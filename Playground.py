@@ -234,8 +234,6 @@ class Playground_Object(object):
             if (i.shape == 2):
                 PG.draw.rect(display, i.fillcolor, i.coordinate + i.size)
                 PG.draw.rect(display, i.bordercolor, i.coordinate + i .size, int(i.size[0] / 3))
-        self.GridData = np.zeros((self.PlayGroundWidth, self.PlayGroundHeight), dtype=int)
-        for x in np.arange(1,self.PlayGroundWidth):
-            for y in np.arange (1,self.PlayGroundHeight):
-                if (display.get_at((x, y)) == (85, 85, 85) ):
-                    self.GridData[x,y] = 1
+        pix_arr = PG.surfarray.pixels2d(display)
+        self.GridData = np.zeros((self.PlayGroundWidth+1, self.PlayGroundHeight+1), dtype=int)
+        self.GridData[pix_arr==((85<<16)+(85<<8)+85)] = 1
