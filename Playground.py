@@ -234,6 +234,14 @@ class Playground_Object(object):
             if (i.shape == 2):
                 PG.draw.rect(display, i.fillcolor, i.coordinate + i.size)
                 PG.draw.rect(display, i.bordercolor, i.coordinate + i .size, int(i.size[0] / 3))
+        
+        # Set GridData to 1 where the corresponding pixel is obstacle-colored
+        # Note: This approach forces GridData to be at least as large as the pixel array,
+        # potentially wasting some memory compared to using a nested for loop. It is
+        # written this way intentionally to improve computation time (>1000%)
         pix_arr = PG.surfarray.pixels2d(display)
-        self.GridData = np.zeros((self.PlayGroundWidth+1, self.PlayGroundHeight+1), dtype=int)
-        self.GridData[pix_arr==((85<<16)+(85<<8)+85)] = 1
+        grid_data_width =max(self.PlayGroundWidth, pix_arr.shape[0])
+        grid_data_height = max(self.PlayGroundHeight, pix_arr.shape[1] )
+        self.GridData = np.zeros((grid_data_width, grid_data_height), dtype=int)
+        obstacle_pixel_val = ((85<<16)+(85<<8)+85) # (85, 85, 85) represented as integer
+        self.GridData[pix_arr==obstacle_pixel_val] = 1
