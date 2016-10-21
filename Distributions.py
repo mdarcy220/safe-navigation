@@ -30,11 +30,12 @@ class Distributions(object):
 
 
     def Radar_RectangularDistribution(self, Center):
+        width = self.Radar_RectangleDistribution_width;
         arr = np.zeros(360 / self.DegreeResolution)
-        Startpoint = Center -  Radar_RectangleDistribution_width / 2
+        Startpoint = Center -  width / 2
         if (Startpoint < 0):
             Startpoint = Startpoint + 360
-        for degree in np.arange (Startpoint, Center + Radar_RectangleDistribution_width / 2, self.DegreeResolution):
+        for degree in np.arange (Startpoint, Center + width / 2, self.DegreeResolution):
             if (degree > 360):
                 degree = degree - 360
             arr[degree / self.DegreeResolution] = 1

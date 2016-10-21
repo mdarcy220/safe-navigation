@@ -6,7 +6,8 @@ from Radar import  Radar_Object
 import Distributions
 
 class Robot_Object(object):
-    def __init__(self, screen,  Target_Object, StartLocation, speed = 3):
+    def __init__(self, screen,  Target_Object, StartLocation, speed = 3, cmdargs=None):
+        self.cmdargs            = cmdargs
         self.Coordinate         = StartLocation
         self.TargetObj          = Target_Object
         self.RobotSpd           = speed
@@ -23,9 +24,11 @@ class Robot_Object(object):
 
     def NextStep(self, Grid_data):
         self.GridData = Grid_data
-        self.DecisionMembershipfunction = self.PDF.Radar_GaussianDistribution(self.getDirectiontoTarget())
+        DecisionMembershipfunction = self.PDF.Radar_GaussianDistribution(self.getDirectiontoTarget())
+        if (not (self.cmdargs is None)) and (self.cmdargs.target_distribution_type == 'rectangular'):
+            DecisionMembershipfunction = self.PDF.Radar_RectangularDistribution(self.getDirectiontoTarget())            
         self.RadarData = self.Radarobject.ScanRadar(self.Coordinate, Grid_data)
-        self.Opfunction = self.ProbabilityOperator(self.DecisionMembershipfunction, self.RadarData)
+        self.Opfunction = self.ProbabilityOperator(DecisionMembershipfunction, self.RadarData)
         DecidedAngle = np.argmax(self.Opfunction) * self.PDF.DegreeResolution
 
         x = self.Coordinate[0] + int(np.cos(DecidedAngle * np.pi / 180) * self.RobotSpd)
