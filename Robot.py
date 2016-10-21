@@ -4,6 +4,7 @@ import math
 from Radar import  Radar_Object
 #import Queue
 import Distributions
+import Vector
 
 class Robot_Object(object):
     def __init__(self, screen,  Target_Object, StartLocation, speed = 3, cmdargs=None):
@@ -59,21 +60,7 @@ class Robot_Object(object):
 
 
     def getDistancetoTarget(self):
-        subtract = np.subtract(self.TargetObj.Coordinate, self.Coordinate)
-        Distance = np.sqrt(subtract[0]**2 + subtract[1]**2)
-        print(Distance)
-        return Distance
-
+        return Vector.getDistanceBetweenPoints(self.TargetObj.Coordinate, self.Coordinate)
 
     def getDirectiontoTarget(self):
-        subtract = np.subtract(self.TargetObj.Coordinate, self.Coordinate)
-        direction = 0
-        if subtract[0] == 0:
-            direction = np.sign(subtract[1]) * 90
-        else:
-            direction = np.arctan(subtract[1] / subtract[0]) * 180 / np.pi
-
-        if subtract[0] < 0:
-            direction += 180
-        direction %= 360
-        return direction
+        return Vector.getAngleBetweenPoints(self.Coordinate, self.TargetObj.Coordinate)
