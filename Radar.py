@@ -25,7 +25,7 @@ class Radar_Object(object):
             ang_in_radians = degree * math.pi / 180
             cos_cached = math.cos(ang_in_radians)
             sin_cached = math.sin(ang_in_radians)
-            for i in range(0, self.RadarRadius, 10):
+            for i in range(0, self.RadarRadius, 1):
                 x = int(cos_cached * i + CoordinateofCenter[0])
                 y = int(sin_cached * i + CoordinateofCenter[1])
                 if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):

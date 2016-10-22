@@ -230,11 +230,11 @@ class Playground_Object(object):
             i.NextStep()
             if (i.shape == 1):
                 PG.draw.circle(display, i.fillcolor, i.coordinate, i.radius)
-                PG.draw.circle(display, i.bordercolor, i.coordinate, i.radius, int (i.radius/3))
+                #PG.draw.circle(display, i.bordercolor, i.coordinate, i.radius, int (i.radius/3))
             if (i.shape == 2):
                 PG.draw.rect(display, i.fillcolor, i.coordinate + i.size)
-                PG.draw.rect(display, i.bordercolor, i.coordinate + i .size, int(i.size[0] / 3))
-        
+                #PG.draw.rect(display, i.bordercolor, i.coordinate + i .size, int(i.size[0] / 3))
+
         # Set GridData to 1 where the corresponding pixel is obstacle-colored
         # Note: This approach forces GridData to be at least as large as the pixel array,
         # potentially wasting some memory compared to using a nested for loop. It is
