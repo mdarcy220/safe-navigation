@@ -7,7 +7,7 @@ class Distributions(object):
         self.Radar_RectangleDistribution_width = 40
         
         self.Radar_GaussianDistribution_Amplitude = 1
-        self.Radar_GaussianDistribution_Sigma = 90
+        self.Radar_GaussianDistribution_Sigma = 110
         
         self.Memory_GaussianDistribution_Sigmax = 1
         self.Memory_GaussianDistribution_Sigmay = 1
