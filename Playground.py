@@ -240,8 +240,20 @@ class Playground_Object(object):
         # potentially wasting some memory compared to using a nested for loop. It is
         # written this way intentionally to improve computation time (>1000%)
         pix_arr = PG.surfarray.pixels2d(display)
-        grid_data_width =max(self.PlayGroundWidth, pix_arr.shape[0])
-        grid_data_height = max(self.PlayGroundHeight, pix_arr.shape[1] )
+        # Mask pixel data to account for small errors in color
+        # Note: This only works because it has been determined through 
+        # experimentation that almost all color errors occur in the last two
+        # bits of the value.
+        pixel_mask = 0b11111100
+        masked_pix_arr = np.bitwise_and(pix_arr, np.array([pixel_mask], dtype='uint8'))
+
+        grid_data_width =max(self.PlayGroundWidth, masked_pix_arr.shape[0])
+        grid_data_height = max(self.PlayGroundHeight, masked_pix_arr.shape[1] )
         self.GridData = np.zeros((grid_data_width, grid_data_height), dtype=int)
-        obstacle_pixel_val = ((85<<16)+(85<<8)+85) # (85, 85, 85) represented as integer
-        self.GridData[pix_arr==obstacle_pixel_val] = 1
+
+        obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
+        self.GridData[masked_pix_arr == obstacle_pixel_val] = 1
+
+        # Uncomment the following two lines to see the GridData directly
+        #pix_arr[self.GridData==0] = 0
+        #pix_arr[self.GridData==1] = 0xFFFFFF
