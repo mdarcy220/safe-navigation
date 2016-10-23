@@ -22,10 +22,10 @@ class Radar_Object(object):
         x_upper_bound = min(799, self.screen.get_width())
         y_upper_bound = min(599, self.screen.get_height())
         for degree in np.arange(0, 360, self.degreeStep):
-            ang_in_radians = degree * math.pi / 180
-            cos_cached = math.cos(ang_in_radians)
-            sin_cached = math.sin(ang_in_radians)
-            for i in range(0, self.RadarRadius, 1):
+            ang_in_radians = degree * np.pi / 180
+            cos_cached = np.cos(ang_in_radians)
+            sin_cached = np.sin(ang_in_radians)
+            for i in np.arange(0, self.RadarRadius, 0.5):
                 x = int(cos_cached * i + CoordinateofCenter[0])
                 y = int(sin_cached * i + CoordinateofCenter[1])
                 if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):

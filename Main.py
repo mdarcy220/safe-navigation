@@ -17,10 +17,16 @@ def get_cmdline_args():
             default=False,
             action='store_true'
     );
+    parser.add_argument('--show-real-time-plot',
+            help='Show a real-time plot of PDFs',
+            dest='show_real_time_plot',
+            default=False,
+            action='store_true'
+    );
     parser.add_argument('--target-distribution-type',
             help='Type of target distribution to use',
             dest='target_distribution_type',
-            choices=['gaussian', 'rectangular'],
+            choices=['gaussian', 'rectangular', 'dotproduct'],
             default='gaussian',
             action='store'
     );
