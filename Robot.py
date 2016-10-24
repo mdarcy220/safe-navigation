@@ -1,7 +1,7 @@
 import numpy  as np
 import pygame as PG
 import math
-from Radar import  Radar_Object
+from Radar import Radar_Object
 import Distributions
 import Vector
 import matplotlib.pyplot as plt
@@ -10,10 +10,13 @@ import time
 class Robot_Object(object):
     def __init__(self, screen,  Target_Object, StartLocation, speed = 3, cmdargs=None):
         self.cmdargs            = cmdargs
-        self.location           = StartLocation
         self.TargetObj          = Target_Object
+        self.location           = StartLocation
         self.speed              = speed
-        self.radar              = Radar_Object(screen)
+
+        radar_resolution = cmdargs.radar_resolution if cmdargs else 4
+
+        self.radar              = Radar_Object(screen, resolution=radar_resolution)
         self.PathList           = []
         self.PDF                = Distributions.Distributions()
 
@@ -41,8 +44,8 @@ class Robot_Object(object):
         self.speed = speed
 
 
-    def Gaussian_noise(self, pdf):
-        noise_pdf = np.random.normal(0, 0.02, pdf.size) + pdf
+    def Gaussian_noise(self, pdf, noise_level):
+        noise_pdf = np.random.normal(0, noise_level, pdf.size) + pdf
         return noise_pdf
 
 
@@ -55,10 +58,14 @@ class Robot_Object(object):
         elif (not (self.cmdargs is None)) and (self.cmdargs.target_distribution_type == 'dotproduct'):
             targetpoint_ang = self.angleToTarget()
             targetpoint_pdf = np.array([(self.speed*(np.cos(np.abs(targetpoint_ang - ang) * np.pi/180)+1)/2) for ang in np.arange(0, 360, self.PDF.DegreeResolution)], dtype='float64')
-            targetpoint_pdf = (targetpoint_pdf/np.amax(targetpoint_pdf)) * 0.8 + 0.2
+            targetpoint_pdf = (targetpoint_pdf / np.amax(targetpoint_pdf)) * 0.8 + 0.2
 
         self.combined_pdf = targetpoint_pdf
-        RadarData = self.Gaussian_noise(self.radar.ScanRadar(self.location, grid_data))
+
+        RadarData = self.radar.ScanRadar(self.location, grid_data)
+        if (self.cmdargs) and not (self.cmdargs.radar_noise_level <= 0):
+            RadarData = self.Gaussian_noise(RadarData, self.cmdargs.radar_noise_level)
+
         self.combined_pdf = self.combine_pdfs(self.combined_pdf, RadarData)
 
         if (not (self.cmdargs is None)) and (self.cmdargs.enable_memory):
@@ -68,15 +75,20 @@ class Robot_Object(object):
 
             mem_bias_ang = Vector.getAngleBetweenPoints((0,0), mem_bias_vec)
             mem_bias_mag = Vector.getDistanceBetweenPoints((0,0), mem_bias_vec)
-            
-            mem_bias_pdf = np.array([(np.cos(np.abs(mem_bias_ang-ang) * np.pi/180)) for ang in np.arange(0, 360, self.PDF.DegreeResolution)])
+
+            # Create memory distribution based on dot product with memory vector
+            mem_bias_pdf = np.array([np.cos(np.abs(mem_bias_ang - ang) * np.pi/180) for ang in np.arange(0, 360, self.PDF.DegreeResolution)])
+            mem_bias_pdf += 1 # Add 1 to get the cosine function above 0
             if np.amax(mem_bias_pdf) > 0:
-                mem_bias_pdf = mem_bias_pdf / np.amax(mem_bias_pdf) * 0.75
-            mem_bias_pdf = mem_bias_pdf + 0.25
+                mem_bias_pdf = mem_bias_pdf / np.amax(mem_bias_pdf)
             self.combined_pdf = self.combine_pdfs(self.combined_pdf, mem_bias_pdf)
 
             if (self.stepNum % 1) == 0:
                 self.visited_points.append(self.location)
+
+        # Bias the distribution to stay away from obstacles
+        self.combined_pdf[RadarData>0.7] *= 1.1
+        self.combined_pdf[RadarData < 0.2] -= 1
 
         movement_ang = self.pdf_angle_selector(self.combined_pdf) * self.PDF.DegreeResolution
 
@@ -91,14 +103,15 @@ class Robot_Object(object):
 
         movement_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * self.speed
         self.last_mmv = movement_vec
-        movement_vec = np.array(movement_vec, dtype=int)
-        new_location = np.add(self.location, movement_vec)
 
-        if not (grid_data[int(new_location[0]), int(new_location[1])] == 1):
-            self.location = new_location
-        else:
+        new_location = np.add(self.location, movement_vec)
+        if (grid_data[int(new_location[0]), int(new_location[1])] == 1):
             print('Robot glitched into obstacle!')
             self.location = np.add(self.location, -movement_vec*1.5)
+
+        if (self.cmdargs) and (self.cmdargs.use_integer_robot_location):
+            new_location = np.array(new_location, dtype=int)
+        self.location = new_location
 
         self.PathList.append(np.array(self.location, dtype=int))
         if (self.distanceToTarget() < 20):
@@ -107,19 +120,15 @@ class Robot_Object(object):
 
 
     def center_of_gravity_pdfselector(self, pdf):
-        width = 30
+        width = 60
         maxval_ind = np.argmax(pdf)
         sum_num = 0
         sum_den = 0
-        for n in np.arange(int(maxval_ind - width / 2), int(maxval_ind + width/2), 1 ):
-            if n < 0: 
-                n += 360
-            if n > 359:
-                n -= 360
-            sum_num += pdf[n]*n
-            sum_den += pdf[n]
-        center_of_mass = int(sum_num / (sum_den + 0.00001)) # Add a small number (0.0001) in case sum_den is 0
-        return center_of_mass
+        for n in np.arange(int(maxval_ind - width / 2), int(maxval_ind + width/2), 1):
+            sum_num += pdf[n % 360] * n
+            sum_den += pdf[n % 360]
+        center_of_mass = int(sum_num / (sum_den + 0.00001)) # Add a small number (0.00001) in case sum_den is 0
+        return center_of_mass % 360
 
 
     def threshold_midpoint_pdfselector(self, pdf):
@@ -149,8 +158,8 @@ class Robot_Object(object):
 
 
     def calc_memory_bias_vector(self):
-        sigmaSquared = 10 ** 2
-        gaussian_derivative = lambda x: -0.1*x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
+        sigmaSquared = 15 ** 2
+        gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
         vec = np.array([0, 0], dtype='float64')
         for point in self.visited_points:
         #for point in [PG.mouse.get_pos()]:
