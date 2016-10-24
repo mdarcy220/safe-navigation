@@ -23,6 +23,12 @@ def get_cmdline_args():
             default=False,
             action='store_true'
     );
+    parser.add_argument('--use-integer-robot-location',
+            help='Set the simulation to store the robot location as an integer instead of a floating-point value',
+            dest='use_integer_robot_location',
+            default=False,
+            action='store_true'
+    );
     parser.add_argument('--target-distribution-type',
             help='Type of target distribution to use',
             dest='target_distribution_type',
@@ -35,6 +41,27 @@ def get_cmdline_args():
             dest='robot_speed',
             type=int,
             default=10,
+            action='store'
+    );
+    parser.add_argument('--map-modifier-num',
+            help='Numeric ID of desired map modifier.',
+            dest='map_modifier_num',
+            type=int,
+            default=-1,
+            action='store'
+    );
+    parser.add_argument('--radar-resolution',
+            help='Resolution of the rader, in pixels',
+            dest='radar_resolution',
+            type=float,
+            default=4,
+            action='store'
+    );
+    parser.add_argument('--radar-noise-level',
+            help='Width of Gaussian for radar noise',
+            dest='radar_noise_level',
+            type=float,
+            default=0.02,
             action='store'
     );
     parser.add_argument('--map-name',

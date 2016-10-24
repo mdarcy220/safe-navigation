@@ -5,11 +5,12 @@ import sys
 
 class Radar_Object(object):
 
-    def __init__(self, screen, Radius = 100, radarcolor = (236,179,223)):
+    def __init__(self, screen, Radius = 100, radarcolor = (236,179,223), resolution = 4):
 
         self.screen   = screen
         self.RadarRadius = Radius
         self.RadarColor  = radarcolor
+        self.resolution  = resolution
         self.image       = PG.Surface([self.RadarRadius * 2,  self.RadarRadius * 2])
         self.image.fill((255,255,255))
         self.image.set_colorkey((255,255,255))
@@ -25,7 +26,7 @@ class Radar_Object(object):
             ang_in_radians = degree * np.pi / 180
             cos_cached = np.cos(ang_in_radians)
             sin_cached = np.sin(ang_in_radians)
-            for i in np.arange(0, self.RadarRadius, 5):
+            for i in np.arange(0, self.RadarRadius, self.resolution):
                 x = int(cos_cached * i + CoordinateofCenter[0])
                 y = int(sin_cached * i + CoordinateofCenter[1])
                 if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):

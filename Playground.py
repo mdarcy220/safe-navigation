@@ -3,7 +3,8 @@ import pygame as PG
 from  DynamicObstacles import DynamicObs
 class Playground_Object(object):
 
-    def __init__(self, Width, Height, MapName, position = (0,0)):
+    def __init__(self, Width, Height, MapName, position = (0,0), cmdargs=None):
+        self.cmdargs            = cmdargs
         self.PlayGroundWidth    = Width
         self.PlayGroundHeight   = Height
         self.GridData           = np.zeros((self.PlayGroundWidth,self.PlayGroundHeight ), dtype=int)
@@ -16,7 +17,27 @@ class Playground_Object(object):
     def LoadMap(self, Mapname):
         image                   = PG.image.load(self.MapName)
         self.Playground         = image
-        self.Map4(image)
+        if (self.cmdargs):
+            self.apply_map_modifier(image, self.cmdargs.map_modifier_num)
+
+
+    def apply_map_modifier(self, image, modifier_num):
+        if (modifier_num == 1):
+            self.Map1(image)
+        elif (modifier_num == 2):
+            self.Map2(image)
+        elif (modifier_num == 3):
+            self.Map3(image)
+        elif (modifier_num == 4):
+            self.Map4(image)
+        elif (modifier_num == 5):
+            self.Map5(image)
+        elif (modifier_num == 6):
+            self.Map6(image)
+        elif (modifier_num == 7):
+            self.Map7(image)
+        else:
+            return
 
 
     def Map7(self, image):
