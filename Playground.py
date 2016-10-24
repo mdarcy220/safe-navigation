@@ -19,9 +19,32 @@ class Playground_Object(object):
         self.Playground         = image
         if (self.cmdargs):
             self.apply_map_modifier(image, self.cmdargs.map_modifier_num)
+        self.SetSpeeds(self.cmdargs.speedmode)
 
+    def SetSpeeds(self, speedmode):
+        #1  Obstacles Slower
+        #2  Obstalces Faster
+        #3  Obstacles same as Robot
+        #4  Obstacles 50% faster and 50% slower
+        #5  Robot Speed is always fastest
+        
+        
+        if speedmode > 6:
+            speedmode = 1    
+        for DO in self.DynamicObstacles:
+            if speedmode == 4:
+                DO.speed = np.array ([4, 10])[np.random.randint(2)]  #Obstalces will be 4 or 10
+            elif speedmode == 3:
+                DO.speed = 6  #Obstacles will be equal to Robot
+            elif (speedmode == 2 or speedmode ==5):
+                DO.speed = 10
+            elif speedmode == 1:
+                DO.speed = 4         
+                    
+        
 
     def apply_map_modifier(self, image, modifier_num):
+
         if (modifier_num == 1):
             self.Map1(image)
         elif (modifier_num == 2):
@@ -276,5 +299,5 @@ class Playground_Object(object):
         self.GridData[masked_pix_arr == obstacle_pixel_val] = 1
 
         # Uncomment the following two lines to see the GridData directly
-        #pix_arr[self.GridData==0] = 0
-        #pix_arr[self.GridData==1] = 0xFFFFFF
+        pix_arr[self.GridData==0] = 0
+        pix_arr[self.GridData==1] = 0xFFFFFF

@@ -8,12 +8,22 @@ import matplotlib.pyplot as plt
 import time
 
 class Robot_Object(object):
-    def __init__(self, screen,  Target_Object, StartLocation, speed = 3, cmdargs=None):
+    def __init__(self, screen,  Target_Object, StartLocation, speed = 6, cmdargs=None, issafe = False):
         self.cmdargs            = cmdargs
         self.TargetObj          = Target_Object
         self.location           = StartLocation
         self.speed              = speed
-
+        self.IAmSafe            = issafe
+        if (self.IAmSafe):
+            #1  Obstacles Slower
+            #2  Obstalces Faster
+            #3  Obstacles same as Robot
+            #4  Obstacles 50% faster and 50% slower
+            #5  Robot Speed is always fastest
+            if (self.cmdargs.speedmode == 5):
+                self.speed = 10
+        self.NumberofGlitches   = 0
+        
         radar_resolution = cmdargs.radar_resolution if cmdargs else 4
 
         self.radar              = Radar_Object(screen, resolution=radar_resolution)
@@ -50,6 +60,8 @@ class Robot_Object(object):
 
 
     def NextStep(self, grid_data):
+        if (self.distanceToTarget() < 20):
+            return self.NumberofGlitches, True
         self.stepNum += 1
 
         targetpoint_pdf = self.PDF.Radar_GaussianDistribution(self.angleToTarget())
@@ -65,6 +77,7 @@ class Robot_Object(object):
         RadarData = self.radar.ScanRadar(self.location, grid_data)
         if (self.cmdargs) and not (self.cmdargs.radar_noise_level <= 0):
             RadarData = self.Gaussian_noise(RadarData, self.cmdargs.radar_noise_level)
+ 
 
         self.combined_pdf = self.combine_pdfs(self.combined_pdf, RadarData)
 
@@ -91,7 +104,24 @@ class Robot_Object(object):
         self.combined_pdf[RadarData < 0.2] -= 1
 
         movement_ang = self.pdf_angle_selector(self.combined_pdf) * self.PDF.DegreeResolution
-
+        
+        if (self.IAmSafe):
+            ClosestObstacle_degree   = np.argmin (RadarData)
+            ClosestObstacle_distance = np.min(RadarData)
+            
+            if (np.absolute (ClosestObstacle_degree - movement_ang) < 60):
+                if (ClosestObstacle_distance < 0.5):
+                    self.speed = -1
+                if (ClosestObstacle_distance >= 0.5):
+                    self.speed = 4
+            elif (np.absolute (ClosestObstacle_degree - movement_ang) >120): 
+                if (ClosestObstacle_distance < 0.5):
+                    self.speed = 10
+                if (ClosestObstacle_distance >= 0.5):
+                    self.speed = 8
+            else:
+                self.speed = 6
+         
         if (not (self.cmdargs is None)) and (self.cmdargs.show_real_time_plot):
             plt.cla()
             plt.plot(self.combined_pdf)
@@ -106,7 +136,8 @@ class Robot_Object(object):
 
         new_location = np.add(self.location, movement_vec)
         if (grid_data[int(new_location[0]), int(new_location[1])] == 1):
-            print('Robot glitched into obstacle!')
+            print(('Safe ' if self.IAmSafe else 'Normal ') + 'Robot glitched into obstacle!')
+            self.NumberofGlitches += 1
             self.location = np.add(self.location, -movement_vec*1.5)
 
         if (self.cmdargs) and (self.cmdargs.use_integer_robot_location):
@@ -114,9 +145,8 @@ class Robot_Object(object):
         self.location = new_location
 
         self.PathList.append(np.array(self.location, dtype=int))
-        if (self.distanceToTarget() < 20):
-            return True
-        return False
+
+        return self.NumberofGlitches, False
 
 
     def center_of_gravity_pdfselector(self, pdf):
@@ -173,10 +203,16 @@ class Robot_Object(object):
         # Be careful when uncommenting things in this function.
         # Each line drawn makes it more likely that the robot goes through obstacles
         #PG.draw.circle(screen, (0, 0, 255), np.array(self.location, dtype=int), 4, 0)
+        BlueColor  = (0,0,255)
+        GreenColor = (10, 100,10)
+        if (self.IAmSafe):
+            PathColor = GreenColor
+        else:
+            PathColor = BlueColor
         for ind, o in enumerate(self.PathList):
             if ind == len(self.PathList) - 1:
                 continue
-            PG.draw.line(screen,(0,0,255),self.PathList[ind], self.PathList[ind +1], 3)
+            PG.draw.line(screen,PathColor,self.PathList[ind], self.PathList[ind +1], 3)
         if (not (self.cmdargs is None)) and (0 < self.cmdargs.debug_level):
             # Draw line representing memory effect
             #PG.draw.line(screen, (0,255,0), np.array(self.location, dtype=int), np.array(self.location+self.last_mbv*100, dtype=int), 1)
@@ -185,7 +221,7 @@ class Robot_Object(object):
             #PG.draw.line(screen, (255,0,0), np.array(self.location, dtype=int), np.array(self.location+self.last_mmv*100, dtype=int), 1)
 
             # Draw circle representing radar range
-            PG.draw.circle(screen, (255,255,0), np.array(self.location, dtype=int), self.radar.RadarRadius, 2)
+            PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), self.radar.RadarRadius, 2)
 
             # Draw distribution values around robot
             #self.draw_pdf(screen, self.combined_pdf)

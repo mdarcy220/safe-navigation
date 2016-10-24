@@ -40,7 +40,7 @@ def get_cmdline_args():
             help='Base speed of the robot',
             dest='robot_speed',
             type=int,
-            default=10,
+            default=6,
             action='store'
     );
     parser.add_argument('--map-modifier-num',
@@ -48,6 +48,14 @@ def get_cmdline_args():
             dest='map_modifier_num',
             type=int,
             default=-1,
+            action='store'
+    );
+    parser.add_argument('--speed-mode',
+            help='Speed mode of the Obstacles and the Robot',
+            dest='speedmode',
+            choices=[1,2,3,4,5],
+            type=int,
+            default=1,
             action='store'
     );
     parser.add_argument('--radar-resolution',
