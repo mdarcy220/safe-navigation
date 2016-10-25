@@ -18,7 +18,7 @@ class Radar_Object(object):
 
     def ScanRadar(self, CoordinateofCenter, Grid_Data):
 
-        radar_data = np.ones(360 / int(self.degreeStep))
+        radar_data = np.ones(int(360 / int(self.degreeStep)))
         currentStep = 0
         x_upper_bound = min(799, self.screen.get_width())
         y_upper_bound = min(599, self.screen.get_height())

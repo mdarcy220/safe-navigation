@@ -136,7 +136,7 @@ class Robot_Object(object):
 
         new_location = np.add(self.location, movement_vec)
         if (grid_data[int(new_location[0]), int(new_location[1])] == 1):
-            print(('Safe ' if self.IAmSafe else 'Normal ') + 'Robot glitched into obstacle!')
+            #print(('Safe ' if self.IAmSafe else 'Normal ') + 'Robot glitched into obstacle!')
             self.NumberofGlitches += 1
             self.location = np.add(self.location, -movement_vec*1.5)
 

@@ -41,9 +41,12 @@ class Game_Object(object):
             if self.cmdargs.fast_computing:
                 isAtTarget = False
                 while (not isAtTarget):
-                    temp, isAtTarget = self.Normal_Robot.NextStep(self.Playground.GridData) and self.Safe_Robot.NextStep(self.Playground.GridData)
+                    normal_Glitches, IsNormalatTarget = self.Normal_Robot.NextStep(self.Playground.GridData)
+                    Safe_Glitches  , IsSafeatTarget     = self.Safe_Robot.NextStep(self.Playground.GridData)
+                    isAtTarget =  IsNormalatTarget and IsSafeatTarget
                     
                 if (isAtTarget):
+                    output = str(normal_Glitches) + "|" + str(Safe_Glitches) + "|" + str(self.Normal_Robot.stepNum) + "|" + str(self.Safe_Robot.stepNum)
                     shouldClose = True
             else:
                 self.Normal_Robot.NextStep(self.Playground.GridData)
@@ -55,5 +58,6 @@ class Game_Object(object):
                 PG.display.update()
             clockrobot = clockrobot + 1
             clock.tick(1000)
+        print (output)
         PG.quit()
         return 0
