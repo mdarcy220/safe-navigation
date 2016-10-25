@@ -8,7 +8,7 @@ class DynamicObs(object):
         self.coordinate     = (0,0)
         self.origin         = (0,0)
         self.size           = [50,50]
-        self.fillcolor      = (85,85,85)
+        self.fillcolor      = (34,119,34)
         self.bordercolor    = (255,0,0)
         self.MovementMode   = 1
         self.shape          = 1

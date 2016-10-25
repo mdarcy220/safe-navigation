@@ -106,8 +106,9 @@ class Robot_Object(object):
         movement_ang = self.pdf_angle_selector(self.combined_pdf) * self.PDF.DegreeResolution
         
         if (self.IAmSafe):
-            ClosestObstacle_degree   = np.argmin (RadarData)
-            ClosestObstacle_distance = np.min(RadarData)
+            dynamic_pdf = self.radar.scan_dynamic_obstacles(self.location, grid_data)
+            ClosestObstacle_degree   = np.argmin (dynamic_pdf)
+            ClosestObstacle_distance = np.min(dynamic_pdf)
             
             if (np.absolute (ClosestObstacle_degree - movement_ang) < 60):
                 if (ClosestObstacle_distance < 0.5):

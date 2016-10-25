@@ -298,6 +298,10 @@ class Playground_Object(object):
         obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
         self.GridData[masked_pix_arr == obstacle_pixel_val] = 1
 
+        dynamic_obstacle_pixel_val = 0x227722 & pixel_mask # (34, 119, 34) represented as integer
+        self.GridData[masked_pix_arr == dynamic_obstacle_pixel_val] = 3
+        
         # Uncomment the following two lines to see the GridData directly
         pix_arr[self.GridData==0] = 0
+        pix_arr[self.GridData==3] = 0x115599
         pix_arr[self.GridData==1] = 0xFFFFFF
