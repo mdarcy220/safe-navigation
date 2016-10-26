@@ -54,7 +54,7 @@ class Radar_Object(object):
                 x = int(cos_cached * i + CoordinateofCenter[0])
                 y = int(sin_cached * i + CoordinateofCenter[1])
                 if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):
-                    radar_data[currentStep] = i / self.RadarRadius
+                    radar_data[currentStep] = 1
                     break
                 if (Grid_Data[x,y] == 3):
                     radar_data[currentStep] = i / self.RadarRadius

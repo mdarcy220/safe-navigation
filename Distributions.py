@@ -13,6 +13,8 @@ class Distributions(object):
         self.Memory_GaussianDistribution_Sigmay = 1
         
         self.DegreeResolution = 1 #This means that, the array starts from 1 and increases by DegreeResolution. like 1, 1+ DegreeResolution, 1+ 2*DegreeResolution ... 360
+
+        self.cached_gaussian_distribution = None
         
     def ResetValues (self, 
                      Radar_RectangleDistribution_width    = 40, 
@@ -44,10 +46,18 @@ class Distributions(object):
 
 
     def Radar_GaussianDistribution (self, Center):
+        if self.cached_gaussian_distribution is None:
+            self.cached_gaussian_distribution = self.gen_cached_gaussian();
+
+
+        return np.roll(self.cached_gaussian_distribution, int(np.round(Center)))
+
+    def gen_cached_gaussian(self):
+        
         arr = np.zeros(int(360 / self.DegreeResolution))
 
         for degree in np.arange (-180, 540, self.DegreeResolution):
-            gaussianresult = self.Radar_GaussianDistribution_Amplitude * np.exp((-1 * ((degree - Center) ** 2)) / (2 * (self.Radar_GaussianDistribution_Sigma ** 2)))
+            gaussianresult = self.Radar_GaussianDistribution_Amplitude * np.exp((-1 * ((degree) ** 2)) / (2 * (self.Radar_GaussianDistribution_Sigma ** 2)))
 
             if degree < 0:
                 degree = degree + 360
@@ -57,7 +67,6 @@ class Distributions(object):
                 arr[int(degree /  self.DegreeResolution)] = gaussianresult
 
         return arr;
-
 
     def Memory_GaussianDistribution(self, Center, xboundary, yboundary): #xyboundary should include the x and y of the grid data.
         arr = np.zeros((yboundary, xboundary))
