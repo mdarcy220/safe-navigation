@@ -11,7 +11,7 @@ do
     echo "Speed mode: $speed"
     for i in {1..10}
     do
-        output=$(python Main.py $Args --map-modifier-num 0  --map-name Maps/Ground_WithRooms.png --speed-mode $speed)
+        output=$(python3 Main.py $Args --map-modifier-num 0  --map-name Maps/Ground_WithRooms.png --speed-mode $speed)
         echo "Simulation #$i done. The output is:" $output
         echo $output >> Results.txt
     done
@@ -24,7 +24,7 @@ do
     echo "Speed mode: $speed"
     for i in {1..10}
     do
-        output=$(python Main.py $Args --map-modifier-num 2  --map-name Maps/Ground_withParralel_walls.png --speed-mode $speed)
+        output=$(python3 Main.py $Args --map-modifier-num 2  --map-name Maps/Ground_withParralel_walls.png --speed-mode $speed)
         echo "Simulation #$i done. The output is:" $output
         echo $output >> Results.txt
     done
@@ -36,7 +36,7 @@ do
     echo "Speed mode: $speed"
     for i in {1..10}
     do
-        output=$(python Main.py $Args --map-modifier-num 3  --map-name Maps/Ground_WithRooms.png --speed-mode $speed)
+        output=$(python3 Main.py $Args --map-modifier-num 3  --map-name Maps/Ground_WithRooms.png --speed-mode $speed)
         echo "Simulation #$i done. The output is:" $output
         echo $output >> Results.txt
     done
@@ -48,7 +48,7 @@ do
     echo "Speed mode: $speed"
     for i in {1..10}
     do
-        output=$(python Main.py $Args --map-modifier-num 1  --map-name Maps/Ground_Nothing.png --speed-mode $speed)
+        output=$(python3 Main.py $Args --map-modifier-num 1  --map-name Maps/Ground_Nothing.png --speed-mode $speed)
         echo "Simulation #$i done. The output is:" $output
         echo $output >> Results.txt
     done
@@ -61,7 +61,7 @@ do
     echo "Speed mode: $speed"
     for i in {1..10}
     do
-        output=$(python Main.py $Args --map-modifier-num 4  --map-name Maps/Ground_Nothing.png --speed-mode $speed)
+        output=$(python3 Main.py $Args --map-modifier-num 4  --map-name Maps/Ground_Nothing.png --speed-mode $speed)
         echo "Simulation #$i done. The output is:" $output
         echo $output >> Results.txt
     done
@@ -74,7 +74,7 @@ do
     echo "Speed mode: $speed"
     for i in {1..10}
     do
-        output=$(python Main.py $Args --map-modifier-num 5 --map-name Maps/Ground_Nothing.png --speed-mode $speed)
+        output=$(python3 Main.py $Args --map-modifier-num 5 --map-name Maps/Ground_Nothing.png --speed-mode $speed)
         echo "Simulation #$i done. The output is:" $output
         echo $output >> Results.txt
     done
@@ -87,7 +87,7 @@ do
     echo "Speed mode: $speed"
     for i in {1..10}
     do
-        output=$(python Main.py $Args --map-modifier-num 7 --map-name Maps/Ground_Nothing.png --speed-mode $speed)
+        output=$(python3 Main.py $Args --map-modifier-num 7 --map-name Maps/Ground_Nothing.png --speed-mode $speed)
         echo "Simulation #$i done. The output is:" $output
         echo $output >> Results.txt
     done
@@ -99,7 +99,7 @@ do
     echo "Speed mode: $speed"
     for i in {1..10}
     do
-        output=$(python Main.py $Args --map-modifier-num 8 --map-name Maps/Ground_Maze.jpg --speed-mode $speed)
+        output=$(python3 Main.py $Args --map-modifier-num 8 --map-name Maps/Ground_Maze.png --speed-mode $speed)
         echo "Simulation #$i done. The output is:" $output
         echo $output >> Results.txt
     done
