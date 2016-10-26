@@ -7,12 +7,21 @@ import Vector
 import matplotlib.pyplot as plt
 import time
 
+
+class RobotStats:
+    def __init__(self):
+        self.num_glitches = 0
+        self.num_steps = 0
+
+
 class Robot_Object(object):
-    def __init__(self, screen,  Target_Object, StartLocation, speed = 6, cmdargs=None, issafe = False):
+    def __init__(self, screen,  Target_Object, StartLocation, speed = 6, cmdargs=None, issafe = False, name=""):
         self.cmdargs            = cmdargs
         self.TargetObj          = Target_Object
         self.location           = StartLocation
         self.speed              = speed
+        self.stats              = RobotStats()
+        self.name               = name
         self.IAmSafe            = issafe
         if (self.IAmSafe):
             #1  Obstacles Slower
@@ -49,6 +58,9 @@ class Robot_Object(object):
             plt.ion()
             plt.show()
 
+    def get_stats(self):
+        return self.stats
+
 
     def SetSpeed(self, speed):
         self.speed = speed
@@ -60,9 +72,8 @@ class Robot_Object(object):
 
 
     def NextStep(self, grid_data):
-        if (self.distanceToTarget() < 20):
-            return self.NumberofGlitches, True
         self.stepNum += 1
+        self.stats.num_steps += 1
 
         targetpoint_pdf = self.PDF.Radar_GaussianDistribution(self.angleToTarget())
         if (not (self.cmdargs is None)) and (self.cmdargs.target_distribution_type == 'rectangular'):
@@ -100,14 +111,15 @@ class Robot_Object(object):
                 self.visited_points.append(self.location)
 
         # Bias the distribution to stay away from obstacles
-        self.combined_pdf[RadarData>0.7] *= 1.1
-        self.combined_pdf[RadarData < 0.2] -= 1
+        self.combined_pdf[RadarData > 0.7] *= 1.1
+        self.combined_pdf[RadarData < 0.15] -= 1
 
         movement_ang = self.pdf_angle_selector(self.combined_pdf) * self.PDF.DegreeResolution
         
         if (self.IAmSafe):
-            ClosestObstacle_degree   = np.argmin (RadarData)
-            ClosestObstacle_distance = np.min(RadarData)
+            dynamic_pdf = self.radar.scan_dynamic_obstacles(self.location, grid_data)
+            ClosestObstacle_degree   = np.argmin (dynamic_pdf)
+            ClosestObstacle_distance = np.min(dynamic_pdf)
             
             if (np.absolute (ClosestObstacle_degree - movement_ang) < 60):
                 if (ClosestObstacle_distance < 0.5):
@@ -136,8 +148,8 @@ class Robot_Object(object):
 
         new_location = np.add(self.location, movement_vec)
         if (grid_data[int(new_location[0]), int(new_location[1])] == 1):
-            print(('Safe ' if self.IAmSafe else 'Normal ') + 'Robot glitched into obstacle!')
-            self.NumberofGlitches += 1
+            #print('Robot ({}) glitched into obstacle!'.format(self.name))
+            self.stats.num_glitches += 1
             self.location = np.add(self.location, -movement_vec*1.5)
 
         if (self.cmdargs) and (self.cmdargs.use_integer_robot_location):
@@ -145,8 +157,6 @@ class Robot_Object(object):
         self.location = new_location
 
         self.PathList.append(np.array(self.location, dtype=int))
-
-        return self.NumberofGlitches, False
 
 
     def center_of_gravity_pdfselector(self, pdf):
@@ -188,10 +198,10 @@ class Robot_Object(object):
 
 
     def calc_memory_bias_vector(self):
-        sigmaSquared = 15 ** 2
+        sigmaSquared = 10 ** 2
         gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
         vec = np.array([0, 0], dtype='float64')
-        for point in self.visited_points:
+        for point in self.visited_points[-500:-10]:
         #for point in [PG.mouse.get_pos()]:
             effect_magnitude = gaussian_derivative(Vector.getDistanceBetweenPoints(point, self.location))
             effect_vector = effect_magnitude * np.subtract(point, self.location)
@@ -212,7 +222,7 @@ class Robot_Object(object):
         for ind, o in enumerate(self.PathList):
             if ind == len(self.PathList) - 1:
                 continue
-            PG.draw.line(screen,PathColor,self.PathList[ind], self.PathList[ind +1], 3)
+            PG.draw.line(screen,PathColor,self.PathList[ind], self.PathList[ind +1], 2)
         if (not (self.cmdargs is None)) and (0 < self.cmdargs.debug_level):
             # Draw line representing memory effect
             #PG.draw.line(screen, (0,255,0), np.array(self.location, dtype=int), np.array(self.location+self.last_mbv*100, dtype=int), 1)

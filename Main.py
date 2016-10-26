@@ -90,7 +90,4 @@ def get_cmdline_args():
 
 if __name__ == '__main__':
     Game = Game_Object(get_cmdline_args())
-    if (Game.GameLoop() == 1):
-        print ("Error occured ... ")
-    else:
-        print ("Completed")
+    Game.GameLoop()

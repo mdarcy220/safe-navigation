@@ -4,7 +4,7 @@ import configparser as cp
 import numpy        as np
 
 from  Playground  import Playground_Object
-from  Robot       import Robot_Object
+from  Robot       import Robot_Object, RobotStats
 from  Target      import Target_Object
 from  Monitoring  import Monitors
 import time
@@ -22,38 +22,72 @@ class Game_Object(object):
         self.gameDisplay   = PG.display.set_mode((self.Display_Width, self.Display_Height))
         self.Playground    = Playground_Object(800, self.Display_Height, cmdargs.map_name, cmdargs=cmdargs)
         self.TargetPoint   = Target_Object((740,50))
-        self.Normal_Robot  = Robot_Object (self.gameDisplay, self.TargetPoint,(50,550), speed=cmdargs.robot_speed, cmdargs=cmdargs)
-        self.Safe_Robot    = Robot_Object (self.gameDisplay, self.TargetPoint,(50,550), speed=cmdargs.robot_speed, cmdargs=cmdargs, issafe = True)
+
+        self.Normal_Robot  = Robot_Object (self.gameDisplay, self.TargetPoint,(50,550), speed=cmdargs.robot_speed, cmdargs=cmdargs, name="NormalRobot")
+        self.Safe_Robot    = Robot_Object (self.gameDisplay, self.TargetPoint,(50,550), speed=cmdargs.robot_speed, cmdargs=cmdargs, issafe = True, name="SafeRobot")
+        self.robot_list    = []
+        self.robot_list.append(self.Normal_Robot)
+        self.robot_list.append(self.Safe_Robot)
 
         PG.display.set_caption('Robot Simulator')
 
-    def GameLoop(self):
+    def standard_game_loop(self):
         clock = PG.time.Clock()
-        shouldClose = False
-        while not shouldClose:
-
+        while True:
+            # Handle events
             for event in PG.event.get():
                 if event.type == PG.QUIT:
-                    shouldClose = True
+                    return
+            # Step the environment
             self.Playground.Nextstep(self.gameDisplay)
-            clockrobot = 0
+        
+            # Process robot actions
+            for robot in self.robot_list:
+                robot.NextStep(self.Playground.GridData)
 
-            if self.cmdargs.fast_computing:
-                isAtTarget = False
-                while (not isAtTarget):
-                    temp, isAtTarget = self.Normal_Robot.NextStep(self.Playground.GridData) and self.Safe_Robot.NextStep(self.Playground.GridData)
-                    
-                if (isAtTarget):
-                    shouldClose = True
-            else:
-                self.Normal_Robot.NextStep(self.Playground.GridData)
-                self.Safe_Robot.NextStep(self.Playground.GridData)
-                
-                self.TargetPoint.draw(self.gameDisplay)
-                self.Normal_Robot.draw(self.gameDisplay)
-                self.Safe_Robot.draw(self.gameDisplay)
-                PG.display.update()
-            clockrobot = clockrobot + 1
+            # Draw everything
+            for robot in self.robot_list:
+                robot.draw(self.gameDisplay)
+            self.TargetPoint.draw(self.gameDisplay)
+            PG.display.update()
+
+            # Tick the clocks
             clock.tick(1000)
+        
+    def fast_computing_game_loop(self):
+        safe_robot_at_target = False
+        normal_robot_at_target = False 
+        isAtTarget = False
+        while (not (safe_robot_at_target and normal_robot_at_target)):
+            self.Normal_Robot.NextStep(self.Playground.GridData)
+            self.Safe_Robot.NextStep(self.Playground.GridData)
+            normal_robot_at_target = (self.Normal_Robot.distanceToTarget() < 20)
+            safe_robot_at_target = (self.Safe_Robot.distanceToTarget() < 20)
+
+
+        output_csv = str(self.cmdargs.speedmode) + ','
+        output_csv += str(self.cmdargs.radar_resolution) +','
+        output_csv += str(self.cmdargs.radar_noise_level) +','
+        output_csv += str(self.cmdargs.map_name) +','
+        output_csv += str(self.cmdargs.map_modifier_num) +','
+        output_csv += str(self.cmdargs.target_distribution_type) +','
+        output_csv += str(self.cmdargs.use_integer_robot_location) +','
+
+        normal_robot_stats = self.Normal_Robot.get_stats()
+        safe_robot_stats = self.Safe_Robot.get_stats()
+
+        output_csv += str(normal_robot_stats.num_glitches) + ","
+        output_csv += str(safe_robot_stats.num_glitches) + ","
+        output_csv += str(self.Normal_Robot.stepNum) + ","
+        output_csv += str(self.Safe_Robot.stepNum)
+
+        print(output_csv)
+
+    def GameLoop(self):
+        if self.cmdargs.fast_computing:
+            self.fast_computing_game_loop()
+        else:
+            self.standard_game_loop()
+
         PG.quit()
         return 0
