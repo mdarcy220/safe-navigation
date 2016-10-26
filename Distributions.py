@@ -44,7 +44,7 @@ class Distributions(object):
 
 
     def Radar_GaussianDistribution (self, Center):
-        arr = np.zeros(360 / int(self.DegreeResolution))
+        arr = np.zeros(int(360 / self.DegreeResolution))
 
         for degree in np.arange (-180, 540, self.DegreeResolution):
             gaussianresult = self.Radar_GaussianDistribution_Amplitude * np.exp((-1 * ((degree - Center) ** 2)) / (2 * (self.Radar_GaussianDistribution_Sigma ** 2)))
