@@ -58,12 +58,14 @@ class Game_Object(object):
         safe_robot_at_target = False
         normal_robot_at_target = False 
         isAtTarget = False
+        self.Playground.Nextstep(self.gameDisplay)
         while (not (safe_robot_at_target and normal_robot_at_target)):
-            self.Normal_Robot.NextStep(self.Playground.GridData)
-            self.Safe_Robot.NextStep(self.Playground.GridData)
-            normal_robot_at_target = (self.Normal_Robot.distanceToTarget() < 20)
-            safe_robot_at_target = (self.Safe_Robot.distanceToTarget() < 20)
-
+            if not normal_robot_at_target:
+                self.Normal_Robot.NextStep(self.Playground.GridData)
+                normal_robot_at_target = (self.Normal_Robot.distanceToTarget() < 20)
+            if not safe_robot_at_target:
+                self.Safe_Robot.NextStep(self.Playground.GridData)
+                safe_robot_at_target = (self.Safe_Robot.distanceToTarget() < 20)
 
         output_csv = str(self.cmdargs.speedmode) + ','
         output_csv += str(self.cmdargs.radar_resolution) +','
