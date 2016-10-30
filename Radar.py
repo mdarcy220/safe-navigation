@@ -56,7 +56,7 @@ class Radar_Object(object):
                 if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):
                     radar_data[currentStep] = 1
                     break
-                if (Grid_Data[x,y] == 3):
+                if (Grid_Data[x,y] & 2):
                     radar_data[currentStep] = i / self.RadarRadius
                     break
                 #self.screen.set_at((x, y), self.RadarColor)
