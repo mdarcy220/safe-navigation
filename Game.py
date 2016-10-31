@@ -67,6 +67,8 @@ class Game_Object(object):
                 self.Safe_Robot.NextStep(self.Playground.GridData)
                 safe_robot_at_target = (self.Safe_Robot.distanceToTarget() < 20)
 
+
+    def make_csv_line(self):
         output_csv = str(self.cmdargs.speedmode) + ','
         output_csv += str(self.cmdargs.radar_resolution) +','
         output_csv += str(self.cmdargs.radar_noise_level) +','
@@ -83,13 +85,16 @@ class Game_Object(object):
         output_csv += str(self.Normal_Robot.stepNum) + ","
         output_csv += str(self.Safe_Robot.stepNum)
 
-        print(output_csv)
+        return output_csv
+        
 
     def GameLoop(self):
         if self.cmdargs.fast_computing:
             self.fast_computing_game_loop()
         else:
             self.standard_game_loop()
+
+        print(self.make_csv_line());
 
         PG.quit()
         return 0

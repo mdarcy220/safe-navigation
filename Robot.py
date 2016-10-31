@@ -54,6 +54,8 @@ class Robot_Object(object):
         # Number of times NextStep was called
         self.stepNum            = 0
 
+        self.last_glitch_step   = -1
+
         # Used to allow real-time plotting
         if (not (self.cmdargs is None)) and (cmdargs.show_real_time_plot):
             plt.ion()
@@ -151,8 +153,11 @@ class Robot_Object(object):
 
         new_location = np.add(self.location, movement_vec)
         if (grid_data[int(new_location[0]), int(new_location[1])] & 1):
-            print('Robot ({}) glitched into obstacle!'.format(self.name))
-            self.stats.num_glitches += 1
+            if self.stepNum - self.last_glitch_step > 1:
+                if self.cmdargs and not self.cmdargs.batch_mode:
+                    print('Robot ({}) glitched into obstacle!'.format(self.name))
+                self.stats.num_glitches += 1
+            self.last_glitch_step = self.stepNum
             new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-.5, .5, size=2));
             if(Vector.getDistanceBetweenPoints(self.location, new_location) > 2*self.speed):
                 new_location = np.add(self.location, np.random.uniform(-0.5, 0.5, size=2))

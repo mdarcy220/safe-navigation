@@ -11,6 +11,12 @@ def get_cmdline_args():
             default=False,
             action='store_true'
     );
+    parser.add_argument('--batch-mode',
+            help='Enable batch mode (no output except csv line)',
+            dest='batch_mode',
+            default=False,
+            action='store_true'
+    );
     parser.add_argument('--fast-computing',
             help='Enable fast computing mode',
             dest='fast_computing',
