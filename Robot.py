@@ -6,6 +6,7 @@ import Distributions
 import Vector
 import matplotlib.pyplot as plt
 import time
+#import scipy.signal
 
 
 class RobotStats:
@@ -111,8 +112,10 @@ class Robot_Object(object):
                 self.visited_points.append(self.location)
 
         # Bias the distribution to stay away from obstacles
-        self.combined_pdf[RadarData > 0.7] *= 1.1
-        self.combined_pdf[RadarData < 0.15] -= 1
+        self.combined_pdf[RadarData > 0.86] *= 1.2
+        self.combined_pdf[RadarData < 0.15] **= 3
+        #self.combined_pdf = scipy.signal.medfilt(self.combined_pdf, 9)#scipy.signal.savgol_filter(self.combined_pdf, 9, 2);
+        #self.combined_pdf = np.maximum(self.combined_pdf, 0);
 
         movement_ang = self.pdf_angle_selector(self.combined_pdf) * self.PDF.DegreeResolution
         
@@ -147,10 +150,12 @@ class Robot_Object(object):
         self.last_mmv = movement_vec
 
         new_location = np.add(self.location, movement_vec)
-        if (grid_data[int(new_location[0]), int(new_location[1])] == 1):
-            #print('Robot ({}) glitched into obstacle!'.format(self.name))
+        if (grid_data[int(new_location[0]), int(new_location[1])] & 1):
+            print('Robot ({}) glitched into obstacle!'.format(self.name))
             self.stats.num_glitches += 1
-            self.location = np.add(self.location, -movement_vec*1.5)
+            new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-.5, .5, size=2));
+            if(Vector.getDistanceBetweenPoints(self.location, new_location) > 2*self.speed):
+                new_location = np.add(self.location, np.random.uniform(-0.5, 0.5, size=2))
 
         if (self.cmdargs) and (self.cmdargs.use_integer_robot_location):
             new_location = np.array(new_location, dtype=int)
