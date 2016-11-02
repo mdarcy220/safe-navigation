@@ -43,7 +43,8 @@ class Game_Object(object):
         
             # Process robot actions
             for robot in self.robot_list:
-                robot.NextStep(self.Playground.GridData)
+                if not (robot.distanceToTarget() < 20):
+                    robot.NextStep(self.Playground.GridData)
 
             # Draw everything
             for robot in self.robot_list:

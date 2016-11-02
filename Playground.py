@@ -5,12 +5,12 @@ class Playground_Object(object):
 
     def __init__(self, Width, Height, MapName, position = (0,0), cmdargs=None):
         self.cmdargs            = cmdargs
-        self.PlayGroundWidth    = Width
-        self.PlayGroundHeight   = Height
-        self.GridData           = np.zeros((self.PlayGroundWidth,self.PlayGroundHeight ), dtype=int)
+        self.width    = Width
+        self.height   = Height
+        self.GridData           = np.zeros((self.width,self.height ), dtype=int)
         self.MapName            = MapName
         self.Position           = position
-        self.DynamicObstacles   = []
+        self.dynamic_obstacles   = []
         self.LoadMap(self.MapName)
 
 
@@ -31,7 +31,7 @@ class Playground_Object(object):
         
         if speedmode > 6:
             speedmode = 1    
-        for DO in self.DynamicObstacles:
+        for DO in self.dynamic_obstacles:
             if speedmode == 4:
                 DO.speed = np.array ([4, 10])[np.random.randint(2)]  #Obstalces will be 4 or 10
             elif speedmode == 3:
@@ -59,8 +59,31 @@ class Playground_Object(object):
             self.Map6(image)
         elif (modifier_num == 7):
             self.Map7(image)
+        elif (modifier_num == 8):
+            self.Map8(image)
+        elif (modifier_num == 9):
+            self.Map9(image)
         else:
             return
+
+
+    def Map9(self, image):
+        for i in range(1, 10):
+            dynobs = DynamicObs()
+            x_coord = int(np.random.uniform(low=1, high=self.width))
+            y_coord = int(np.random.uniform(low=1, high=self.height))
+            dynobs.coordinate = (x_coord, y_coord)
+            dynobs.origin = dynobs.coordinate
+            
+            dynobs.movement_mode = 3
+            dynobs.radius = int(np.random.uniform(5, 40))
+            dynobs.shape = 1
+            dynobs.speed = np.random.uniform(low=1.0, high=9.0)
+            for j in range(1, 10):
+                x_coord = int(np.random.uniform(50, self.width))
+                y_coord = int(np.random.uniform(50, self.height))
+                dynobs.path_list.append(np.array([x_coord, y_coord]))
+            self.dynamic_obstacles.append(dynobs)
 
 
     def Map7(self, image):
@@ -71,35 +94,35 @@ class Playground_Object(object):
             temp = DynamicObs()
             temp.coordinate = (x[0], i)
             temp.origin = (x[0], i)
-            temp.MovementMode = 2
+            temp.movement_mode = 2
             temp.radius = 50
             temp.shape = 1
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
         for ind, i in enumerate(y):
             temp = DynamicObs()
             temp.coordinate = (x[2], i)
             temp.origin = (x[2], i)
-            temp.MovementMode = 2
+            temp.movement_mode = 2
             temp.radius = 50
             temp.shape = 1
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
 
         for ind, i in enumerate(y):
             temp = DynamicObs()
             temp.coordinate = (x[1], i)
             temp.origin =  (x[1], i)
-            temp.MovementMode = 1
+            temp.movement_mode = 1
             temp.size = [50,50]
             temp.shape = 2
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
         for ind, i in enumerate(y):
             temp = DynamicObs()
             temp.coordinate = (x[3], i)
             temp.origin = (x[3], i)
-            temp.MovementMode = 1
+            temp.movement_mode = 1
             temp.size = [50, 50]
             temp.shape = 2
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
 
     def Map8(self, image):
 
@@ -109,10 +132,10 @@ class Playground_Object(object):
             temp = DynamicObs()
             temp.coordinate = (i, y[ind])
             temp.origin = (i, y[ind])
-            temp.MovementMode = 2
+            temp.movement_mode = 2
             temp.radius = 20
             temp.shape = 1
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
 
 
     def Map5(self, image):
@@ -128,20 +151,20 @@ class Playground_Object(object):
             y = int(np.random.uniform(0, 600))
             temp.coordinate = (x, y)
             temp.origin = (x, y)
-            temp.MovementMode = 2
+            temp.movement_mode = 2
             temp.radius = int(np.random.uniform(10, 20))
             temp.shape = 1
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
         for j in np.arange(10):
             temp = DynamicObs()
             x = int(np.random.uniform(0, 800))
             y = int(np.random.uniform(0, 600))
             temp.coordinate = (x, y)
             temp.origin = (x, y)
-            temp.MovementMode = 1
+            temp.movement_mode = 1
             temp.size = [int(np.random.uniform(10, 20)), int(np.random.uniform(10, 20))]
             temp.shape = 2
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
 
 
     def Map4(self, image):
@@ -157,20 +180,20 @@ class Playground_Object(object):
             y = int(np.random.uniform(0, 600))
             temp.coordinate = (x, y)
             temp.origin = (x, y)
-            temp.MovementMode = 2
+            temp.movement_mode = 2
             temp.radius = int(np.random.uniform(10, 20))
             temp.shape = 1
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
         for j in np.arange(10):
             temp = DynamicObs()
             x = int(np.random.uniform(0, 800))
             y = int(np.random.uniform(0, 600))
             temp.coordinate = (x, y)
             temp.origin = (x, y)
-            temp.MovementMode = 1
+            temp.movement_mode = 1
             temp.size = [int(np.random.uniform(10, 20)), int(np.random.uniform(10, 20))]
             temp.shape = 2
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
 
 
 
@@ -181,10 +204,10 @@ class Playground_Object(object):
             y = int(np.random.uniform(150, 450))
             temp.coordinate = (x,y)
             temp.origin   = (x,y)
-            temp.MovementMode = 2
+            temp.movement_mode = 2
             temp.radius = int(np.random.uniform(20, 30))
             temp.shape = 1
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
 
 
     def Map3(self, image):
@@ -194,10 +217,10 @@ class Playground_Object(object):
             y = int(np.random.uniform(150, 450))
             temp.coordinate = (x,y)
             temp.origin   = (x,y)
-            temp.MovementMode = 2
+            temp.movement_mode = 2
             temp.radius = int(np.random.uniform(20, 30))
             temp.shape = 1
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
 
 
 
@@ -214,7 +237,7 @@ class Playground_Object(object):
         temp1 = DynamicObs()
         temp1.coordinate = (x1, y1)
         temp1.origin = (x1, y1)
-        temp1.MovementMode = 2
+        temp1.movement_mode = 2
         temp1.radius = 50
         temp1.shape = 1
 
@@ -222,7 +245,7 @@ class Playground_Object(object):
         temp2 = DynamicObs()
         temp2.coordinate = (x2, y2)
         temp2.origin = (x2, y2)
-        temp2.MovementMode = 2
+        temp2.movement_mode = 2
         temp2.radius = 50
         temp2.shape = 1
 
@@ -230,13 +253,13 @@ class Playground_Object(object):
         temp3 = DynamicObs()
         temp3.coordinate = (x3, y3)
         temp3.origin = (x3, y3)
-        temp3.MovementMode = 2
+        temp3.movement_mode = 2
         temp3.radius = 50
         temp3.shape = 1
 
-        self.DynamicObstacles.append(temp1)
-        self.DynamicObstacles.append(temp2)
-        self.DynamicObstacles.append(temp3)
+        self.dynamic_obstacles.append(temp1)
+        self.dynamic_obstacles.append(temp2)
+        self.dynamic_obstacles.append(temp3)
 
 
     def Map1(self, image):
@@ -252,28 +275,28 @@ class Playground_Object(object):
             y = int(np.random.uniform(150, 450))
             temp.coordinate = (x,y)
             temp.origin   = (x,y)
-            temp.MovementMode = 2
+            temp.movement_mode = 2
             temp.radius = int(np.random.uniform(20, 30))
             temp.shape = 1
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
         for j in np.arange(4):
             temp = DynamicObs()
             x = int(np.random.uniform(100, 700))
             y = int(np.random.uniform(150, 450))
             temp.coordinate = (x, y)
             temp.origin = (x, y)
-            temp.MovementMode = 1
+            temp.movement_mode = 1
             temp.size = [int(np.random.uniform(20, 30)),int(np.random.uniform(20, 30))]
             temp.shape = 2
-            self.DynamicObstacles.append(temp)
+            self.dynamic_obstacles.append(temp)
 
     def Nextstep (self, display):
         tempbackground = self.Playground
         display.blit(tempbackground, self.Position)
-        for i in self.DynamicObstacles:
+        for i in self.dynamic_obstacles:
             i.NextStep()
             if (i.shape == 1):
-                PG.draw.circle(display, i.fillcolor, i.coordinate, i.radius)
+                PG.draw.circle(display, i.fillcolor, np.array(i.coordinate, dtype='int64'), i.radius)
                 #PG.draw.circle(display, i.bordercolor, i.coordinate, i.radius, int (i.radius/3))
             if (i.shape == 2):
                 PG.draw.rect(display, i.fillcolor, i.coordinate + i.size)
@@ -291,8 +314,8 @@ class Playground_Object(object):
         pixel_mask = 0b11111100
         masked_pix_arr = np.bitwise_and(pix_arr, np.array([pixel_mask], dtype='uint8'))
 
-        grid_data_width =max(self.PlayGroundWidth, masked_pix_arr.shape[0])
-        grid_data_height = max(self.PlayGroundHeight, masked_pix_arr.shape[1] )
+        grid_data_width = max(self.width, masked_pix_arr.shape[0])
+        grid_data_height = max(self.height, masked_pix_arr.shape[1] )
         self.GridData = np.zeros((grid_data_width, grid_data_height), dtype=int)
 
         obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
