@@ -41,10 +41,16 @@ class Game_Object(object):
             # Step the environment
             self.Playground.Nextstep(self.gameDisplay)
         
+            allBotsAtTarget = True
+
             # Process robot actions
             for robot in self.robot_list:
                 if not (robot.distanceToTarget() < 20):
+                    allBotsAtTarget = False
                     robot.NextStep(self.Playground.GridData)
+
+            if (self.cmdargs.batch_mode) and (allBotsAtTarget):
+                return
 
             # Draw everything
             for robot in self.robot_list:

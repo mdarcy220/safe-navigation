@@ -68,7 +68,7 @@ class Playground_Object(object):
 
 
     def Map9(self, image):
-        for i in range(1, 10):
+        for i in range(1, 20):
             dynobs = DynamicObs()
             x_coord = int(np.random.uniform(low=1, high=self.width))
             y_coord = int(np.random.uniform(low=1, high=self.height))

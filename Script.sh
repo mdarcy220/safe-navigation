@@ -2,11 +2,11 @@
 # Robot Simulator
 
 
-ResultFile=$(date +"%y%m%d%H%M%S")
+ResultFile=$(date +"safenavresults_%y_%m_%d_%H_%M_%S.csv")
 echo "Creating the result file:"
 echo $ResultFile
 echo "Starting Simulation ..."
-Args="--enable-memory --debug-level 1 --robot-speed 6 --radar-resolution 10 --fast-computing"
+Args="--enable-memory --debug-level 1 --robot-speed 6 --radar-resolution 10 --batch-mode"
 numberofsimulations=5
 echo "Map 1 simulation is starting"
 for speed in {1..5}

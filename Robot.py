@@ -127,14 +127,18 @@ class Robot_Object(object):
             ClosestObstacle_distance = np.min(dynamic_pdf)
             
             if (np.absolute (ClosestObstacle_degree - movement_ang) < 60):
-                if (ClosestObstacle_distance < 0.5):
-                    self.speed = -1
-                if (ClosestObstacle_distance >= 0.5):
-                    self.speed = 4
+                if (ClosestObstacle_distance < 0.3):
+                    self.speed = 8
+                    movement_ang = -ClosestObstacle_degree
+                    NofElemtoDelete = 2
+                    if (len(self.visited_points) > NofElemtoDelete):
+                        del self.visited_points[-NofElemtoDelete:]
+                elif (ClosestObstacle_distance >= 0.3):
+                    self.speed = 5
             elif (np.absolute (ClosestObstacle_degree - movement_ang) >120): 
                 if (ClosestObstacle_distance < 0.5):
                     self.speed = 10
-                if (ClosestObstacle_distance >= 0.5):
+                elif (ClosestObstacle_distance >= 0.5):
                     self.speed = 8
             else:
                 self.speed = 6
