@@ -48,8 +48,11 @@ class Robot_Object(object):
         # Memory of visited points
         self.visited_points     = []
         # Stores the memory and movement vectors (for drawing in debug mode)
-        self.last_mbv           = [0,0]
-        self.last_mmv           = [0,0]
+        self.last_mbv           = np.array([0, 0])
+        self.last_mmv           = np.array([0, 0])
+        self.movement_momentum  = 0
+        if (not (cmdargs is None)):
+            self.movement_momentum = cmdargs.robot_movement_momentum
 
         # Number of times NextStep was called
         self.stepNum            = 0
@@ -57,7 +60,7 @@ class Robot_Object(object):
         self.last_glitch_step   = -1
 
         # Used to allow real-time plotting
-        if (not (self.cmdargs is None)) and (cmdargs.show_real_time_plot):
+        if (not (cmdargs is None)) and (cmdargs.show_real_time_plot):
             plt.ion()
             plt.show()
 
@@ -123,26 +126,8 @@ class Robot_Object(object):
         
         if (self.IAmSafe):
             dynamic_pdf = self.radar.scan_dynamic_obstacles(self.location, grid_data)
-            ClosestObstacle_degree   = np.argmin (dynamic_pdf)
-            ClosestObstacle_distance = np.min(dynamic_pdf)
-            
-            if (np.absolute (ClosestObstacle_degree - movement_ang) < 60):
-                if (ClosestObstacle_distance < 0.3):
-                    self.speed = 8
-                    movement_ang = -ClosestObstacle_degree
-                    NofElemtoDelete = 2
-                    if (len(self.visited_points) > NofElemtoDelete):
-                        del self.visited_points[-NofElemtoDelete:]
-                elif (ClosestObstacle_distance >= 0.3):
-                    self.speed = 5
-            elif (np.absolute (ClosestObstacle_degree - movement_ang) >120): 
-                if (ClosestObstacle_distance < 0.5):
-                    self.speed = 10
-                elif (ClosestObstacle_distance >= 0.5):
-                    self.speed = 8
-            else:
-                self.speed = 6
-         
+            self.adjust_speed_for_safety(dynamic_pdf, movement_ang)
+
         if (not (self.cmdargs is None)) and (self.cmdargs.show_real_time_plot):
             plt.cla()
             plt.plot(self.combined_pdf)
@@ -152,7 +137,10 @@ class Robot_Object(object):
             plt.axis([0,360,0,1.1])
             plt.pause(0.00001)
 
-        movement_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * self.speed
+
+        accel_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * self.speed
+        movement_vec = np.add(self.last_mmv * self.movement_momentum, accel_vec * (1.0 - self.movement_momentum))
+        movement_vec *= self.speed / Vector.magnitudeOf(movement_vec) # Set length equal to self.speed
         self.last_mmv = movement_vec
 
         new_location = np.add(self.location, movement_vec)
@@ -171,6 +159,32 @@ class Robot_Object(object):
         self.location = new_location
 
         self.PathList.append(np.array(self.location, dtype=int))
+
+
+    # Adjusts the speed of the robot based on the given dynamic obstacle 
+    # distribution and movement angle
+    def adjust_speed_for_safety(self, dynamic_pdf, movement_ang):
+        ClosestObstacle_degree   = np.argmin (dynamic_pdf)
+        ClosestObstacle_distance = np.min(dynamic_pdf)
+        angle_from_movement = np.absolute(Vector.angle_diff_degrees(movement_ang, ClosestObstacle_degree))
+        self.speed = 6
+
+        if(0.99 < ClosestObstacle_distance):
+            return
+        elif (angle_from_movement < 60):
+            if (ClosestObstacle_distance < 0.3):
+                self.speed = 8
+                movement_ang = -ClosestObstacle_degree
+                NofElemtoDelete = 2
+                if (len(self.visited_points) > NofElemtoDelete):
+                    del self.visited_points[-NofElemtoDelete:]
+            elif (ClosestObstacle_distance >= 0.3):
+                self.speed = 5
+        elif (angle_from_movement > 120): 
+            if (ClosestObstacle_distance < 0.5):
+                self.speed = 10
+            elif (ClosestObstacle_distance >= 0.5):
+                self.speed = 8
 
 
     def center_of_gravity_pdfselector(self, pdf):
@@ -215,7 +229,7 @@ class Robot_Object(object):
         sigmaSquared = 10 ** 2
         gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
         vec = np.array([0, 0], dtype='float64')
-        for point in self.visited_points[-500:-10]:
+        for point in self.visited_points[-500:-5]:
         #for point in [PG.mouse.get_pos()]:
             effect_magnitude = gaussian_derivative(Vector.getDistanceBetweenPoints(point, self.location))
             effect_vector = effect_magnitude * np.subtract(point, self.location)
