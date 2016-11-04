@@ -6,7 +6,7 @@ import Distributions
 import Vector
 import matplotlib.pyplot as plt
 import time
-#import scipy.signal
+import scipy.signal
 
 
 class RobotStats:
@@ -119,8 +119,9 @@ class Robot_Object(object):
         # Bias the distribution to stay away from obstacles
         self.combined_pdf[RadarData > 0.86] *= 1.2
         self.combined_pdf[RadarData < 0.15] **= 3
-        #self.combined_pdf = scipy.signal.medfilt(self.combined_pdf, 9)#scipy.signal.savgol_filter(self.combined_pdf, 9, 2);
-        #self.combined_pdf = np.maximum(self.combined_pdf, 0);
+        if (self.cmdargs) and (self.cmdargs.enable_pdf_smoothing_filter):
+            self.combined_pdf = self.putfilter(self.combined_pdf)
+        self.combined_pdf = np.maximum(self.combined_pdf, 0);
 
         movement_ang = self.pdf_angle_selector(self.combined_pdf) * self.PDF.DegreeResolution
         
@@ -159,6 +160,14 @@ class Robot_Object(object):
         self.location = new_location
 
         self.PathList.append(np.array(self.location, dtype=int))
+
+
+    def putfilter(self, inputsignal):
+        N = 10 #order of the butterworth  filter
+        Wn = 0.1 #Nyquest Sampling frequency
+        b, a = scipy.signal.butter(N, Wn, 'low') #create butterworth filter
+        outputsignal = scipy.signal.filtfilt(b, a, inputsignal)
+        return outputsignal
 
 
     # Adjusts the speed of the robot based on the given dynamic obstacle 
