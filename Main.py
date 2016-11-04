@@ -17,6 +17,12 @@ def get_cmdline_args():
             default=False,
             action='store_true'
     );
+    parser.add_argument('--enable-pdf-smoothing-filter',
+            help='Run a filter to smooth the combined distribution',
+            dest='enable_pdf_smoothing_filter',
+            default=False,
+            action='store_true'
+    );
     parser.add_argument('--fast-computing',
             help='Enable fast computing mode',
             dest='fast_computing',

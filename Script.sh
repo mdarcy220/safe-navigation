@@ -3,108 +3,63 @@
 
 
 ResultFile=$(date +"safenavresults_%y_%m_%d_%H_%M_%S.csv")
-echo "Creating the result file:"
-echo $ResultFile
-echo "Starting Simulation ..."
-Args="--enable-memory --debug-level 1 --robot-speed 6 --radar-resolution 10 --batch-mode"
+printf "Starting Simulation. The results will be stored in: %s\n" "$ResultFile"
+base_args_1="--enable-memory --debug-level 1 --robot-speed 6 --radar-resolution 10 --batch-mode"
 numberofsimulations=5
-echo "Map 1 simulation is starting"
-for speed in {1..5}
-do  
-    echo "Speed mode: $speed"
-    for ((i=1; i<=numberofsimulations; i++)); 
-    do
-        output=$(python3 Main.py $Args --map-modifier-num 0  --map-name Maps/Ground_WithRooms.png --speed-mode $speed)
-        echo "Simulation #$i done. The output is:" $output
-        echo $output >> $ResultFile
-    done
-done 
+arg_sets=()
+max_processes=8
+cur_num_processes=0
 
+run_arg_set() {
 
-echo "Map 2 simulation is starting"
-for speed in {1..5}
+    local arg_set="$1"
+    local output_file="$2"
+    python3 Main.py $arg_set >> "$output_file"
+
+}
+
+# Generate argument sets
+printf "Generating argument sets...\n"
+for ((speed = 1; speed <= 5; speed++))
 do
-    echo "Speed mode: $speed"
-    for ((i=1; i<=numberofsimulations; i++)); 
-    do
-        output=$(python3 Main.py $Args --map-modifier-num 2  --map-name Maps/Ground_withParralel_walls.png --speed-mode $speed)
-        echo "Simulation #$i done. The output is:" $output
-        echo $output >> $ResultFile
-    done
+
+    arg_sets+=("$base_args_1 --map-modifier-num 0  --map-name Maps/Ground_WithRooms.png                 --speed-mode $speed")
+    arg_sets+=("$base_args_1 --map-modifier-num 1  --map-name Maps/Ground_Nothing.png                   --speed-mode $speed")
+    arg_sets+=("$base_args_1 --map-modifier-num 2  --map-name Maps/Ground_withParralel_walls.png        --speed-mode $speed")
+    arg_sets+=("$base_args_1 --map-modifier-num 3  --map-name Maps/Ground_WithRooms.png                 --speed-mode $speed")
+    arg_sets+=("$base_args_1 --map-modifier-num 4  --map-name Maps/Ground_Nothing.png                   --speed-mode $speed")
+    arg_sets+=("$base_args_1 --map-modifier-num 5  --map-name Maps/Ground_Nothing.png                   --speed-mode $speed")
+    arg_sets+=("$base_args_1 --map-modifier-num 7  --map-name Maps/Ground_Nothing.png                   --speed-mode $speed")
+    arg_sets+=("$base_args_1 --map-modifier-num 9  --map-name Maps/Ground_Maze.png                      --speed-mode $speed")
+
 done
 
-echo "Map 3 simulation is starting"
-for speed in {1..5}
+# Run commands
+for arg_set in "${arg_sets[@]}"
 do
-    echo "Speed mode: $speed"
-    for ((i=1; i<=numberofsimulations; i++)); 
+
+    printf "Starting arg set: %s\n" "$arg_set"
+
+    for ((i = 0; i < numberofsimulations; i++)); 
     do
-        output=$(python3 Main.py $Args --map-modifier-num 3  --map-name Maps/Ground_WithRooms.png --speed-mode $speed)
-        echo "Simulation #$i done. The output is:" $output
-        echo $output >> $ResultFile
+
+        printf "Running trial #%d\n" $((i+1))
+        (
+            run_arg_set "$arg_set" "$ResultFile"
+        ) &
+
+        (( cur_num_processes++ ))
+        if (( max_processes <= cur_num_processes ))
+        then
+            wait -n
+            (( cur_num_processes-- ))
+        fi
+
     done
+
 done
 
-echo "Map 4 simulation is starting"
-for speed in {1..5}
-do
-    echo "Speed mode: $speed"
-    for ((i=1; i<=numberofsimulations; i++)); 
-    do
-        output=$(python3 Main.py $Args --map-modifier-num 1  --map-name Maps/Ground_Nothing.png --speed-mode $speed)
-        echo "Simulation #$i done. The output is:" $output
-        echo $output >> $ResultFile
-    done
-done
+wait
 
-
-echo "Map 5 simulation is starting"
-for speed in {1..5}
-do
-    echo "Speed mode: $speed"
-    for ((i=1; i<=numberofsimulations; i++)); 
-    do
-        output=$(python3 Main.py $Args --map-modifier-num 4  --map-name Maps/Ground_Nothing.png --speed-mode $speed)
-        echo "Simulation #$i done. The output is:" $output
-        echo $output >> $ResultFile
-    done
-done
-
-
-echo "Map 6 simulation is starting"
-for speed in {1..5}
-do
-    echo "Speed mode: $speed"
-    for ((i=1; i<=numberofsimulations; i++)); 
-    do
-        output=$(python3 Main.py $Args --map-modifier-num 5 --map-name Maps/Ground_Nothing.png --speed-mode $speed)
-        echo "Simulation #$i done. The output is:" $output
-        echo $output >> $ResultFile
-    done
-done
-
-
-echo "Map 7 simulation is starting"
-for speed in {1..5}
-do
-    echo "Speed mode: $speed"
-    for ((i=1; i<=numberofsimulations; i++)); 
-    do
-        output=$(python3 Main.py $Args --map-modifier-num 7 --map-name Maps/Ground_Nothing.png --speed-mode $speed)
-        echo "Simulation #$i done. The output is:" $output
-        echo $output >> $ResultFile
-    done
-done
-
-echo "Map 8 simulation is starting"
-for speed in {1..5}
-do
-    echo "Speed mode: $speed"
-    for ((i=1; i<=numberofsimulations; i++)); 
-    do
-        output=$(python3 Main.py $Args --map-modifier-num 8 --map-name Maps/Ground_Maze.png --speed-mode $speed)
-        echo "Simulation #$i done. The output is:" $output
-        echo $output >> $ResultFile
-    done
-done
+printf "All done. Results are in %s\n" "$ResultFile"
 
