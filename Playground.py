@@ -11,15 +11,31 @@ class Playground_Object(object):
         self.MapName            = MapName
         self.Position           = position
         self.dynamic_obstacles   = []
+        self.map_modifiers = [None]
+        self.init_map_modifiers()
         self.LoadMap(self.MapName)
+
+
+    def init_map_modifiers(self):
+        self.map_modifiers.append(self.Map1);
+        self.map_modifiers.append(self.Map2);
+        self.map_modifiers.append(self.Map3);
+        self.map_modifiers.append(self.Map4);
+        self.map_modifiers.append(self.Map5);
+        self.map_modifiers.append(None); 
+        self.map_modifiers.append(self.Map7);
+        self.map_modifiers.append(self.Map8);
+        self.map_modifiers.append(self.Map9);
+        self.map_modifiers.append(self.Map10);
 
 
     def LoadMap(self, Mapname):
         image                   = PG.image.load(self.MapName)
         self.Playground         = image
         if (self.cmdargs):
-            self.apply_map_modifier(image, self.cmdargs.map_modifier_num)
+            self.apply_map_modifier_by_number(image, self.cmdargs.map_modifier_num)
         self.SetSpeeds(self.cmdargs.speedmode)
+
 
     def SetSpeeds(self, speedmode):
         #1  Obstacles Slower
@@ -43,185 +59,83 @@ class Playground_Object(object):
                     
         
 
-    def apply_map_modifier(self, image, modifier_num):
+    def apply_map_modifier_by_number(self, image, modifier_num):
 
-        if (modifier_num == 1):
-            self.Map1(image)
-        elif (modifier_num == 2):
-            self.Map2(image)
-        elif (modifier_num == 3):
-            self.Map3(image)
-        elif (modifier_num == 4):
-            self.Map4(image)
-        elif (modifier_num == 5):
-            self.Map5(image)
-        elif (modifier_num == 6):
-            self.Map6(image)
-        elif (modifier_num == 7):
-            self.Map7(image)
-        elif (modifier_num == 8):
-            self.Map8(image)
-        elif (modifier_num == 9):
-            self.Map9(image)
-        else:
+        if (len(self.map_modifiers) <= modifier_num):
+            return
+        map_modifier = self.map_modifiers[modifier_num]
+        if map_modifier is None:
             return
 
+        map_modifier(image)
 
-    def Map9(self, image):
+    def make_randompath_dynamic_obstacle(self,
+                                        x_low=1,
+                                        x_high=None,
+                                        y_low=1,
+                                        y_high=None,
+                                        radius_low=5,
+                                        radius_high=40,
+                                        shape=1,
+                                        speed_low=1.0,
+                                        speed_high=9.0,
+                                        num_path_points=15,
+                                        path_x_low=1,
+                                        path_x_high=None,
+                                        path_y_low=1,
+                                        path_y_high=None):
+        x_high = self.width if x_high is None else x_high
+        y_high = self.width if y_high is None else y_high
+        path_x_high = self.width if path_x_high is None else path_x_high
+        path_y_high = self.width if path_y_high is None else path_y_high
+ 
+        dynobs = DynamicObs()
+        x_coord = int(np.random.uniform(low=x_low, high=x_high))
+        y_coord = int(np.random.uniform(low=y_low, high=y_high))
+        dynobs.coordinate = (x_coord, y_coord)
+        dynobs.origin = dynobs.coordinate
+        
+        dynobs.movement_mode = 3
+        dynobs.radius = int(np.random.uniform(radius_low, radius_high))
+        dynobs.shape = shape
+        dynobs.speed = np.random.uniform(low=speed_low, high=speed_high)
+        for j in range(1, num_path_points):
+            x_coord = int(np.random.uniform(path_x_low, path_x_high))
+            y_coord = int(np.random.uniform(path_y_low, path_y_high))
+            dynobs.path_list.append(np.array([x_coord, y_coord]))
+        return dynobs
+
+
+    def Map1(self, image):
+
         for i in range(1, 20):
-            dynobs = DynamicObs()
-            x_coord = int(np.random.uniform(low=1, high=self.width))
-            y_coord = int(np.random.uniform(low=1, high=self.height))
-            dynobs.coordinate = (x_coord, y_coord)
-            dynobs.origin = dynobs.coordinate
-            
-            dynobs.movement_mode = 3
-            dynobs.radius = int(np.random.uniform(5, 40))
-            dynobs.shape = 1
-            dynobs.speed = np.random.uniform(low=1.0, high=9.0)
-            for j in range(1, 10):
-                x_coord = int(np.random.uniform(50, self.width))
-                y_coord = int(np.random.uniform(50, self.height))
-                dynobs.path_list.append(np.array([x_coord, y_coord]))
+            dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=35, speed_high=7.0)
             self.dynamic_obstacles.append(dynobs)
-
-
-    def Map7(self, image):
-        x = [200, 300, 440, 560]
-        y = [50, 200, 350, 500]
-
-        for ind,i in enumerate(y):
-            temp = DynamicObs()
-            temp.coordinate = (x[0], i)
-            temp.origin = (x[0], i)
-            temp.movement_mode = 2
-            temp.radius = 50
-            temp.shape = 1
-            self.dynamic_obstacles.append(temp)
-        for ind, i in enumerate(y):
-            temp = DynamicObs()
-            temp.coordinate = (x[2], i)
-            temp.origin = (x[2], i)
-            temp.movement_mode = 2
-            temp.radius = 50
-            temp.shape = 1
-            self.dynamic_obstacles.append(temp)
-
-        for ind, i in enumerate(y):
-            temp = DynamicObs()
-            temp.coordinate = (x[1], i)
-            temp.origin =  (x[1], i)
-            temp.movement_mode = 1
-            temp.size = [50,50]
-            temp.shape = 2
-            self.dynamic_obstacles.append(temp)
-        for ind, i in enumerate(y):
-            temp = DynamicObs()
-            temp.coordinate = (x[3], i)
-            temp.origin = (x[3], i)
-            temp.movement_mode = 1
-            temp.size = [50, 50]
-            temp.shape = 2
-            self.dynamic_obstacles.append(temp)
-
-    def Map8(self, image):
-
-        x = [100, 400, 600, 100,700,650]
-        y = [50, 350, 175, 200, 400,500]
-        for ind,i in enumerate (x):
-            temp = DynamicObs()
-            temp.coordinate = (i, y[ind])
-            temp.origin = (i, y[ind])
-            temp.movement_mode = 2
-            temp.radius = 20
-            temp.shape = 1
-            self.dynamic_obstacles.append(temp)
-
-
-    def Map5(self, image):
-
-        for i in np.arange(0, 100, 1):
+        for i in np.arange(0, 50, 1):
             x = int(np.random.uniform(100, 700))
-            y = int(np.random.uniform(100, 500))
-            radius = int(np.random.uniform(5, 30))
-            PG.draw.rect(image, (85, 85, 85), (x, y, 20,20))
-        for j in np.arange(10):
-            temp = DynamicObs()
-            x = int(np.random.uniform(0, 800))
-            y = int(np.random.uniform(0, 600))
-            temp.coordinate = (x, y)
-            temp.origin = (x, y)
-            temp.movement_mode = 2
-            temp.radius = int(np.random.uniform(10, 20))
-            temp.shape = 1
-            self.dynamic_obstacles.append(temp)
-        for j in np.arange(10):
-            temp = DynamicObs()
-            x = int(np.random.uniform(0, 800))
-            y = int(np.random.uniform(0, 600))
-            temp.coordinate = (x, y)
-            temp.origin = (x, y)
-            temp.movement_mode = 1
-            temp.size = [int(np.random.uniform(10, 20)), int(np.random.uniform(10, 20))]
-            temp.shape = 2
-            self.dynamic_obstacles.append(temp)
-
-
-    def Map4(self, image):
-
-        for i in np.arange(0, 100, 1):
-            x = int(np.random.uniform(0, 800))
-            y = int(np.random.uniform(0, 600))
-            radius = int(np.random.uniform(5, 30))
+            y = int(np.random.uniform(150, 450))
+            radius = int(np.random.uniform(10, 30))
             PG.draw.circle(image, (85, 85, 85), (x, y), radius)
-        for j in np.arange(10):
+        for j in np.arange(4):
             temp = DynamicObs()
-            x = int(np.random.uniform(0, 800))
-            y = int(np.random.uniform(0, 600))
-            temp.coordinate = (x, y)
-            temp.origin = (x, y)
+            x = int(np.random.uniform(100, 700))
+            y = int(np.random.uniform(150, 450))
+            temp.coordinate = (x,y)
+            temp.origin   = (x,y)
             temp.movement_mode = 2
-            temp.radius = int(np.random.uniform(10, 20))
+            temp.radius = int(np.random.uniform(20, 30))
             temp.shape = 1
             self.dynamic_obstacles.append(temp)
-        for j in np.arange(10):
+        for j in np.arange(4):
             temp = DynamicObs()
-            x = int(np.random.uniform(0, 800))
-            y = int(np.random.uniform(0, 600))
+            x = int(np.random.uniform(100, 700))
+            y = int(np.random.uniform(150, 450))
             temp.coordinate = (x, y)
             temp.origin = (x, y)
             temp.movement_mode = 1
-            temp.size = [int(np.random.uniform(10, 20)), int(np.random.uniform(10, 20))]
+            temp.size = [int(np.random.uniform(20, 30)),int(np.random.uniform(20, 30))]
             temp.shape = 2
             self.dynamic_obstacles.append(temp)
-
-
-
-    def Map3(self, image):
-        for j in np.arange(8):
-            temp = DynamicObs()
-            x = int(np.random.uniform(100, 700))
-            y = int(np.random.uniform(150, 450))
-            temp.coordinate = (x,y)
-            temp.origin   = (x,y)
-            temp.movement_mode = 2
-            temp.radius = int(np.random.uniform(20, 30))
-            temp.shape = 1
-            self.dynamic_obstacles.append(temp)
-
-
-    def Map3(self, image):
-        for j in np.arange(8):
-            temp = DynamicObs()
-            x = int(np.random.uniform(100, 700))
-            y = int(np.random.uniform(150, 450))
-            temp.coordinate = (x,y)
-            temp.origin   = (x,y)
-            temp.movement_mode = 2
-            temp.radius = int(np.random.uniform(20, 30))
-            temp.shape = 1
-            self.dynamic_obstacles.append(temp)
-
 
 
     def Map2(self,image):
@@ -262,14 +176,10 @@ class Playground_Object(object):
         self.dynamic_obstacles.append(temp3)
 
 
-    def Map1(self, image):
 
-        for i in np.arange(0, 50, 1):
-            x = int(np.random.uniform(100, 700))
-            y = int(np.random.uniform(150, 450))
-            radius = int(np.random.uniform(10, 30))
-            PG.draw.circle(image, (85, 85, 85), (x, y), radius)
-        for j in np.arange(4):
+
+    def Map3(self, image):
+        for j in np.arange(8):
             temp = DynamicObs()
             x = int(np.random.uniform(100, 700))
             y = int(np.random.uniform(150, 450))
@@ -279,16 +189,138 @@ class Playground_Object(object):
             temp.radius = int(np.random.uniform(20, 30))
             temp.shape = 1
             self.dynamic_obstacles.append(temp)
-        for j in np.arange(4):
+
+
+    def Map4(self, image):
+
+        for i in range(1, 20):
+            dynobs = self.make_randompath_dynamic_obstacle()
+            self.dynamic_obstacles.append(dynobs)
+        for i in np.arange(0, 100, 1):
+            x = int(np.random.uniform(0, 800))
+            y = int(np.random.uniform(0, 600))
+            radius = int(np.random.uniform(5, 30))
+            PG.draw.circle(image, (85, 85, 85), (x, y), radius)
+        for j in np.arange(10):
             temp = DynamicObs()
-            x = int(np.random.uniform(100, 700))
-            y = int(np.random.uniform(150, 450))
+            x = int(np.random.uniform(0, 800))
+            y = int(np.random.uniform(0, 600))
+            temp.coordinate = (x, y)
+            temp.origin = (x, y)
+            temp.movement_mode = 2
+            temp.radius = int(np.random.uniform(10, 20))
+            temp.shape = 1
+            self.dynamic_obstacles.append(temp)
+        for j in np.arange(10):
+            temp = DynamicObs()
+            x = int(np.random.uniform(0, 800))
+            y = int(np.random.uniform(0, 600))
             temp.coordinate = (x, y)
             temp.origin = (x, y)
             temp.movement_mode = 1
-            temp.size = [int(np.random.uniform(20, 30)),int(np.random.uniform(20, 30))]
+            temp.size = [int(np.random.uniform(10, 20)), int(np.random.uniform(10, 20))]
             temp.shape = 2
             self.dynamic_obstacles.append(temp)
+
+
+    def Map5(self, image):
+
+        for i in range(1, 20):
+            dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
+            self.dynamic_obstacles.append(dynobs)
+        for i in np.arange(0, 100, 1):
+            x = int(np.random.uniform(100, 700))
+            y = int(np.random.uniform(100, 500))
+            radius = int(np.random.uniform(5, 30))
+            PG.draw.rect(image, (85, 85, 85), (x, y, 20,20))
+        for j in np.arange(10):
+            temp = DynamicObs()
+            x = int(np.random.uniform(0, 800))
+            y = int(np.random.uniform(0, 600))
+            temp.coordinate = (x, y)
+            temp.origin = (x, y)
+            temp.movement_mode = 2
+            temp.radius = int(np.random.uniform(10, 20))
+            temp.shape = 1
+            self.dynamic_obstacles.append(temp)
+        for j in np.arange(10):
+            temp = DynamicObs()
+            x = int(np.random.uniform(0, 800))
+            y = int(np.random.uniform(0, 600))
+            temp.coordinate = (x, y)
+            temp.origin = (x, y)
+            temp.movement_mode = 1
+            temp.size = [int(np.random.uniform(10, 20)), int(np.random.uniform(10, 20))]
+            temp.shape = 2
+            self.dynamic_obstacles.append(temp)
+
+
+
+
+    def Map7(self, image):
+        x = [200, 300, 440, 560]
+        y = [50, 200, 350, 500]
+
+        for ind,i in enumerate(y):
+            temp = DynamicObs()
+            temp.coordinate = (x[0], i)
+            temp.origin = (x[0], i)
+            temp.movement_mode = 2
+            temp.radius = 50
+            temp.shape = 1
+            self.dynamic_obstacles.append(temp)
+        for ind, i in enumerate(y):
+            temp = DynamicObs()
+            temp.coordinate = (x[2], i)
+            temp.origin = (x[2], i)
+            temp.movement_mode = 2
+            temp.radius = 50
+            temp.shape = 1
+            self.dynamic_obstacles.append(temp)
+
+        for ind, i in enumerate(y):
+            temp = DynamicObs()
+            temp.coordinate = (x[1], i)
+            temp.origin =  (x[1], i)
+            temp.movement_mode = 1
+            temp.size = [50,50]
+            temp.shape = 2
+            self.dynamic_obstacles.append(temp)
+        for ind, i in enumerate(y):
+            temp = DynamicObs()
+            temp.coordinate = (x[3], i)
+            temp.origin = (x[3], i)
+            temp.movement_mode = 1
+            temp.size = [50, 50]
+            temp.shape = 2
+            self.dynamic_obstacles.append(temp)
+
+
+    def Map8(self, image):
+
+        x = [100, 400, 600, 100,700,650]
+        y = [50, 350, 175, 200, 400,500]
+        for ind,i in enumerate (x):
+            temp = DynamicObs()
+            temp.coordinate = (i, y[ind])
+            temp.origin = (i, y[ind])
+            temp.movement_mode = 2
+            temp.radius = 20
+            temp.shape = 1
+            self.dynamic_obstacles.append(temp)
+
+
+    def Map9(self, image):
+        for i in range(1, 20):
+            dynobs = self.make_randompath_dynamic_obstacle()
+            self.dynamic_obstacles.append(dynobs)
+
+    # Swarm of obstacles
+    def Map10(self, image): 
+        for i in range(1, 120):
+            dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=15, speed_high=11.0)
+            self.dynamic_obstacles.append(dynobs)
+
 
     def Nextstep (self, display):
         tempbackground = self.Playground
