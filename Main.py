@@ -42,6 +42,13 @@ def get_cmdline_args():
             default='gaussian',
             action='store'
     );
+    parser.add_argument('--robot-movement-momentum',
+            help='Momentum for robot movement (range 0 to 1, 0 means no momentum)',
+            dest='robot_movement_momentum',
+            type=float,
+            default=6.0,
+            action='store'
+    );
     parser.add_argument('--robot-speed',
             help='Base speed of the robot',
             dest='robot_speed',
