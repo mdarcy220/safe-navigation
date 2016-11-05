@@ -52,7 +52,14 @@ def get_cmdline_args():
             help='Momentum for robot movement (range 0 to 1, 0 means no momentum)',
             dest='robot_movement_momentum',
             type=float,
-            default=6.0,
+            default=0.0,
+            action='store'
+    );
+    parser.add_argument('--max-steps',
+            help='Maximum number of steps to take before terminating the simulation. Defaults to 1,000,000',
+            dest='max_steps',
+            type=int,
+            default=1000000,
             action='store'
     );
     parser.add_argument('--robot-speed',

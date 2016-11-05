@@ -33,6 +33,7 @@ class Game_Object(object):
 
     def standard_game_loop(self):
         clock = PG.time.Clock()
+        step_num = 0
         while True:
             # Handle events
             for event in PG.event.get():
@@ -51,6 +52,10 @@ class Game_Object(object):
 
             if (self.cmdargs.batch_mode) and (allBotsAtTarget):
                 return
+            if not allBotsAtTarget:
+                step_num += 1
+            if self.cmdargs.max_steps <= step_num:
+                return
 
             # Draw everything
             for robot in self.robot_list:
@@ -64,15 +69,20 @@ class Game_Object(object):
     def fast_computing_game_loop(self):
         safe_robot_at_target = False
         normal_robot_at_target = False 
-        isAtTarget = False
+        allRobotsAtTarget = False
         self.Playground.Nextstep(self.gameDisplay)
-        while (not (safe_robot_at_target and normal_robot_at_target)):
-            if not normal_robot_at_target:
-                self.Normal_Robot.NextStep(self.Playground.GridData)
-                normal_robot_at_target = (self.Normal_Robot.distanceToTarget() < 20)
-            if not safe_robot_at_target:
-                self.Safe_Robot.NextStep(self.Playground.GridData)
-                safe_robot_at_target = (self.Safe_Robot.distanceToTarget() < 20)
+        step_num = 0
+        while (not allRobotsAtTarget):
+            allBotsAtTarget = True
+
+            # Process robot actions
+            for robot in self.robot_list:
+                if not (robot.distanceToTarget() < 20):
+                    allBotsAtTarget = False
+                    robot.NextStep(self.Playground.GridData)
+            step_num += 1
+            if self.cmdargs.max_steps <= step_num:
+                return
 
 
     def make_csv_line(self):
@@ -89,11 +99,20 @@ class Game_Object(object):
 
         output_csv += str(normal_robot_stats.num_glitches) + ","
         output_csv += str(safe_robot_stats.num_glitches) + ","
-        output_csv += str(self.Normal_Robot.stepNum) + ","
-        output_csv += str(self.Safe_Robot.stepNum)
+
+        output_csv += str(self.Normal_Robot.stepNum if self.check_robot_at_target(self.Normal_Robot) else "") + ","
+        output_csv += str(self.Safe_Robot.stepNum if self.check_robot_at_target(self.Safe_Robot) else "") + ","
+
+        output_csv += str(0 if self.check_robot_at_target(self.Normal_Robot) else 1) + ","
+        output_csv += str(0 if self.check_robot_at_target(self.Safe_Robot) else 1) 
+
 
         return output_csv
-        
+
+
+    def check_robot_at_target(self, robot):
+        return robot.distanceToTarget() < 20
+
 
     def GameLoop(self):
         if self.cmdargs.fast_computing:
