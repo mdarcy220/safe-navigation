@@ -235,8 +235,8 @@ class Robot_Object(object):
 
 
     def calc_memory_bias_vector(self):
-        sigmaSquared = 10 ** 2
-        gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
+        sigmaSquared = 25 ** 2
+        gaussian_derivative = lambda x: -0.3*x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
         vec = np.array([0, 0], dtype='float64')
         for point in self.visited_points[-500:-5]:
         #for point in [PG.mouse.get_pos()]:
