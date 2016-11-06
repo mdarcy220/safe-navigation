@@ -55,6 +55,27 @@ def get_cmdline_args():
             default=0.0,
             action='store'
     );
+    parser.add_argument('--robot-memory-size',
+            help='Maximum number of visited points to store in memory',
+            dest='robot_memory_size',
+            type=int,
+            default=50505050500,
+            action='store'
+    );
+    parser.add_argument('--robot-memory-sigma',
+            help='Sigma of the robot memory gaussian',
+            dest='robot_memory_sigma',
+            type=float,
+            default=25,
+            action='store'
+    );
+    parser.add_argument('--robot-memory-decay',
+            help='Decay factor for the effect of remembered points over time',
+            dest='robot_memory_decay',
+            type=float,
+            default=1,
+            action='store'
+    );
     parser.add_argument('--max-steps',
             help='Maximum number of steps to take before terminating the simulation. Defaults to 1,000,000',
             dest='max_steps',

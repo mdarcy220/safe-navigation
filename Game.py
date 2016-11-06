@@ -15,6 +15,11 @@ class Game_Object(object):
         self.StaticObstacles = []
 
         self.cmdargs       = cmdargs
+
+        self.display_every_frame = True
+        if self.cmdargs.batch_mode:
+            self.display_every_frame = False
+
         self.WhiteColor    = (255, 255, 255)
         self.BlackColor    = (0, 0, 0)
         self.Display_Width = 1200
@@ -31,14 +36,41 @@ class Game_Object(object):
 
         PG.display.set_caption('Robot Simulator')
 
+
+    def handle_pygame_events(self):
+        for event in PG.event.get():
+            if event.type == PG.QUIT:
+                return 1
+            elif event.type == PG.KEYDOWN:
+                if event.key == PG.K_u:
+                    self.update_game_image()
+                    self.render_game_image()
+                elif event.key == PG.K_q:
+                    return 1
+                elif event.key == PG.K_e:
+                    self.display_every_frame = (not self.display_every_frame)
+        return 0
+
+
+    def update_game_image(self):
+        self.TargetPoint.draw(self.gameDisplay)
+        for robot in self.robot_list:
+            robot.draw(self.gameDisplay)
+
+
+    def render_game_image(self):
+        PG.display.update()
+
+
     def standard_game_loop(self):
         clock = PG.time.Clock()
         step_num = 0
         while True:
             # Handle events
-            for event in PG.event.get():
-                if event.type == PG.QUIT:
-                    return
+            event_status = self.handle_pygame_events()
+            if event_status == 1:
+                return
+
             # Step the environment
             self.Playground.Nextstep(self.gameDisplay)
         
@@ -58,12 +90,11 @@ class Game_Object(object):
                 return
 
             # Draw everything
-            for robot in self.robot_list:
-                robot.draw(self.gameDisplay)
-            self.TargetPoint.draw(self.gameDisplay)
-            PG.display.update()
+            if self.display_every_frame:
+                self.update_game_image()
+                self.render_game_image()
 
-            # Tick the clocks
+            # Tick the clock
             clock.tick(1000)
         
     def fast_computing_game_loop(self):
@@ -89,6 +120,10 @@ class Game_Object(object):
         output_csv = str(self.cmdargs.speedmode) + ','
         output_csv += str(self.cmdargs.radar_resolution) +','
         output_csv += str(self.cmdargs.radar_noise_level) +','
+        output_csv += str(self.cmdargs.robot_movement_momentum) +','
+        output_csv += str(self.cmdargs.robot_memory_sigma) +','
+        output_csv += str(self.cmdargs.robot_memory_decay) +','
+        output_csv += str(self.cmdargs.robot_memory_size) +','
         output_csv += str(self.cmdargs.map_name) +','
         output_csv += str(self.cmdargs.map_modifier_num) +','
         output_csv += str(self.cmdargs.target_distribution_type) +','

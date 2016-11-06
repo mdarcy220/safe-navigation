@@ -51,8 +51,14 @@ class Robot_Object(object):
         self.last_mbv           = np.array([0, 0])
         self.last_mmv           = np.array([0, 0])
         self.movement_momentum  = 0
+        self.memory_sigma = 25
+        self.memory_decay = 1
+        self.memory_size  = 500
         if (not (cmdargs is None)):
             self.movement_momentum = cmdargs.robot_movement_momentum
+            self.memory_sigma = cmdargs.robot_memory_sigma
+            self.memory_decay = cmdargs.robot_memory_decay
+            self.memory_size  = cmdargs.robot_memory_size
 
         # Number of times NextStep was called
         self.stepNum            = 0
@@ -94,6 +100,7 @@ class Robot_Object(object):
         RadarData = self.radar.ScanRadar(self.location, grid_data)
         if (self.cmdargs) and not (self.cmdargs.radar_noise_level <= 0):
             RadarData = self.Gaussian_noise(RadarData, self.cmdargs.radar_noise_level)
+        #RadarData *= (1 - np.roll(RadarData, int(len(RadarData)/2))) / 4 + 0.75
  
 
         self.combined_pdf = self.combine_pdfs(self.combined_pdf, RadarData)
@@ -121,8 +128,9 @@ class Robot_Object(object):
         self.combined_pdf[RadarData < 0.15] **= 3
         if (self.cmdargs) and (self.cmdargs.enable_pdf_smoothing_filter):
             self.combined_pdf = self.putfilter(self.combined_pdf)
-        self.combined_pdf = np.maximum(self.combined_pdf, 0);
 
+
+        self.combined_pdf = np.maximum(self.combined_pdf, 0);
         movement_ang = self.pdf_angle_selector(self.combined_pdf) * self.PDF.DegreeResolution
         
         if (self.IAmSafe):
@@ -180,16 +188,15 @@ class Robot_Object(object):
 
         if(0.99 < ClosestObstacle_distance):
             return
-        elif (angle_from_movement < 60):
+        elif (angle_from_movement < 50):
             if (ClosestObstacle_distance < 0.3):
-                self.speed = 8
-                movement_ang = -ClosestObstacle_degree
-                NofElemtoDelete = 2
-                if (len(self.visited_points) > NofElemtoDelete):
-                    del self.visited_points[-NofElemtoDelete:]
+                self.speed = 6
+                #NofElemtoDelete = 2
+                #if (len(self.visited_points) > NofElemtoDelete):
+                    #del self.visited_points[-NofElemtoDelete:]
             elif (ClosestObstacle_distance >= 0.3):
-                self.speed = 5
-        elif (angle_from_movement > 120): 
+                self.speed = 6
+        elif (angle_from_movement > 50): 
             if (ClosestObstacle_distance < 0.5):
                 self.speed = 10
             elif (ClosestObstacle_distance >= 0.5):
@@ -235,14 +242,19 @@ class Robot_Object(object):
 
 
     def calc_memory_bias_vector(self):
-        sigmaSquared = 25 ** 2
-        gaussian_derivative = lambda x: -0.3*x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
+        sigma = self.memory_sigma
+        decay = self.memory_decay
+        size = int(self.memory_size)
+        sigmaSquared = sigma * sigma
+        gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
         vec = np.array([0, 0], dtype='float64')
-        for point in self.visited_points[-500:-5]:
+        i = size
+        for point in self.visited_points[-size:]:
         #for point in [PG.mouse.get_pos()]:
             effect_magnitude = gaussian_derivative(Vector.getDistanceBetweenPoints(point, self.location))
-            effect_vector = effect_magnitude * np.subtract(point, self.location)
+            effect_vector = (decay**i) * effect_magnitude * np.subtract(point, self.location)
             vec += effect_vector
+            i -= 1
         return vec
 
 
