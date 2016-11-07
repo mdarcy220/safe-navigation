@@ -111,11 +111,11 @@ class Playground_Object(object):
         for i in range(1, 20):
             dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=35, speed_high=7.0)
             self.dynamic_obstacles.append(dynobs)
-        for i in np.arange(0, 50, 1):
-            x = int(np.random.uniform(100, 700))
-            y = int(np.random.uniform(150, 450))
-            radius = int(np.random.uniform(10, 30))
-            PG.draw.circle(image, (85, 85, 85), (x, y), radius)
+        #for i in np.arange(0, 50, 1):
+        #    x = int(np.random.uniform(100, 700))
+        #    y = int(np.random.uniform(150, 450))
+        #    radius = int(np.random.uniform(10, 30))
+        #    PG.draw.circle(image, (85, 85, 85), (x, y), radius)
         for j in np.arange(4):
             temp = DynamicObs()
             x = int(np.random.uniform(100, 700))
@@ -196,11 +196,11 @@ class Playground_Object(object):
         for i in range(1, 20):
             dynobs = self.make_randompath_dynamic_obstacle()
             self.dynamic_obstacles.append(dynobs)
-        for i in np.arange(0, 100, 1):
-            x = int(np.random.uniform(0, 800))
-            y = int(np.random.uniform(0, 600))
-            radius = int(np.random.uniform(5, 30))
-            PG.draw.circle(image, (85, 85, 85), (x, y), radius)
+        #for i in np.arange(0, 100, 1):
+        #    x = int(np.random.uniform(0, 800))
+        #    y = int(np.random.uniform(0, 600))
+        #    radius = int(np.random.uniform(5, 30))
+        #    PG.draw.circle(image, (85, 85, 85), (x, y), radius)
         for j in np.arange(10):
             temp = DynamicObs()
             x = int(np.random.uniform(0, 800))
@@ -228,11 +228,11 @@ class Playground_Object(object):
         for i in range(1, 20):
             dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
             self.dynamic_obstacles.append(dynobs)
-        for i in np.arange(0, 100, 1):
-            x = int(np.random.uniform(100, 700))
-            y = int(np.random.uniform(100, 500))
-            radius = int(np.random.uniform(5, 30))
-            PG.draw.rect(image, (85, 85, 85), (x, y, 20,20))
+        #for i in np.arange(0, 100, 1):
+        #    x = int(np.random.uniform(100, 700))
+        #    y = int(np.random.uniform(100, 500))
+        #    radius = int(np.random.uniform(5, 30))
+        #    PG.draw.rect(image, (85, 85, 85), (x, y, 20,20))
         for j in np.arange(10):
             temp = DynamicObs()
             x = int(np.random.uniform(0, 800))
