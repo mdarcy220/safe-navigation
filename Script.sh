@@ -35,6 +35,7 @@ do
     arg_sets+=("$base_args --map-modifier-num 4  --map-name Maps/preset/preset_nothing_mod4.png       --speed-mode $speed")
     arg_sets+=("$base_args --map-modifier-num 5  --map-name Maps/preset/preset_nothing_mod5.png       --speed-mode $speed")
     arg_sets+=("$base_args --map-modifier-num 0  --map-name Maps/Ground_WithRooms.png                 --speed-mode $speed")
+    #arg_sets+=("$base_args --map-modifier-num 0  --map-name Maps/rooms_roundedcorners.png                 --speed-mode $speed")
     arg_sets+=("$base_args --map-modifier-num 10 --map-name Maps/Ground_withParralel_walls.png        --speed-mode $speed")
     arg_sets+=("$base_args --map-modifier-num 10 --map-name Maps/Ground_WithRooms.png                 --speed-mode $speed")
     arg_sets+=("$base_args --map-modifier-num 10 --map-name Maps/Ground_Nothing.png                   --speed-mode $speed")

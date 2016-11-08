@@ -53,11 +53,11 @@ class Playground_Object(object):
             elif speedmode == 3:
                 DO.speed = self.cmdargs.robot_speed  # Obstacles will be equal to Robot
             elif speedmode == 4:
-                DO.speed = np.array ([4, 8])[np.random.randint(2)]  # Obstalces will be 4 or 10
+                DO.speed = np.array ([4, 8])[np.random.randint(2)]  # Obstacles will be 4 or 8
             elif speedmode == 5:
-                DO.speed = 10
+                DO.speed = 6
             elif speedmode == 6:
-                DO.speed = 10
+                DO.speed = 12
                     
         
 

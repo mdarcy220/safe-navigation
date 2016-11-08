@@ -100,7 +100,6 @@ def get_cmdline_args():
     parser.add_argument('--speed-mode',
             help='Speed mode of the Obstacles and the Robot',
             dest='speedmode',
-            choices=[1,2,3,4,5],
             type=int,
             default=1,
             action='store'

@@ -24,8 +24,11 @@ class Robot_Object(object):
         self.stats              = RobotStats()
         self.name               = name
         self.IAmSafe            = issafe
+
+        self.normal_speed       = speed
+        self.max_speed          = 10
         if (self.cmdargs.speedmode == 5):
-            self.speed = 10
+            self.normal_speed = 10
         self.NumberofGlitches   = 0
         
         radar_resolution = cmdargs.radar_resolution if cmdargs else 4
@@ -118,8 +121,8 @@ class Robot_Object(object):
                 self.visited_points.append(self.location)
 
         # Bias the distribution to stay away from obstacles
-        #self.combined_pdf[RadarData > 0.86] *= 1.2
-        #self.combined_pdf[RadarData < 0.15] **= 3
+        #self.combined_pdf[RadarData > 0.85] *= 1
+        #self.combined_pdf[RadarData < 0.15] **= 2
         if (self.cmdargs) and (self.cmdargs.enable_pdf_smoothing_filter):
             self.combined_pdf = self.putfilter(self.combined_pdf)
 
@@ -178,7 +181,8 @@ class Robot_Object(object):
         ClosestObstacle_degree   = np.argmin (dynamic_pdf)
         ClosestObstacle_distance = np.min(dynamic_pdf)
         angle_from_movement = np.absolute(Vector.angle_diff_degrees(movement_ang, ClosestObstacle_degree))
-        self.speed = 6
+        
+        self.speed = self.normal_speed
 
         if(0.99 < ClosestObstacle_distance):
             return
@@ -189,12 +193,9 @@ class Robot_Object(object):
                 self.speed = 6
         elif (angle_from_movement > 50): 
             if (ClosestObstacle_distance < 0.5):
-                if self.cmdargs.speedmode == 6:
-                    self.speed = 8
-                else:
-                    self.speed = 10
+                self.speed = self.max_speed
             elif (ClosestObstacle_distance >= 0.5):
-                self.speed = 8
+                self.speed = max(8, self.normal_speed)
 
 
     def center_of_gravity_pdfselector(self, pdf):
