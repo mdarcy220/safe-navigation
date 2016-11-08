@@ -45,17 +45,19 @@ class Playground_Object(object):
         #5  Robot Speed is always fastest
         
         
-        if speedmode > 6:
-            speedmode = 1    
         for DO in self.dynamic_obstacles:
-            if speedmode == 4:
-                DO.speed = np.array ([4, 10])[np.random.randint(2)]  #Obstalces will be 4 or 10
-            elif speedmode == 3:
-                DO.speed = 6  #Obstacles will be equal to Robot
-            elif (speedmode == 2 or speedmode ==5):
-                DO.speed = 10
-            elif speedmode == 1:
+            if speedmode == 1:
                 DO.speed = 4         
+            elif (speedmode == 2):
+                DO.speed = 8
+            elif speedmode == 3:
+                DO.speed = self.cmdargs.robot_speed  # Obstacles will be equal to Robot
+            elif speedmode == 4:
+                DO.speed = np.array ([4, 8])[np.random.randint(2)]  # Obstalces will be 4 or 10
+            elif speedmode == 5:
+                DO.speed = 10
+            elif speedmode == 6:
+                DO.speed = 10
                     
         
 

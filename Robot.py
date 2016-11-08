@@ -24,14 +24,8 @@ class Robot_Object(object):
         self.stats              = RobotStats()
         self.name               = name
         self.IAmSafe            = issafe
-        if (self.IAmSafe):
-            #1  Obstacles Slower
-            #2  Obstalces Faster
-            #3  Obstacles same as Robot
-            #4  Obstacles 50% faster and 50% slower
-            #5  Robot Speed is always fastest
-            if (self.cmdargs.speedmode == 5):
-                self.speed = 10
+        if (self.cmdargs.speedmode == 5):
+            self.speed = 10
         self.NumberofGlitches   = 0
         
         radar_resolution = cmdargs.radar_resolution if cmdargs else 4
@@ -124,8 +118,8 @@ class Robot_Object(object):
                 self.visited_points.append(self.location)
 
         # Bias the distribution to stay away from obstacles
-        self.combined_pdf[RadarData > 0.86] *= 1.2
-        self.combined_pdf[RadarData < 0.15] **= 3
+        #self.combined_pdf[RadarData > 0.86] *= 1.2
+        #self.combined_pdf[RadarData < 0.15] **= 3
         if (self.cmdargs) and (self.cmdargs.enable_pdf_smoothing_filter):
             self.combined_pdf = self.putfilter(self.combined_pdf)
 
@@ -191,14 +185,14 @@ class Robot_Object(object):
         elif (angle_from_movement < 50):
             if (ClosestObstacle_distance < 0.3):
                 self.speed = 6
-                #NofElemtoDelete = 2
-                #if (len(self.visited_points) > NofElemtoDelete):
-                    #del self.visited_points[-NofElemtoDelete:]
             elif (ClosestObstacle_distance >= 0.3):
                 self.speed = 6
         elif (angle_from_movement > 50): 
             if (ClosestObstacle_distance < 0.5):
-                self.speed = 10
+                if self.cmdargs.speedmode == 6:
+                    self.speed = 8
+                else:
+                    self.speed = 10
             elif (ClosestObstacle_distance >= 0.5):
                 self.speed = 8
 
