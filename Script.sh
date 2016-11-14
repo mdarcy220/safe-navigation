@@ -4,7 +4,7 @@
 
 num_cores=$(lscpu -p | egrep -v '^#' | sort -u -t, -k 2,4 | wc -l)
 [[ -z "$result_file_prefix" ]] && result_file_prefix="."
-[[ -z "$base_args" ]] && base_args="--enable-memory --debug-level 1 --robot-speed 6 --radar-resolution 10 --batch-mode --robot-movement-momentum=0.2"
+[[ -z "$base_args" ]] && base_args="--enable-memory --debug-level 1 --robot-speed 6 --radar-resolution 5 --batch-mode --max-steps=5000 --robot-movement-momentum=0.0 --robot-memory-sigma=30 --robot-memory-decay=1 --robot-memory-size=500"
 [[ -z "$num_trials" ]] && num_trials=5
 [[ -z "$max_processes" ]] && max_processes=$num_cores
 

@@ -313,13 +313,13 @@ class Playground_Object(object):
 
 
     def Map9(self, image):
-        for i in range(1, 20):
-            dynobs = self.make_randompath_dynamic_obstacle()
+        for i in range(1, 15):
+            dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
             self.dynamic_obstacles.append(dynobs)
 
     # Swarm of obstacles
     def Map10(self, image): 
-        for i in range(1, 120):
+        for i in range(1, 70):
             dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=15, speed_high=11.0)
             self.dynamic_obstacles.append(dynobs)
 

@@ -31,7 +31,9 @@ class Robot_Object(object):
             self.normal_speed = 10
         self.NumberofGlitches   = 0
         
-        radar_resolution = cmdargs.radar_resolution if cmdargs else 4
+        self.speed = self.normal_speed
+
+        radar_resolution = cmdargs.radar_resolution
 
         self.radar              = Radar_Object(screen, resolution=radar_resolution)
         self.PathList           = []
@@ -188,7 +190,7 @@ class Robot_Object(object):
             return
         elif (angle_from_movement < 50):
             if (ClosestObstacle_distance < 0.3):
-                self.speed = 6
+                self.speed = 4
             elif (ClosestObstacle_distance >= 0.3):
                 self.speed = 6
         elif (angle_from_movement > 50): 
