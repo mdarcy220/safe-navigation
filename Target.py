@@ -1,22 +1,22 @@
 import pygame as PG
 
-class Target_Object (object):
-    def __init__(self, Coordinate ,radius = 20, width = 0, targetcolor = (255,0,0)):
-        self.Coordinate = Coordinate
-        self.Radius = radius
-        self.Width = width
-        self.TargetColor = targetcolor
+class Target:
+	def __init__(self, position ,radius = 20, width = 0, color = (255,0,0)):
+		self.position = position
+		self.radius = radius
+		self.width = width
+		self.color = color
 
-    def SetWidth(self, width):
-        self.Width = width
+	def Setwidth(self, width):
+		self.width = width
 
-    def SetColor(self,Color):
-        self.TargetColor = Color
+	def SetColor(self, color):
+		self.color = color
 
-    def SetRadius(self, Radius):
-        self.Radius = Radius
+	def Setradius(self, radius):
+		self.radius = radius
 
-    def draw(self, screen):
-        PG.draw.circle(screen, self.TargetColor, self.Coordinate, int(self.Radius), self.Width)
-        PG.draw.circle(screen,(255,255,255) ,self.Coordinate,int(self.Radius/1.5),self.Width)
-        PG.draw.circle(screen,self.TargetColor,self.Coordinate,int(self.Radius/4),self.Width)
+	def draw(self, screen):
+		PG.draw.circle(screen, self.color, self.position, int(self.radius), self.width)
+		PG.draw.circle(screen,(255,255,255) ,self.position,int(self.radius/1.5),self.width)
+		PG.draw.circle(screen,self.color,self.position,int(self.radius/4),self.width)
