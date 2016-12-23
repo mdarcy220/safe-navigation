@@ -12,7 +12,7 @@ class Game:
 		self.cmdargs	   = cmdargs
 
 		self.display_every_frame = True
-		if self.cmdargs.batch_mode:
+		if cmdargs.batch_mode and not cmdargs.display_every_frame:
 			self.display_every_frame = False
 
 		self.Display_Width = 800
@@ -27,7 +27,7 @@ class Game:
 		self.robot_list.append(self.normal_robot)
 		self.robot_list.append(self.safe_robot)
 
-		PG.display.set_caption('Robot Simulator')
+		PG.display.set_caption(cmdargs.window_title)
 
 
 	def handle_pygame_events(self):

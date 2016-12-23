@@ -29,9 +29,15 @@ class Robot:
 		self.max_speed			= 10
 		if (self.cmdargs.speedmode == 5):
 			self.normal_speed = 10
+		if (not self.using_safe_mode):
+			self.normal_speed = 10
 		self.NumberofGlitches		= 0
 		
 		self.speed = self.normal_speed
+
+		self.speed_adjust_pdf = Distributions.Gaussian()
+		self.speed_adjust_pdf.degree_resolution = 2
+		
 
 		radar_resolution = cmdargs.radar_resolution
 
@@ -139,9 +145,10 @@ class Robot:
 			plt.pause(0.00001)
 
 
-		accel_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * self.speed
+		accel_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * 2
 		movement_vec = np.add(self.last_mmv * self.movement_momentum, accel_vec * (1.0 - self.movement_momentum))
-		movement_vec *= self.speed / Vector.magnitudeOf(movement_vec) # Set length equal to self.speed
+		if Vector.magnitudeOf(movement_vec) > self.speed:
+			movement_vec *= self.speed / Vector.magnitudeOf(movement_vec) # Set length equal to self.speed
 		self.last_mmv = movement_vec
 
 		new_location = np.add(self.location, movement_vec)
@@ -176,21 +183,26 @@ class Robot:
 		closest_obs_degree	 = np.argmin (dynamic_pdf)
 		closest_obs_dist = np.min(dynamic_pdf)
 		angle_from_movement = np.absolute(Vector.angle_diff_degrees(movement_ang, closest_obs_degree))
-		
-		self.speed = self.normal_speed
 
-		if(0.99 < closest_obs_dist):
-			return
-		elif (angle_from_movement < 50):
-			if (closest_obs_dist < 0.3):
-				self.speed = 4
-			elif (closest_obs_dist >= 0.3):
-				self.speed = 6
-		elif (angle_from_movement > 50): 
-			if (closest_obs_dist < 0.5):
-				self.speed = self.max_speed
-			elif (closest_obs_dist >= 0.5):
-				self.speed = max(8, self.normal_speed)
+		angle_weight_pdf = self.speed_adjust_pdf.get_distribution(90)
+
+		self.speed = self.normal_speed
+		min_speed = 2
+		max_speed = 10
+		speed_range = 2*(max_speed - min_speed)
+
+		front_pdf = 1 - dynamic_pdf.take(np.arange(-90, 90, 1), mode='wrap')
+		front_pdf[front_pdf > 0.05] = 1
+		front_pdf *= angle_weight_pdf
+		front_obs_ratio = front_pdf.sum() / front_pdf.size
+
+		back_pdf = 1- dynamic_pdf.take(np.arange(90, 270, 1), mode='wrap')
+		back_pdf[back_pdf > 0.05] = 1
+		back_pdf *= angle_weight_pdf
+		back_obs_ratio = back_pdf.sum() / back_pdf.size
+
+		self.speed = self.normal_speed + (1.25*back_obs_ratio - front_obs_ratio) * (speed_range / 2.0)
+		self.speed = np.clip(self.speed, min_speed, max_speed)
 
 
 	def center_of_gravity_pdfselector(self, pdf):

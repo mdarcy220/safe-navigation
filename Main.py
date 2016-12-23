@@ -41,6 +41,12 @@ def get_cmdline_args():
 			default=False,
 			action='store_true'
 	);
+	parser.add_argument('--display-every-frame',
+			help='Display every frame ',
+			dest='display_every_frame',
+			default=False,
+			action='store_true'
+	);
 	parser.add_argument('--target-distribution-type',
 			help='Type of target distribution to use',
 			dest='target_distribution_type',
@@ -130,6 +136,13 @@ def get_cmdline_args():
 			dest='debug_level',
 			type=int,
 			default=0,
+			action='store'
+	);
+	parser.add_argument('--window-title',
+			help='What to set the window title to',
+			dest='window_title',
+			type=str,
+			default='Robot Simulator',
 			action='store'
 	);
 	return parser.parse_args(sys.argv[1:])
