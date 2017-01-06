@@ -16,7 +16,7 @@ class RobotStats:
 
 
 class Robot:
-	def __init__(self, screen, target, initial_position, speed = 6, cmdargs=None, using_safe_mode = False, name=""):
+	def __init__(self, screen, target, initial_position, radar, speed = 6, cmdargs=None, using_safe_mode = False, name=""):
 		self.cmdargs		= cmdargs
 		self.target		= target
 		self.location		= initial_position
@@ -40,9 +40,7 @@ class Robot:
 		self.speed_adjust_pdf.degree_resolution = 2
 		
 
-		radar_resolution = cmdargs.radar_resolution
-
-		self.radar	= Radar(screen, resolution=radar_resolution)
+		self.radar	= radar
 		self.PathList	= []
 		self.PDF	= Distributions.Gaussian()
 		if (self.cmdargs.target_distribution_type == 'rectangular'):

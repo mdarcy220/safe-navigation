@@ -5,8 +5,8 @@ import Vector
 class DynamicObs:
 	def __init__(self):
 		self.radius		=  0
-		self.coordinate		= (0,0)
-		self.origin		= (0,0)
+		self.coordinate		= np.array([0,0])
+		self.origin		= np.array([0,0])
 		self.size		= [50,50]
 		self.fillcolor		= (34,119,34)
 		self.bordercolor	= (255,0,0)
@@ -25,12 +25,10 @@ class DynamicObs:
 
 	def NextStep(self):
 		if (self.movement_mode == 1):
-			x = int(np.random.uniform(-self.speed,self.speed)) * 1
-			y = int(np.random.uniform(-self.speed,self.speed)) * 1
-			self.coordinate = np.add(self.coordinate, (x,y)).tolist()
+			self.coordinate = np.add(self.coordinate, np.random.uniform(-self.speed, self.speed, size=[2]))
 		elif (self.movement_mode == 2):
 			self.tempind += 10
-			self.coordinate = (self.origin[0] + int(np.cos(self.tempind * np.pi / 180) * 30), self.origin[1] + int(np.sin(self.tempind * np.pi / 180) * 30))
+			self.coordinate = np.add(self.origin, [int(np.cos(self.tempind * np.pi / 180) * 30), int(np.sin(self.tempind * np.pi / 180) * 30)])
 			if self.tempind == 360:
 				self.tempind = 0
 		elif (self.movement_mode == 3):

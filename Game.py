@@ -1,9 +1,10 @@
 import pygame	as PG
 import numpy	as np
 
-from  Environment import Environment
-from  Robot import Robot, RobotStats
-from  Target import Target
+from Environment import Environment
+from Robot import Robot, RobotStats
+from Radar import Radar
+from Target import Target
 import time
 
 class Game:
@@ -21,8 +22,10 @@ class Game:
 		self.env = Environment(800, self.gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
 		self.target = Target((740,50))
 
-		self.normal_robot  = Robot (self.gameDisplay, self.target, (50, 550), speed=cmdargs.robot_speed, cmdargs=cmdargs, using_safe_mode =False, name="NormalRobot")
-		self.safe_robot    = Robot (self.gameDisplay, self.target, (50, 550), speed=cmdargs.robot_speed, cmdargs=cmdargs, using_safe_mode = True, name="SafeRobot")
+		radar = Radar(self.env, resolution = cmdargs.radar_resolution);
+
+		self.normal_robot  = Robot (self.gameDisplay, self.target, (50, 550), radar, speed=cmdargs.robot_speed, cmdargs=cmdargs, using_safe_mode =False, name="NormalRobot")
+		self.safe_robot    = Robot (self.gameDisplay, self.target, (50, 550), radar, speed=cmdargs.robot_speed, cmdargs=cmdargs, using_safe_mode = True, name="SafeRobot")
 		self.robot_list    = []
 		self.robot_list.append(self.normal_robot)
 		self.robot_list.append(self.safe_robot)
@@ -46,6 +49,7 @@ class Game:
 
 
 	def update_game_image(self):
+		self.env.update_display(self.gameDisplay);
 		self.target.draw(self.gameDisplay)
 		for robot in self.robot_list:
 			robot.draw(self.gameDisplay)
@@ -63,9 +67,6 @@ class Game:
 			event_status = self.handle_pygame_events()
 			if event_status == 1:
 				return
-
-			# Step the environment
-			self.env.Nextstep(self.gameDisplay)
 		
 			allBotsAtTarget = True
 
@@ -74,6 +75,9 @@ class Game:
 				if not (robot.distanceToTarget() < 20):
 					allBotsAtTarget = False
 					robot.NextStep(self.env.grid_data)
+
+			# Step the environment
+			self.env.next_step()
 
 			if (self.cmdargs.batch_mode) and (allBotsAtTarget):
 				return
@@ -89,12 +93,12 @@ class Game:
 
 			# Tick the clock
 			clock.tick(1000)
-		
+
+
 	def fast_computing_game_loop(self):
 		safe_robot_at_target = False
 		normal_robot_at_target = False 
 		allRobotsAtTarget = False
-		self.env.Nextstep(self.gameDisplay)
 		step_num = 0
 		while (not allRobotsAtTarget):
 			allBotsAtTarget = True
