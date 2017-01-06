@@ -138,6 +138,13 @@ def get_cmdline_args():
 			default=0,
 			action='store'
 	);
+	parser.add_argument('--start-delay',
+			help='Number of seconds to wait before starting',
+			dest='start_delay',
+			type=int,
+			default=0,
+			action='store'
+	);
 	parser.add_argument('--window-title',
 			help='What to set the window title to',
 			dest='window_title',
@@ -146,6 +153,7 @@ def get_cmdline_args():
 			action='store'
 	);
 	return parser.parse_args(sys.argv[1:])
+
 
 if __name__ == '__main__':
 	Game = Game(get_cmdline_args())

@@ -143,6 +143,7 @@ class Game:
 
 
 	def GameLoop(self):
+		time.sleep(self.cmdargs.start_delay)
 		if self.cmdargs.fast_computing:
 			self.fast_computing_game_loop()
 		else:

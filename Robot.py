@@ -24,6 +24,7 @@ class Robot:
 		self.stats		= RobotStats()
 		self.name		= name
 		self.using_safe_mode	= using_safe_mode
+		self.drawcoll = 0
 
 		self.normal_speed		= speed
 		self.max_speed			= 10
@@ -144,8 +145,7 @@ class Robot:
 			plt.axis([0,360,0,1.1])
 			plt.pause(0.00001)
 
-
-		accel_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * 2
+		accel_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * self.speed
 		movement_vec = np.add(self.last_mmv * self.movement_momentum, accel_vec * (1.0 - self.movement_momentum))
 		if Vector.magnitudeOf(movement_vec) > self.speed:
 			movement_vec *= self.speed / Vector.magnitudeOf(movement_vec) # Set length equal to self.speed
@@ -156,6 +156,7 @@ class Robot:
 			if self.stepNum - self.last_glitch_step > 1:
 				if not self.cmdargs.batch_mode:
 					print('Robot ({}) glitched into obstacle!'.format(self.name))
+				self.drawcoll = 10
 				self.stats.num_glitches += 1
 			self.last_glitch_step = self.stepNum
 			new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-.5, .5, size=2));
@@ -275,6 +276,9 @@ class Robot:
 				continue
 			PG.draw.line(screen,PathColor,self.PathList[ind], self.PathList[ind +1], 2)
 		if (0 < self.cmdargs.debug_level):
+			if self.drawcoll > 0:
+				PG.draw.circle(screen, (255, 127, 127), np.array(self.location, dtype=int), 15, 1)
+				self.drawcoll = self.drawcoll - 1
 			# Draw line representing memory effect
 			#PG.draw.line(screen, (0,255,0), np.array(self.location, dtype=int), np.array(self.location+self.last_mbv*100, dtype=int), 1)
 

@@ -70,21 +70,22 @@ class Environment(object):
 
 		map_modifier(image)
 
+
 	def make_randompath_dynamic_obstacle(self,
-										x_low=1,
-										x_high=None,
-										y_low=1,
-										y_high=None,
-										radius_low=5,
-										radius_high=40,
-										shape=1,
-										speed_low=1.0,
-										speed_high=9.0,
-										num_path_points=15,
-										path_x_low=1,
-										path_x_high=None,
-										path_y_low=1,
-										path_y_high=None):
+						x_low=1,
+						x_high=None,
+						y_low=1,
+						y_high=None,
+						radius_low=5,
+						radius_high=40,
+						shape=1,
+						speed_low=1.0,
+						speed_high=9.0,
+						num_path_points=15,
+						path_x_low=1,
+						path_x_high=None,
+						path_y_low=1,
+						path_y_high=None):
 		x_high = self.width if x_high is None else x_high
 		y_high = self.width if y_high is None else y_high
 		path_x_high = self.width if path_x_high is None else path_x_high
