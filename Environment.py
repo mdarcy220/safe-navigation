@@ -81,7 +81,7 @@ class Environment(object):
 						shape=1,
 						speed_low=1.0,
 						speed_high=9.0,
-						num_path_points=15,
+						num_path_points=50,
 						path_x_low=1,
 						path_x_high=None,
 						path_y_low=1,
