@@ -1,6 +1,6 @@
 import numpy  as np
 import pygame as PG
-from  DynamicObstacles import DynamicObs
+from  DynamicObstacles import DynamicObstacle
 import sys
 
 class Environment:
@@ -98,7 +98,7 @@ class Environment:
 		path_x_high = self.width if path_x_high is None else path_x_high
 		path_y_high = self.width if path_y_high is None else path_y_high
  
-		dynobs = DynamicObs()
+		dynobs = DynamicObstacle()
 		x_coord = int(np.random.uniform(low=x_low, high=x_high))
 		y_coord = int(np.random.uniform(low=y_low, high=y_high))
 		dynobs.coordinate = np.array([x_coord, y_coord])
@@ -121,7 +121,7 @@ class Environment:
 			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=35, speed_high=7.0)
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(4):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			x = int(np.random.uniform(100, 700))
 			y = int(np.random.uniform(150, 450))
 			dynobs.coordinate = np.array([x,y])
@@ -131,7 +131,7 @@ class Environment:
 			dynobs.shape = 1
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(4):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			x = int(np.random.uniform(100, 700))
 			y = int(np.random.uniform(150, 450))
 			dynobs.coordinate = np.array([x, y])
@@ -152,7 +152,7 @@ class Environment:
 		y2 = 350
 		y3 = 175
 
-		dynobs1 = DynamicObs()
+		dynobs1 = DynamicObstacle()
 		dynobs1.coordinate = np.array([x1, y1])
 		dynobs1.origin = np.array([x1, y1])
 		dynobs1.movement_mode = 2
@@ -160,7 +160,7 @@ class Environment:
 		dynobs1.shape = 1
 
 
-		dynobs2 = DynamicObs()
+		dynobs2 = DynamicObstacle()
 		dynobs2.coordinate = np.array([x2, y2])
 		dynobs2.origin = np.array([x2, y2])
 		dynobs2.movement_mode = 2
@@ -168,7 +168,7 @@ class Environment:
 		dynobs2.shape = 1
 
 
-		dynobs3 = DynamicObs()
+		dynobs3 = DynamicObstacle()
 		dynobs3.coordinate = np.array([x3, y3])
 		dynobs3.origin = np.array([x3, y3])
 		dynobs3.movement_mode = 2
@@ -184,7 +184,7 @@ class Environment:
 
 	def Map3(self):
 		for j in np.arange(8):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			x = int(np.random.uniform(100, 700))
 			y = int(np.random.uniform(150, 450))
 			dynobs.coordinate = np.array([x,y])
@@ -201,7 +201,7 @@ class Environment:
 			dynobs = self.make_randompath_dynamic_obstacle()
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(10):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			x = int(np.random.uniform(0, 800))
 			y = int(np.random.uniform(0, 600))
 			dynobs.coordinate = np.array([x, y])
@@ -211,7 +211,7 @@ class Environment:
 			dynobs.shape = 1
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(10):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			x = int(np.random.uniform(0, 800))
 			y = int(np.random.uniform(0, 600))
 			dynobs.coordinate = np.array([x, y])
@@ -228,7 +228,7 @@ class Environment:
 			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(10):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			x = int(np.random.uniform(0, 800))
 			y = int(np.random.uniform(0, 600))
 			dynobs.coordinate = np.array([x, y])
@@ -238,7 +238,7 @@ class Environment:
 			dynobs.shape = 1
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(10):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			x = int(np.random.uniform(0, 800))
 			y = int(np.random.uniform(0, 600))
 			dynobs.coordinate = np.array([x, y])
@@ -256,7 +256,7 @@ class Environment:
 		y = [50, 200, 350, 500]
 
 		for ind,i in enumerate(y):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			dynobs.coordinate = np.array([x[0], i])
 			dynobs.origin = np.array([x[0], i])
 			dynobs.movement_mode = 2
@@ -264,7 +264,7 @@ class Environment:
 			dynobs.shape = 1
 			self.dynamic_obstacles.append(dynobs)
 		for ind, i in enumerate(y):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			dynobs.coordinate = np.array([x[2], i])
 			dynobs.origin = np.array([x[2], i])
 			dynobs.movement_mode = 2
@@ -273,7 +273,7 @@ class Environment:
 			self.dynamic_obstacles.append(dynobs)
 
 		for ind, i in enumerate(y):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			dynobs.coordinate = np.array([x[1], i])
 			dynobs.origin = np.array([x[1], i])
 			dynobs.movement_mode = 1
@@ -281,7 +281,7 @@ class Environment:
 			dynobs.shape = 2
 			self.dynamic_obstacles.append(dynobs)
 		for ind, i in enumerate(y):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			dynobs.coordinate = np.array([x[3], i])
 			dynobs.origin = np.array([x[3], i])
 			dynobs.movement_mode = 1
@@ -295,7 +295,7 @@ class Environment:
 		x = [100, 400, 600, 100,700,650]
 		y = [50, 350, 175, 200, 400,500]
 		for ind,i in enumerate (x):
-			dynobs = DynamicObs()
+			dynobs = DynamicObstacle()
 			dynobs.coordinate = np.array([i, y[ind]])
 			dynobs.origin = np.array([i, y[ind]])
 			dynobs.movement_mode = 2
@@ -318,7 +318,8 @@ class Environment:
 
 	def update_dynamic_obstacles(self):
 		for dynobs in self.dynamic_obstacles:
-			dynobs.NextStep();
+			dynobs.next_step();
+
 
 	def update_display(self, display):
 		display.blit(self.static_base_image, (0, 0))
@@ -331,11 +332,14 @@ class Environment:
 
 	def update_grid_data_from_display(self, display):
 		self.needs_grid_data_update = False
+
 		# Set grid_data to 1 where the corresponding pixel is obstacle-colored
 		# Note: This approach forces grid_data to be at least as large as the pixel array,
 		# potentially wasting some memory compared to using a nested for loop. It is
 		# written this way intentionally to improve computation time (>1000%)
+
 		pix_arr = PG.surfarray.pixels2d(display)
+
 		# Mask pixel data to account for small errors in color
 		# Note: This only works because it has been determined through 
 		# experimentation that almost all color errors occur in the last two

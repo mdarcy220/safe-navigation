@@ -2,14 +2,16 @@ import numpy as np
 import pygame as PG
 import Vector
 
-class DynamicObs:
+
+class DynamicObstacle:
+
 	def __init__(self):
-		self.radius		=  0
-		self.coordinate		= np.array([0,0])
-		self.origin		= np.array([0,0])
-		self.size		= [50,50]
-		self.fillcolor		= (34,119,34)
-		self.bordercolor	= (255,0,0)
+		self.radius		= 0
+		self.coordinate		= np.array([0, 0])
+		self.origin		= np.array([0, 0])
+		self.size		= [50, 50]
+		self.fillcolor		= (0x22, 0x77, 0x22)
+		self.bordercolor	= (0xFF, 0x00, 0x00)
 		self.movement_mode	= 1
 		self.shape		= 1
 		self.speed		= 8
@@ -23,7 +25,7 @@ class DynamicObs:
 	def set_radius(self, radius):
 		self.radius = radius
 
-	def NextStep(self):
+	def next_step(self):
 		if (self.movement_mode == 1):
 			self.coordinate = np.add(self.coordinate, np.random.uniform(-self.speed, self.speed, size=[2]))
 		elif (self.movement_mode == 2):
