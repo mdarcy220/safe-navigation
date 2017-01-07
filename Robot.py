@@ -102,7 +102,6 @@ class Robot:
 		self.combined_pdf = targetpoint_pdf
 
 		radar_data = self.radar.ScanRadar(self.location, grid_data)
-		#self.drawing_pdf = radar_data
 		if (0 < self.cmdargs.radar_noise_level):
 			radar_data += self.gaussian_noise(self.cmdargs.radar_noise_level, radar_data.size)
 
@@ -134,7 +133,7 @@ class Robot:
 		
 		if (self.using_safe_mode):
 			dynamic_pdf = self.radar.scan_dynamic_obstacles(self.location, grid_data)
-			self.drawing_pdf = dynamic_pdf
+			#self.drawing_pdf = dynamic_pdf
 			self.adjust_speed_for_safety(dynamic_pdf, movement_ang)
 
 		if (self.cmdargs.show_real_time_plot):

@@ -151,7 +151,7 @@ class Radar:
 
 		return angle_range
 
-			
+
 
 
 	def point_inside_rectangle(rect, point):
@@ -235,6 +235,37 @@ class Radar:
 				radar_data[i] = np.min([radar_data[i], float(dist) / float(self.radius)]);
 			
 		return radar_data;
+
+
+	def get_dynobs_at_angle(self, center, angle):
+		nPoints = self._nPoints;
+		beams = self._beams;
+		beam_index = np.round((angle % 360) / self._degree_step);
+		min_dist = -1;
+		closest_dynobs = None;
+		for dynobs in self.env.dynamic_obstacles:
+			if dynobs.shape == 1:
+				inters = circle_line_intersection(np.array(list(dynobs.coordinate)), dynobs.radius, [center, center+beams[beam_index]]);
+			elif dynobs.shape == 2:
+				inters = Radar.rectangle_line_intersection([dynobs.coordinate, np.array(dynobs.size)], [center, center+beams[beam_index]]);
+			if len(inters) == 0:
+				continue;
+
+			inters_rel = np.array(inters) - center;
+			dist = 1
+			if len(inters) == 1:
+				dist = Vector.magnitudeOf(inters_rel[0]);
+			else:
+				if np.dot(inters_rel[0], inters_rel[0]) < np.dot(inters_rel[1], inters_rel[1]):
+					dist = Vector.magnitudeOf(inters_rel[0]);
+				else:
+					dist = Vector.magnitudeOf(inters_rel[1]);
+
+			if dist < min_dist or min_dist < 0:
+				min_dist = dist;
+				closest_dynobs = dynobs
+
+		return closest_dynobs;
 
 
 	def scan_dynamic_obstacles_old(self, center, grid_data):
