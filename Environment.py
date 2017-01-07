@@ -1,19 +1,21 @@
 import numpy  as np
 import pygame as PG
 from  DynamicObstacles import DynamicObs
-class Environment(object):
+import sys
 
-	def __init__(self, width, height, MapName, cmdargs=None):
-		self.cmdargs			= cmdargs
-		self.width	  = width
-		self.height       = height
-		self.grid_data			 = np.zeros((self.width,self.height), dtype=int)
-		self.MapName			= MapName
-		self.dynamic_obstacles	 = []
+class Environment:
+
+	def __init__(self, width, height, map_filename, cmdargs=None):
+		self.cmdargs = cmdargs
+		self.width = width
+		self.height = height
+		self.grid_data = np.zeros((self.width, self.height), dtype=int)
+		self.dynamic_obstacles = []
 		self.map_modifiers = [None]
 
-		self._init_map_modifiers()
-		self.LoadMap(self.MapName)
+		self._init_map_modifiers();
+		self.load_map(map_filename)
+		self.set_speed_mode(self.cmdargs.speedmode)
 
 		self._grid_data_display = PG.Surface((self.width, self.height))
 		self._update_grid_data();
@@ -25,58 +27,55 @@ class Environment(object):
 
 
 	def _init_map_modifiers(self):
-		self.map_modifiers.append(self.Map1);
-		self.map_modifiers.append(self.Map2);
-		self.map_modifiers.append(self.Map3);
-		self.map_modifiers.append(self.Map4);
-		self.map_modifiers.append(self.Map5);
+		self.map_modifiers.append(Environment.Map1);
+		self.map_modifiers.append(Environment.Map2);
+		self.map_modifiers.append(Environment.Map3);
+		self.map_modifiers.append(Environment.Map4);
+		self.map_modifiers.append(Environment.Map5);
 		self.map_modifiers.append(None); 
-		self.map_modifiers.append(self.Map7);
-		self.map_modifiers.append(self.Map8);
-		self.map_modifiers.append(self.Map9);
-		self.map_modifiers.append(self.Map10);
+		self.map_modifiers.append(Environment.Map7);
+		self.map_modifiers.append(Environment.Map8);
+		self.map_modifiers.append(Environment.Map9);
+		self.map_modifiers.append(Environment.Map10);
 
 
-	def LoadMap(self, Mapname):
-		image = PG.image.load(self.MapName)
+	def load_map(self, map_filename):
+		image = PG.image.load(map_filename)
 		self.static_base_image = image
 		if (self.cmdargs):
-			self.apply_map_modifier_by_number(image, self.cmdargs.map_modifier_num)
-		self.SetSpeeds(self.cmdargs.speedmode)
+			self.apply_map_modifier_by_number(self.cmdargs.map_modifier_num)
 
 
-	def SetSpeeds(self, speedmode):
-		#1	Obstacles slower
-		#2	Obstacles faster
-		#3	Obstacles same as robot
-		#4	Obstacles 50% faster and 50% slower
-		#5	Robot speed is always fastest		 
-		
-		for DO in self.dynamic_obstacles:
-			if speedmode == 1:
-				DO.speed = 4		 
+	def set_speed_mode(self, speedmode):
+		for obstacle in self.dynamic_obstacles:
+			if speedmode == 0:
+				pass; # Leave obstacle speeds as default
+			elif speedmode == 1:
+				obstacle.speed = 4		 
 			elif (speedmode == 2):
-				DO.speed = 8
+				obstacle.speed = 8
 			elif speedmode == 3:
-				DO.speed = self.cmdargs.robot_speed
+				obstacle.speed = self.cmdargs.robot_speed
 			elif speedmode == 4:
-				DO.speed = np.array ([4, 8])[np.random.randint(2)]
+				obstacle.speed = np.array ([4, 8])[np.random.randint(2)]
 			elif speedmode == 5:
-				DO.speed = 6
+				obstacle.speed = 6
 			elif speedmode == 6:
-				DO.speed = 12
+				obstacle.speed = 12
+			else:
+				print("Invalid speed mode. Assuming mode 0.", file=sys.stderr);
 					
 		
 
-	def apply_map_modifier_by_number(self, image, modifier_num):
+	def apply_map_modifier_by_number(self, modifier_num):
 
 		if (len(self.map_modifiers) <= modifier_num):
-			return
-		map_modifier = self.map_modifiers[modifier_num]
+			return;
+		map_modifier = self.map_modifiers[modifier_num];
 		if map_modifier is None:
-			return
+			return;
 
-		map_modifier(image)
+		map_modifier(self);
 
 
 	def make_randompath_dynamic_obstacle(self,
@@ -116,7 +115,7 @@ class Environment(object):
 		return dynobs
 
 
-	def Map1(self, image):
+	def Map1(self):
 
 		for i in range(1, 20):
 			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=35, speed_high=7.0)
@@ -183,7 +182,7 @@ class Environment(object):
 
 
 
-	def Map3(self, image):
+	def Map3(self):
 		for j in np.arange(8):
 			dynobs = DynamicObs()
 			x = int(np.random.uniform(100, 700))
@@ -196,7 +195,7 @@ class Environment(object):
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map4(self, image):
+	def Map4(self):
 
 		for i in range(1, 20):
 			dynobs = self.make_randompath_dynamic_obstacle()
@@ -223,7 +222,7 @@ class Environment(object):
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map5(self, image):
+	def Map5(self):
 
 		for i in range(1, 20):
 			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
@@ -252,7 +251,7 @@ class Environment(object):
 
 
 
-	def Map7(self, image):
+	def Map7(self):
 		x = [200, 300, 440, 560]
 		y = [50, 200, 350, 500]
 
@@ -291,7 +290,7 @@ class Environment(object):
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map8(self, image):
+	def Map8(self):
 
 		x = [100, 400, 600, 100,700,650]
 		y = [50, 350, 175, 200, 400,500]
@@ -305,13 +304,13 @@ class Environment(object):
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map9(self, image):
+	def Map9(self):
 		for i in range(1, 15):
 			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
 			self.dynamic_obstacles.append(dynobs)
 
 	# Swarm of obstacles
-	def Map10(self, image):
+	def Map10(self):
 		for i in range(1, 70):
 			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=15, speed_high=11.0)
 			self.dynamic_obstacles.append(dynobs)
