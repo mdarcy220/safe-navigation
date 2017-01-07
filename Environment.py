@@ -15,14 +15,13 @@ class Environment(object):
 		self._init_map_modifiers()
 		self.LoadMap(self.MapName)
 
-		self._init_grid_data();
+		self._grid_data_display = PG.Surface((self.width, self.height))
+		self._update_grid_data();
 
 
-	def _init_grid_data(self):
-		tmp_display = PG.Surface((self.width, self.height))
-		self.update_display(tmp_display);
-		self.update_grid_data_from_display(tmp_display);
-		del tmp_display;
+	def _update_grid_data(self):
+		self.update_display(self._grid_data_display);
+		self.update_grid_data_from_display(self._grid_data_display);
 
 
 	def _init_map_modifiers(self):
@@ -312,7 +311,7 @@ class Environment(object):
 			self.dynamic_obstacles.append(dynobs)
 
 	# Swarm of obstacles
-	def Map10(self, image): 
+	def Map10(self, image):
 		for i in range(1, 70):
 			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=15, speed_high=11.0)
 			self.dynamic_obstacles.append(dynobs)
@@ -332,6 +331,7 @@ class Environment(object):
 
 
 	def update_grid_data_from_display(self, display):
+		self.needs_grid_data_update = False
 		# Set grid_data to 1 where the corresponding pixel is obstacle-colored
 		# Note: This approach forces grid_data to be at least as large as the pixel array,
 		# potentially wasting some memory compared to using a nested for loop. It is
@@ -355,11 +355,13 @@ class Environment(object):
 		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] = 3
 		
 		# Uncomment the following two lines to see the grid_data directly
-		#pix_arr[self.grid_data==0] = 0
-		#pix_arr[self.grid_data==3] = 0x115599
-		#pix_arr[self.grid_data==1] = 0xFFFFFF
+		pix_arr[self.grid_data==0] = 0
+		pix_arr[self.grid_data==3] = 0x115599
+		pix_arr[self.grid_data==1] = 0xFFFFFF
 
 
 	def next_step(self):
+		if self.needs_grid_data_update:
+			self._update_grid_data();
 		self.update_dynamic_obstacles();
-
+		self.needs_grid_data_update = True

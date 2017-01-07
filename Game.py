@@ -16,6 +16,9 @@ class Game:
 		if cmdargs.batch_mode and not cmdargs.display_every_frame:
 			self.display_every_frame = False
 
+		self.is_paused = False
+		self.doing_step = False
+
 		self.Display_Width = 800
 		self.Display_Height= 600
 		self.gameDisplay = PG.display.set_mode((800, 600))
@@ -45,11 +48,16 @@ class Game:
 					return 1
 				elif event.key == PG.K_e:
 					self.display_every_frame = (not self.display_every_frame)
+				elif event.key == PG.K_p:
+					self.is_paused = not self.is_paused;
+				elif event.key == PG.K_s:
+					self.doing_step = True
 		return 0
 
 
 	def update_game_image(self):
 		self.env.update_display(self.gameDisplay);
+		self.env.update_grid_data_from_display(self.gameDisplay)
 		self.target.draw(self.gameDisplay)
 		for robot in self.robot_list:
 			robot.draw(self.gameDisplay)
@@ -67,7 +75,12 @@ class Game:
 			event_status = self.handle_pygame_events()
 			if event_status == 1:
 				return
-		
+
+			if self.is_paused and not self.doing_step:
+				clock.tick(10);
+				continue
+			self.doing_step = False
+
 			allBotsAtTarget = True
 
 			# Process robot actions

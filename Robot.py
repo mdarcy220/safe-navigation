@@ -53,6 +53,7 @@ class Robot:
 		# Memory of visited points
 		self.visited_points	= []
 		# Stores the memory and movement vectors (for drawing in debug mode)
+		self.drawing_pdf        = None
 		self.last_mbv		= np.array([0, 0])
 		self.last_mmv		= np.array([0, 0])
 		self.movement_momentum	= 0
@@ -101,6 +102,7 @@ class Robot:
 		self.combined_pdf = targetpoint_pdf
 
 		radar_data = self.radar.ScanRadar(self.location, grid_data)
+		#self.drawing_pdf = radar_data
 		if (0 < self.cmdargs.radar_noise_level):
 			radar_data += self.gaussian_noise(self.cmdargs.radar_noise_level, radar_data.size)
 
@@ -132,6 +134,7 @@ class Robot:
 		
 		if (self.using_safe_mode):
 			dynamic_pdf = self.radar.scan_dynamic_obstacles(self.location, grid_data)
+			self.drawing_pdf = dynamic_pdf
 			self.adjust_speed_for_safety(dynamic_pdf, movement_ang)
 
 		if (self.cmdargs.show_real_time_plot):
@@ -287,10 +290,12 @@ class Robot:
 			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), self.radar.radius, 2)
 
 			# Draw distribution values around robot
-			#self.draw_pdf(screen, self.combined_pdf)
+			#self.draw_pdf(screen, self.drawing_pdf)
 
 
 	def draw_pdf(self, screen, pdf):
+		if pdf is None:
+			return;
 		scale = self.radar.radius
 		last_point = [self.location[0] + (pdf[0] * scale), self.location[1]]
 		for index in np.arange(0, len(pdf), 1):
@@ -305,3 +310,6 @@ class Robot:
 
 	def angleToTarget(self):
 		return Vector.getAngleBetweenPoints(self.location, self.target.position)
+
+	def get_location(self):
+		return self.location;
