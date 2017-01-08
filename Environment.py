@@ -63,7 +63,9 @@ class Environment:
 			elif speedmode == 6:
 				obstacle.speed = 12
 			else:
-				print("Invalid speed mode. Assuming mode 0.", sys.stderr);
+				sys.stderr.write("Invalid speed mode. Assuming mode 0.\n");
+				sys.stderr.flush();
+				break;
 
 		
 

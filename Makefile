@@ -1,5 +1,5 @@
 
-SOURCES = Circle.py Distributions.py DynamicObstacles.py Environment.py Game.py Geometry.py Main.py Polygon.py Radar.py Robot.py Shape.py Target.py Vector.py
+SOURCES = Circle.py Distributions.py DynamicObstacles.py Environment.py Game.py Geometry.py Main.py Radar.py Robot.py Shape.py Target.py Vector.py
 DOXYGEN_CONFIG_FILE = doxygen.conf
 
 default: cython
