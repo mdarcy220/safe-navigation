@@ -1,9 +1,10 @@
 import pygame	as PG
 import numpy	as np
 
-from  Environment import Environment
-from  Robot import Robot, RobotStats
-from  Target import Target
+from Environment import Environment
+from Robot import Robot, RobotStats
+from Radar import Radar
+from Target import Target
 import time
 
 class Game:
@@ -12,8 +13,11 @@ class Game:
 		self.cmdargs	   = cmdargs
 
 		self.display_every_frame = True
-		if self.cmdargs.batch_mode:
+		if cmdargs.batch_mode and not cmdargs.display_every_frame:
 			self.display_every_frame = False
+
+		self.is_paused = False
+		self.doing_step = False
 
 		self.Display_Width = 800
 		self.Display_Height= 600
@@ -21,13 +25,15 @@ class Game:
 		self.env = Environment(800, self.gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
 		self.target = Target((740,50))
 
-		self.normal_robot  = Robot (self.gameDisplay, self.target, (50, 550), speed=cmdargs.robot_speed, cmdargs=cmdargs, using_safe_mode =False, name="NormalRobot")
-		self.safe_robot    = Robot (self.gameDisplay, self.target, (50, 550), speed=cmdargs.robot_speed, cmdargs=cmdargs, using_safe_mode = True, name="SafeRobot")
+		radar = Radar(self.env, resolution = cmdargs.radar_resolution);
+
+		self.normal_robot  = Robot (self.gameDisplay, self.target, (50, 550), radar, speed=cmdargs.robot_speed, cmdargs=cmdargs, using_safe_mode =False, name="NormalRobot")
+		self.safe_robot    = Robot (self.gameDisplay, self.target, (50, 550), radar, speed=cmdargs.robot_speed, cmdargs=cmdargs, using_safe_mode = True, name="SafeRobot")
 		self.robot_list    = []
 		self.robot_list.append(self.normal_robot)
 		self.robot_list.append(self.safe_robot)
 
-		PG.display.set_caption('Robot Simulator')
+		PG.display.set_caption(cmdargs.window_title)
 
 
 	def handle_pygame_events(self):
@@ -42,10 +48,16 @@ class Game:
 					return 1
 				elif event.key == PG.K_e:
 					self.display_every_frame = (not self.display_every_frame)
+				elif event.key == PG.K_p:
+					self.is_paused = not self.is_paused;
+				elif event.key == PG.K_s:
+					self.doing_step = True
 		return 0
 
 
 	def update_game_image(self):
+		self.env.update_display(self.gameDisplay);
+		self.env.update_grid_data_from_display(self.gameDisplay)
 		self.target.draw(self.gameDisplay)
 		for robot in self.robot_list:
 			robot.draw(self.gameDisplay)
@@ -64,9 +76,11 @@ class Game:
 			if event_status == 1:
 				return
 
-			# Step the environment
-			self.env.Nextstep(self.gameDisplay)
-		
+			if self.is_paused and not self.doing_step:
+				clock.tick(10);
+				continue
+			self.doing_step = False
+
 			allBotsAtTarget = True
 
 			# Process robot actions
@@ -74,6 +88,9 @@ class Game:
 				if not (robot.distanceToTarget() < 20):
 					allBotsAtTarget = False
 					robot.NextStep(self.env.grid_data)
+
+			# Step the environment
+			self.env.next_step()
 
 			if (self.cmdargs.batch_mode) and (allBotsAtTarget):
 				return
@@ -89,12 +106,12 @@ class Game:
 
 			# Tick the clock
 			clock.tick(1000)
-		
+
+
 	def fast_computing_game_loop(self):
 		safe_robot_at_target = False
 		normal_robot_at_target = False 
 		allRobotsAtTarget = False
-		self.env.Nextstep(self.gameDisplay)
 		step_num = 0
 		while (not allRobotsAtTarget):
 			allBotsAtTarget = True
@@ -143,6 +160,7 @@ class Game:
 
 
 	def GameLoop(self):
+		time.sleep(self.cmdargs.start_delay)
 		if self.cmdargs.fast_computing:
 			self.fast_computing_game_loop()
 		else:

@@ -16,7 +16,7 @@ class RobotStats:
 
 
 class Robot:
-	def __init__(self, screen, target, initial_position, speed = 6, cmdargs=None, using_safe_mode = False, name=""):
+	def __init__(self, screen, target, initial_position, radar, speed = 6, cmdargs=None, using_safe_mode = False, name=""):
 		self.cmdargs		= cmdargs
 		self.target		= target
 		self.location		= initial_position
@@ -24,18 +24,23 @@ class Robot:
 		self.stats		= RobotStats()
 		self.name		= name
 		self.using_safe_mode	= using_safe_mode
+		self.drawcoll = 0
 
 		self.normal_speed		= speed
 		self.max_speed			= 10
 		if (self.cmdargs.speedmode == 5):
 			self.normal_speed = 10
+		if (not self.using_safe_mode):
+			self.normal_speed = 10
 		self.NumberofGlitches		= 0
 		
 		self.speed = self.normal_speed
 
-		radar_resolution = cmdargs.radar_resolution
+		self.speed_adjust_pdf = Distributions.Gaussian()
+		self.speed_adjust_pdf.degree_resolution = 2
+		
 
-		self.radar	= Radar(screen, resolution=radar_resolution)
+		self.radar	= radar
 		self.PathList	= []
 		self.PDF	= Distributions.Gaussian()
 		if (self.cmdargs.target_distribution_type == 'rectangular'):
@@ -48,6 +53,7 @@ class Robot:
 		# Memory of visited points
 		self.visited_points	= []
 		# Stores the memory and movement vectors (for drawing in debug mode)
+		self.drawing_pdf        = None
 		self.last_mbv		= np.array([0, 0])
 		self.last_mmv		= np.array([0, 0])
 		self.movement_momentum	= 0
@@ -127,6 +133,7 @@ class Robot:
 		
 		if (self.using_safe_mode):
 			dynamic_pdf = self.radar.scan_dynamic_obstacles(self.location, grid_data)
+			#self.drawing_pdf = dynamic_pdf
 			self.adjust_speed_for_safety(dynamic_pdf, movement_ang)
 
 		if (self.cmdargs.show_real_time_plot):
@@ -138,10 +145,10 @@ class Robot:
 			plt.axis([0,360,0,1.1])
 			plt.pause(0.00001)
 
-
 		accel_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * self.speed
 		movement_vec = np.add(self.last_mmv * self.movement_momentum, accel_vec * (1.0 - self.movement_momentum))
-		movement_vec *= self.speed / Vector.magnitudeOf(movement_vec) # Set length equal to self.speed
+		if Vector.magnitudeOf(movement_vec) > self.speed:
+			movement_vec *= self.speed / Vector.magnitudeOf(movement_vec) # Set length equal to self.speed
 		self.last_mmv = movement_vec
 
 		new_location = np.add(self.location, movement_vec)
@@ -149,6 +156,7 @@ class Robot:
 			if self.stepNum - self.last_glitch_step > 1:
 				if not self.cmdargs.batch_mode:
 					print('Robot ({}) glitched into obstacle!'.format(self.name))
+				self.drawcoll = 10
 				self.stats.num_glitches += 1
 			self.last_glitch_step = self.stepNum
 			new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-.5, .5, size=2));
@@ -176,21 +184,26 @@ class Robot:
 		closest_obs_degree	 = np.argmin (dynamic_pdf)
 		closest_obs_dist = np.min(dynamic_pdf)
 		angle_from_movement = np.absolute(Vector.angle_diff_degrees(movement_ang, closest_obs_degree))
-		
-		self.speed = self.normal_speed
 
-		if(0.99 < closest_obs_dist):
-			return
-		elif (angle_from_movement < 50):
-			if (closest_obs_dist < 0.3):
-				self.speed = 4
-			elif (closest_obs_dist >= 0.3):
-				self.speed = 6
-		elif (angle_from_movement > 50): 
-			if (closest_obs_dist < 0.5):
-				self.speed = self.max_speed
-			elif (closest_obs_dist >= 0.5):
-				self.speed = max(8, self.normal_speed)
+		angle_weight_pdf = self.speed_adjust_pdf.get_distribution(90)
+
+		self.speed = self.normal_speed
+		min_speed = 2
+		max_speed = 10
+		speed_range = 2*(max_speed - min_speed)
+
+		front_pdf = 1 - dynamic_pdf.take(np.arange(-90, 90, 1), mode='wrap')
+		front_pdf[front_pdf > 0.05] = 1
+		front_pdf *= angle_weight_pdf
+		front_obs_ratio = front_pdf.sum() / front_pdf.size
+
+		back_pdf = 1- dynamic_pdf.take(np.arange(90, 270, 1), mode='wrap')
+		back_pdf[back_pdf > 0.05] = 1
+		back_pdf *= angle_weight_pdf
+		back_obs_ratio = back_pdf.sum() / back_pdf.size
+
+		self.speed = self.normal_speed + (1.25*back_obs_ratio - front_obs_ratio) * (speed_range / 2.0)
+		self.speed = np.clip(self.speed, min_speed, max_speed)
 
 
 	def center_of_gravity_pdfselector(self, pdf):
@@ -263,6 +276,9 @@ class Robot:
 				continue
 			PG.draw.line(screen,PathColor,self.PathList[ind], self.PathList[ind +1], 2)
 		if (0 < self.cmdargs.debug_level):
+			if self.drawcoll > 0:
+				PG.draw.circle(screen, (255, 127, 127), np.array(self.location, dtype=int), 15, 1)
+				self.drawcoll = self.drawcoll - 1
 			# Draw line representing memory effect
 			#PG.draw.line(screen, (0,255,0), np.array(self.location, dtype=int), np.array(self.location+self.last_mbv*100, dtype=int), 1)
 
@@ -273,10 +289,12 @@ class Robot:
 			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), self.radar.radius, 2)
 
 			# Draw distribution values around robot
-			#self.draw_pdf(screen, self.combined_pdf)
+			#self.draw_pdf(screen, self.drawing_pdf)
 
 
 	def draw_pdf(self, screen, pdf):
+		if pdf is None:
+			return;
 		scale = self.radar.radius
 		last_point = [self.location[0] + (pdf[0] * scale), self.location[1]]
 		for index in np.arange(0, len(pdf), 1):
@@ -291,3 +309,6 @@ class Robot:
 
 	def angleToTarget(self):
 		return Vector.getAngleBetweenPoints(self.location, self.target.position)
+
+	def get_location(self):
+		return self.location;

@@ -34,12 +34,12 @@ do
 	arg_sets+=("$base_args --map-modifier-num 1  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod1.png")
 	arg_sets+=("$base_args --map-modifier-num 4  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod4.png")
 	arg_sets+=("$base_args --map-modifier-num 5  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod5.png")
-	arg_sets+=("$base_args --map-modifier-num 0  --speed-mode $speed --map-name Maps/Ground_WithRooms.png")
-	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/Ground_withParralel_walls.png")
-	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/Ground_WithRooms.png")
-	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/Ground_Nothing.png")
-	arg_sets+=("$base_args --map-modifier-num 7  --speed-mode $speed --map-name Maps/Ground_Nothing.png")
-	arg_sets+=("$base_args --map-modifier-num 9  --speed-mode $speed --map-name Maps/Ground_Maze.png")
+	arg_sets+=("$base_args --map-modifier-num 0  --speed-mode $speed --map-name Maps/rooms.png")
+	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/parallel_walls.png")
+	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/rooms.png")
+	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/empty.png")
+	arg_sets+=("$base_args --map-modifier-num 7  --speed-mode $speed --map-name Maps/empty.png")
+	arg_sets+=("$base_args --map-modifier-num 9  --speed-mode $speed --map-name Maps/maze.png")
 
 done
 
