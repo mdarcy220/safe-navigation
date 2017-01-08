@@ -14,6 +14,6 @@ doxygen: $(SOURCES) $(DOXYGEN_CONFIG_FILE)
 
 .PHONY: clean
 clean:
-	rm *.c *.so
-	rm -r build __pycache__
+	rm -f *.c *.so
+	rm -rf build __pycache__
 
