@@ -1,13 +1,39 @@
 #!/usr/bin/python3
 
+## @package Geometry
+#
+# This package provides geometry utilities.
+#
+
+
 import numpy as np
 import Vector
 
 DEGREE_TO_RADIAN_FACTOR = np.pi / 180.0;
 RADIAN_TO_DEGREE_FACTOR = 180.0 / np.pi;
 
+## Returns the points of intersection of the two given circles.
+# 
+# @param circle1_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the first circle's center
+# 
+# @param circle1_radius (float)
+# <br>	-- the first circle's radius
+# 
+# @param circle2_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the second circle's center
+# 
+# @param circle2_radius (float)
+# <br>	-- the second circle's radius
+# 
+# 
+# @returns (list of numpy array)
+# <br>	-- A list of points of intersection. Empty list if there is
+# <br>	no intersection, and `None` on error.
+#
 def circle_circle_intersection(circle1_center, circle1_radius, circle2_center, circle2_radius):
-
 	# Method from http://paulbourke.net/geometry/circlesphere/
 	p0 = circle1_center;
 	p1 = circle2_center;
@@ -43,25 +69,27 @@ def circle_circle_intersection(circle1_center, circle1_radius, circle2_center, c
 	return [p3, p4]
 
 
+## Returns the point(s) of intersection of the given circle
+# object with the given line.
+# 
+# @param circle_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of the circle
+# 
+# @param circle_radius (float)
+# <br>	-- the radius of the circle
+# 
+# @param line (list of numpy array)
+# <br>	Format: `[[x1, y1], [x2, y2]]`
+# <br>	-- the line to check
+# 
+# @returns (list of numpy array)
+# <br>	Format: `[[x1, y1], ..., [xn, yn]]`
+# <br>	-- Returns a list of intersection points. If there are no
+# 	intersection points, an empty list will be returned. If an error
+# 	occurs, `None` is returned.
+#
 def circle_line_intersection(circle_center, circle_radius, line):
-	"""
-	Returns the point(s) of intersection of the given circle
-	object with the given line.
-
-	circle_center (numpy array) -- the center of the circle
-
-	circle_radius (scalar) -- the radius of the circle
-
-	line -- a list of 1D numpy arrays. The format should be such that
-	line[0][0] is the x of the first point, line[0][1] is the y of 
-	the first point, line[1][0] is the x of the second point, and
-	line[1][1] is the y of the second point.
-
-	return value -- a list of 1D numpy arrays, each representing
-	the coordinates of an intersection point. If there are no
-	intersection points, an empty list will be returned. If an
-	error occurs, None is returned.
-	"""
 
 	# Make things easier by shifting the coordinate system so the circle
 	# is centered at the origin (0, 0)
@@ -131,6 +159,23 @@ def circle_line_intersection(circle_center, circle_radius, line):
 	return final_intersections;
 
 
+## Returns the intersection of the given two lines.
+# 
+# 
+# @param line1 (list of numpy array)
+# <br>	Format: `[[x1, y1], [x2, y2]]`
+# <br>	-- endpoints of first line segment
+# 
+# @param line2 (list of numpy array)
+# <br>	Format: `[[x1, y1], [x2, y2]]`
+# <br>	-- endpoints of second line segment
+# 
+# 
+# @returns (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- coordinate of intersection if the lines intersect, `None`
+# 	otherwise
+#
 def line_line_intersection(line1, line2):
 	vec_line1 = line1[1] - line1[0];
 	vec_line2 = line2[1] - line2[0];
@@ -147,6 +192,23 @@ def line_line_intersection(line1, line2):
 	return None;
 
 
+## Returns the points of intersection of the given rectangle and line.
+# 
+# 
+# @param rect (list of numpy array)
+# <br>	Format: `[[x, y], [w, h]]`
+# <br>	-- the rectangle
+# 
+# @param line (list of numpy array)
+# <br>	Format `[[x1, y1], [x2, y2]]`
+# <br>	-- the line
+# 
+# 
+# @returns (list of numpy array)
+# <br>	Format: `[[x1, y1], ..., [xn, yn]]`
+# <br>	-- A list of points of intersection. Empty list if there are no
+# 	intersections, and `None` on error.
+#
 def rectangle_line_intersection(rect, line):
 	# Rectangle should be a list of [np.array([x, y]), np.array([width, height])]
 	# Line should be [np.array([x1, y1]), np.array([x2, y2])]
@@ -173,10 +235,54 @@ def rectangle_line_intersection(rect, line):
 	return inters;
 
 
+## Checks if the point is inside the rectangle.
+# 
+# 
+# @param rect (list of numpy array)
+# <br>	Format: `[[x, y], [w, h]]`
+# <br>	-- the rectangle
+# 
+# @param point (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the point
+# 
+# 
+# @returns (boolean)
+# <br>	-- `True` if the point is inside the rectangle (including on the
+# 	bound), `False` otherwise
+#
 def point_inside_rectangle(rect, point):
 	return rect[0][0] <= point[0] and point[0] <= (rect[0][0] + rect[1][0]) and rect[0][1] <= point[1] and point[1] <= (rect[0][1] + rect[1][1]);
 
 
+## Gets the angle range of the "shadow" of the given circle with
+# respect to the given point. The shadow can be thought of in the following
+# way: Imagine the point as a light source and the circle as an opaque
+# object. Then the circle would block light at some range of angles around
+# the point. That area of blocked light is what "shadow" refers to here.
+# 
+# 
+# @param center_point (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the point
+# 
+# @param circle_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of the circle
+# 
+# @param circle_radius (float)
+# <br>	-- the radius of the circle
+# 
+# 
+# @returns (numpy array)
+# <br>	Format: `[start_ang, end_ang]`
+# <br>	-- Returns start and end angles indicating the arc of shadow. The
+# 	angles will be arranged such that the area of shadow is found by
+# 	starting at `start_ang` and increasing the angle value (possibly
+# 	requiring modulus if it wraps around) until `end_ang` is reached.
+# 	Essentially, the shadow is found counterclockwise from `start_ang` to
+# 	end_ang. The angles will be in degrees between 0 and 360.
+#
 def circle_shadow_angle_range(center_point, circle_center, circle_radius):
 	base_ang = Vector.getAngleBetweenPoints(center_point, circle_center);
 	dist = Vector.getDistanceBetweenPoints(center_point, circle_center);
@@ -189,6 +295,35 @@ def circle_shadow_angle_range(center_point, circle_center, circle_radius):
 		return [base_ang - offset, base_ang + offset];
 
 
+## Gets the angle range of the "shadow" of the given rectangle with
+# respect to the given point. The shadow can be thought of in the following
+# way: Imagine the point as a light source and the rectangle as an opaque
+# object. Then the circle would block light at some range of angles around
+# the point. That area of blocked light is what "shadow" refers to here.
+# 
+# 
+# @param center_point (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the point
+# 
+# @param rect_pos (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the location of the top-left corner of the rectangle
+# 
+# @param rect_dim (numpy array)
+# <br>	Format: `[w, h]`
+# <br>	-- the dimensions of the rectangle
+# 
+# 
+# @returns (numpy array)
+# <br>	Format: `[start_ang, end_ang]`
+# <br>	-- Returns start and end angles indicating the arc of shadow. The
+# 	angles will be arranged such that the area of shadow is found by
+# 	starting at `start_ang` and increasing the angle value (possibly
+# 	requiring modulus if it wraps around) until `end_ang` is reached.
+# 	Essentially, the shadow is found counterclockwise from `start_ang` to
+# 	`end_ang`. The angles will be in degrees between 0 and 360.
+#
 def rectangle_shadow_angle_range(center_point, rect_pos, rect_dim):
 	rect_points = [rect_pos]
 	rect_points.append(rect_pos + np.array([rect_dim[0], 0]))
@@ -213,6 +348,44 @@ def rectangle_shadow_angle_range(center_point, rect_pos, rect_dim):
 	return angle_range;
 
 
+## Gets the angle range of the intersection of the given circles with
+# respect to the first circle. This can be thought of as the angles between
+# which the second circle overlaps the first one, with the angles being
+# measured relative to the first circle (circle 1).
+# 
+# It should be noted that this method will ONLY work for circles whose
+# borders intersect. If one circle is inside the other, no angles will be
+# reported even though they still technically overlap.  For other cases you
+# will most likely want to use one of the following methods instead:
+# <br>	@see circle_shadow_angle_range()
+# <br>	@see circle_circle_overlap_angle_range()
+#
+# 
+# @param circle1_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of circle 1
+# 
+# @param circle1_radius (float)
+# <br>	-- the radius of circle 1
+# 
+# 
+# @param circle2_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of circle 2
+# 
+# @param circle2_radius (float)
+# <br>	-- the radius of circle 2
+# 
+# @returns (numpy array)
+# <br>	Format: `[start_ang, end_ang]`
+# <br>	-- Returns start and end angles indicating the arc of overlap. The
+# 	angles will be arranged such that the area of overlap is found by
+# 	starting at `start_ang` and increasing the angle value (possibly
+# 	requiring modulus if it wraps around) until `end_ang` is reached.
+# 	Essentially, the overlap is found counterclockwise from `start_ang`
+# 	to `end_ang`. The angles will be in degrees between 0 and 360. If
+# 	there is no intersection, `None` is returned.
+# 
 def circle_circle_intersect_angle_range(circle_center, circle_radius, circle2_center, circle2_radius):
 	points = circle_circle_intersection(circle_center, circle_radius, circle2_center, circle2_radius);
 	if points is None or len(points) < 2:
@@ -230,6 +403,43 @@ def circle_circle_intersect_angle_range(circle_center, circle_radius, circle2_ce
 		return [0, 360];
 
 
+## Gets the angle range of the overlap shadow of the given circles with
+# respect to the first circle. This can be thought of as the angles between
+# which the second circle overlaps the first one, with the angles being
+# measured relative to the first circle (circle 1).
+# 
+# This is the recommended method to use, as it will correcly consider both
+# partially intersecting circles and cases where the second circle is
+# inside the first. See descriptions of the following methods to compare
+# behavior:
+# <br>	@see circle_shadow_angle_range()
+# <br>	@see circle_circle_intersect_angle_range()
+# 
+# 
+# @param circle1_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of circle 1
+# 
+# @param circle1_radius (float)
+# <br>	-- the radius of circle 1
+# 
+# @param circle2_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of circle 2
+# 
+# @param circle2_radius (float)
+# <br>	-- the radius of circle 2
+# 
+# @returns (numpy array)
+# <br>	Format: `[start_ang, end_ang]`
+# <br>	-- Returns start and end angles indicating the arc of overlap. The
+# 	angles will be arranged such that the area of overlap is found by
+# 	starting at `start_ang` and increasing the angle value (possibly
+# 	requiring modulus if it wraps around) until `end_ang` is reached.
+# 	Essentially, the overlap is found counterclockwise from `start_ang`
+# 	to `end_ang`. The angles will be in degrees between 0 and 360. If
+# 	there is no overlap, `None` is returned.
+#
 def circle_circle_overlap_angle_range(circle1_center, circle1_radius, circle2_center, circle2_radius):
 	# Get an angle range (relative to circle1) that is guaranteed to contain the entire
 	# overlap of circles 1 and 2. May return None if there is no overlap
@@ -240,6 +450,34 @@ def circle_circle_overlap_angle_range(circle1_center, circle1_radius, circle2_ce
 
 
 
+## Gets the angle range of the overlap shadow of the given rectangle
+# with respect to the circle.
+# 
+# This can be thought of as the angles between which the rectangle overlaps
+# the first one, with the angles being measured relative to the circle.
+# This is analogous to the method circle_circle_overlap_angle_range(), so
+# it may be helpful to see that method's documentation for reference.
+# 
+# 
+# @param circle_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of the circle
+# 
+# @param circle_radius (float)
+# <br>	-- the radius of the circle
+# 
+# 
+# @returns (numpy array or list)
+# <br>	Format: `[start_ang, end_ang]`
+# <br>	Desc: Returns start and end angles indicating the arc of overlap.
+# 	The angles will be arranged such that the area of overlap is found
+# 	by starting at `start_ang` and increasing the angle value (possibly
+# 	requiring modulus if it wraps around) until `end_ang` is reached.
+# 	Essentially, the overlap is found counterclockwise from `start_ang`
+# 	to `end_ang`. The angles will be in degrees between 0 and 360. If
+# 	there is no overlap, `None` is returned. If the circle is inside the
+# 	rectangle, the angle range `[0, 360]` is returned.
+#
 def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos, rect_dim):
 	if point_inside_rectangle([rect_pos, rect_dim], circle_center):
 		return [0, 360];
