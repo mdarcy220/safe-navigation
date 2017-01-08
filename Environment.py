@@ -63,8 +63,8 @@ class Environment:
 			elif speedmode == 6:
 				obstacle.speed = 12
 			else:
-				print("Invalid speed mode. Assuming mode 0.", file=sys.stderr);
-					
+				print("Invalid speed mode. Assuming mode 0.", sys.stderr);
+
 		
 
 	def apply_map_modifier_by_number(self, modifier_num):
