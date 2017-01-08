@@ -82,6 +82,13 @@ def get_cmdline_args():
 			default=1,
 			action='store'
 	);
+	parser.add_argument('--max-fps',
+			help='Max number of frames per second. Note that setting this to a small value will NOT improve the performance of the simulation, because it runs at one step per frame. For best performance, set this to a very high value, but low values may be useful for debugging.',
+			dest='max_fps',
+			type=int,
+			default=0,
+			action='store'
+	);
 	parser.add_argument('--max-steps',
 			help='Maximum number of steps to take before terminating the simulation. Defaults to 1,000,000',
 			dest='max_steps',

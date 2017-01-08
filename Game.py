@@ -105,7 +105,7 @@ class Game:
 				self.render_game_image()
 
 			# Tick the clock
-			clock.tick(1000)
+			clock.tick(self.cmdargs.max_fps)
 
 
 	def fast_computing_game_loop(self):
