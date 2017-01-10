@@ -7,6 +7,7 @@
 import numpy  as np
 import pygame as PG
 from Robot import RobotControlInput
+from ObstaclePredictor import DummyObstaclePredictor
 import Distributions
 import Vector
 import matplotlib.pyplot as plt
@@ -53,6 +54,9 @@ class NavigationAlgorithm:
 		self._PDF = Distributions.Gaussian()
 		if (self._cmdargs.target_distribution_type == 'rectangular'):
 			self._PDF = Distributions.Rectangular()
+
+		# Set up obstacle predictor
+		self._obstacle_predictor = DummyObstaclePredictor(360);
 
 		# Number of steps taken in the navigation
 		self.stepNum = 0
@@ -103,6 +107,13 @@ class NavigationAlgorithm:
 		# Scan the radar to get obstacle information
 		raw_radar_data = self._robot.radar.scan(self._robot.location);
 		raw_dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
+
+
+		self._obstacle_predictor.add_observation(self._robot.location,
+				raw_radar_data,
+				raw_dynamic_radar_data,
+				self._obstacle_predictor_dynobs_getter_func
+		);
 
 		normalized_radar_data = raw_radar_data / self._robot.radar.radius;
 		if (0 < self._cmdargs.radar_noise_level):
@@ -301,10 +312,12 @@ class NavigationAlgorithm:
 		vec = np.array([0, 0], dtype='float64')
 		i = size
 		for point in self.visited_points[-size:]:
-		#for point in [PG.mouse.get_pos()]:
 			effect_magnitude = gaussian_derivative(Vector.getDistanceBetweenPoints(point, self._robot.location))
 			effect_vector = (decay**i) * effect_magnitude * np.subtract(point, self._robot.location)
 			vec += effect_vector
 			i -= 1
 		return vec
 
+
+	def _obstacle_predictor_dynobs_getter_func(self, angle):
+		return self._robot.radar.get_dynobs_at_angle(self._robot.location, angle)
