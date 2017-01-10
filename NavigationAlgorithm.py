@@ -100,15 +100,16 @@ class NavigationAlgorithm:
 		# PDFs, but for now that's just the targetpoint PDF
 		combined_pdf = targetpoint_pdf
 
-		# Scan the radar to get obstacle information. This
-		# radar_data variable could just as well be named
-		# obstacle_pdf, because that's what it represents.
-		radar_data = self._robot.radar.scan(self._robot.location)
+		# Scan the radar to get obstacle information
+		raw_radar_data = self._robot.radar.scan(self._robot.location);
+		raw_dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
+
+		normalized_radar_data = raw_radar_data / self._robot.radar.radius;
 		if (0 < self._cmdargs.radar_noise_level):
-			radar_data += self._gaussian_noise(self._cmdargs.radar_noise_level, radar_data.size)
+			normalized_radar_data += self._gaussian_noise(self._cmdargs.radar_noise_level, normalized_radar_data.size)
 
 		# Add the obstacle distribution into the combined PDF
-		combined_pdf = self._combine_pdfs(combined_pdf, radar_data)
+		combined_pdf = self._combine_pdfs(combined_pdf, normalized_radar_data)
 
 		# Process memory
 		if self._cmdargs.enable_memory:
@@ -127,7 +128,7 @@ class NavigationAlgorithm:
 		direction = self._pdf_angle_selector(combined_pdf) * self._PDF.degree_resolution
 
 		# Set the speed
-		speed = self._select_speed(direction);
+		speed = self._select_speed(direction, raw_dynamic_radar_data);
 
 		if (self._cmdargs.show_real_time_plot):
 			self._update_plot([
@@ -180,10 +181,10 @@ class NavigationAlgorithm:
 		return targetpoint_pdf;
 
 
-	def _select_speed(self, direction):
+	def _select_speed(self, direction, raw_dynamic_radar_data):
 		speed = self.normal_speed
 		if (self.using_safe_mode):
-			dynamic_pdf = self._robot.radar.scan_dynamic_obstacles(self._robot.location)
+			dynamic_pdf = raw_dynamic_radar_data / self._robot.radar.radius;
 			self.debug_info["drawing_pdf"] = dynamic_pdf
 			speed = self._adjust_speed_for_safety(dynamic_pdf, direction)
 		return speed;

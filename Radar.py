@@ -15,6 +15,32 @@ import math
 # environment, it produces a radar scan that shows the relative distance to
 # obstacles.
 #
+#
+# RADAR DATA FORMAT:
+#
+# Several methods in this class return a data format that will hereafter be
+# referred to as the "radar data format". The details of this format are
+# as follows:
+#
+# The radar data format is an array-like format, generally stored in a
+# numpy array. The array contains the distance to the nearest obtacle at
+# each of a range of angles. The angles are evenly distributed between 0
+# and 360 degrees, so an array with 6 elements contains values for angles
+# 0, 60, 120, 180, 240, and 300, in that order. More generally, if the
+# array is called `radar_data`, then `radar_data[i]` corresponds to the
+# angle given by `i * (360 / len(radar_data))`.
+#
+# Example: If the value of `radar_data` is `[24, 20, 21, 25]`, it could be
+# interpreted in the following way: At an angle of 0 degrees from the
+# center point, the nearest obstacle is 24 units away. At an angle of 90
+# degrees, the nearest obstacle is 20 units away, and so on.
+#
+# The distances in radar data format are capped at the range of the radar,
+# so if the radar range is 100, any angles for which no obstacle is
+# observed will be reported as a distance of 100. For example, the array
+# `[95, 99, 100, 90]` would indicate that no obstacle was observed at the
+# angle of 180 degrees.
+#
 class Radar:
 
 	## Constructor
@@ -51,7 +77,7 @@ class Radar:
 	#
 	# @returns (numpy array)
 	# <br>	Format: `[ang1_val, ang2_val, ..., angn_val]`
-	# <br>	-- An array of relative distances (in the range `[0, 1]`)
+	# <br>	-- An array of distances (in the range `[0, 1]`)
 	# 	to the nearest obstacle for each angle outward from
 	# 	`center`.  This starts from angle 0 and increases in
 	# 	increments of the `degree_step` of the `Radar`, so
@@ -62,7 +88,7 @@ class Radar:
 	def scan(self, center):
 		grid_data = self._env.grid_data;
 
-		radar_data = np.ones(int(360 / int(self._degree_step)))
+		radar_data = np.full([self._nPoints], self.radius, dtype=np.float64)
 		currentStep = 0
 		x_upper_bound = min(799, grid_data.shape[0])
 		y_upper_bound = min(599, grid_data.shape[1])
@@ -74,10 +100,10 @@ class Radar:
 				x = int(cos_cached * i + center[0])
 				y = int(sin_cached * i + center[1])
 				if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):
-					radar_data[currentStep] = i / self.radius
+					radar_data[currentStep] = i
 					break
 				if (grid_data[x,y] & 1):
-					radar_data[currentStep] = i / self.radius
+					radar_data[currentStep] = i
 					break
 			currentStep = currentStep + 1
 		return radar_data
@@ -137,7 +163,7 @@ class Radar:
 	def scan_dynamic_obstacles(self, center):
 		nPoints = self._nPoints
 		beams = self._beams
-		radar_data = np.ones([nPoints], dtype=np.float64);
+		radar_data = np.full([nPoints], self.radius, dtype=np.float64);
 		sub_dynobs_list = [];
 		for dynobs in self._env.dynamic_obstacles:
 			index_range = self._get_dynobs_data_index_range(center, dynobs);
@@ -160,7 +186,7 @@ class Radar:
 						dist = Vector.magnitudeOf(inters_rel[0]);
 					else:
 						dist = Vector.magnitudeOf(inters_rel[1]);
-				radar_data[i] = np.min([radar_data[i], float(dist) / float(self.radius)]);
+				radar_data[i] = np.min([radar_data[i], float(dist)]);
 			
 		return radar_data;
 

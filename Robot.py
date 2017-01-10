@@ -147,7 +147,7 @@ class Robot:
 		#PG.draw.circle(screen, (0, 0, 255), np.array(self.location, dtype=int), 4, 0)
 		BlueColor  = (0, 0, 255)
 		GreenColor = (10, 100, 10)
-		if (self.nav_algo.using_safe_mode):
+		if (self._nav_algo.using_safe_mode):
 			PathColor = GreenColor
 		else:
 			PathColor = BlueColor
@@ -169,7 +169,7 @@ class Robot:
 			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), self.radar.radius, 2)
 
 			# Draw distribution values around robot
-			#self._draw_pdf(screen, self.nav_algo.debug_info["drawing_pdf"])
+			#self._draw_pdf(screen, self._nav_algo.debug_info["drawing_pdf"])
 
 
 	def _draw_pdf(self, screen, pdf):
