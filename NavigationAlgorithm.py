@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+## @package NavigationAlgorithm
+#
+
 
 import numpy  as np
 import pygame as PG
@@ -29,7 +32,7 @@ class NavigationAlgorithm:
 	# 	slightly changes the way the navigation algorithm works.
 	#
 	def __init__(self, robot, cmdargs, using_safe_mode=False):
-		self.robot = robot;
+		self._robot = robot;
 		self._cmdargs = cmdargs;
 		self.using_safe_mode = using_safe_mode
 
@@ -55,7 +58,7 @@ class NavigationAlgorithm:
 		self.stepNum = 0
 
 		# Function that selects an angle based on a distribution
-		self._pdf_angle_selector = self.center_of_gravity_pdfselector
+		self._pdf_angle_selector = self._center_of_gravity_pdfselector
 		# Function that combines pdfs
 		self._combine_pdfs	= np.minimum
 
@@ -100,7 +103,7 @@ class NavigationAlgorithm:
 		# Scan the radar to get obstacle information. This
 		# radar_data variable could just as well be named
 		# obstacle_pdf, because that's what it represents.
-		radar_data = self.robot.radar.ScanRadar(self.robot.location)
+		radar_data = self._robot.radar.ScanRadar(self._robot.location)
 		if (0 < self._cmdargs.radar_noise_level):
 			radar_data += self.gaussian_noise(self._cmdargs.radar_noise_level, radar_data.size)
 
@@ -140,7 +143,7 @@ class NavigationAlgorithm:
 
 	def _create_memory_bias_pdf(self):
 		# Get memory effect vector
-		mem_bias_vec = self.calc_memory_bias_vector()
+		mem_bias_vec = self._calc_memory_bias_vector()
 		self.debug_info["last_mbv"] = mem_bias_vec
 
 		mem_bias_ang = Vector.getAngleBetweenPoints([0, 0], mem_bias_vec)
@@ -153,7 +156,7 @@ class NavigationAlgorithm:
 			mem_bias_pdf = mem_bias_pdf / np.amax(mem_bias_pdf)
 
 		if (self.stepNum % 1) == 0:
-			self.visited_points.append(self.robot.location)
+			self.visited_points.append(self._robot.location)
 
 		return mem_bias_pdf;
 
@@ -169,9 +172,9 @@ class NavigationAlgorithm:
 	# 	location
 	#
 	def _create_targetpoint_pdf(self):
-		targetpoint_pdf = self._PDF.get_distribution(self.robot.angleToTarget())
+		targetpoint_pdf = self._PDF.get_distribution(self._robot.angleToTarget())
 		if (self._cmdargs.target_distribution_type == 'dotproduct'):
-			targetpoint_ang = self.robot.angleToTarget()
+			targetpoint_ang = self._robot.angleToTarget()
 			targetpoint_pdf = np.array([(self.speed*(np.cos(np.abs(targetpoint_ang - ang) * np.pi/180)+1)/2) for ang in np.arange(0, 360, self._PDF.degree_resolution)], dtype='float64')
 			targetpoint_pdf = (targetpoint_pdf / np.amax(targetpoint_pdf)) * 0.8 + 0.2
 		return targetpoint_pdf;
@@ -180,7 +183,7 @@ class NavigationAlgorithm:
 	def _select_speed(self, direction):
 		speed = self.normal_speed
 		if (self.using_safe_mode):
-			dynamic_pdf = self.robot.radar.scan_dynamic_obstacles(self.robot.location)
+			dynamic_pdf = self._robot.radar.scan_dynamic_obstacles(self._robot.location)
 			self.debug_info["drawing_pdf"] = dynamic_pdf
 			speed = self._adjust_speed_for_safety(dynamic_pdf, direction)
 		return speed;
@@ -206,7 +209,7 @@ class NavigationAlgorithm:
 	# @returns (numpy array)
 	# <br>	-- An array of noise values, that can be added to a
 	# 	distribution to make it noisy.
-	def gaussian_noise(self, noise_level, size):
+	def _gaussian_noise(self, noise_level, size):
 		noise_pdf = np.random.normal(0, noise_level, size)
 		return noise_pdf
 
@@ -250,7 +253,7 @@ class NavigationAlgorithm:
 		return np.clip(speed, min_speed, max_speed)
 
 
-	def center_of_gravity_pdfselector(self, pdf):
+	def _center_of_gravity_pdfselector(self, pdf):
 		width = 60
 		maxval_ind = np.argmax(pdf)
 		sum_num = 0
@@ -262,7 +265,7 @@ class NavigationAlgorithm:
 		return center_of_mass % 360
 
 
-	def threshold_midpoint_pdfselector(self, pdf):
+	def _threshold_midpoint_pdfselector(self, pdf):
 		maxval_ind = np.argmax(pdf)
 		maxval = pdf[maxval_ind]
 		threshold = 0.8 * maxval
@@ -284,11 +287,11 @@ class NavigationAlgorithm:
 		return bestStart+int(bestLen/2)
 
 
-	def max_value_pdfselector(self, pdf):
+	def _max_value_pdfselector(self, pdf):
 		return np.argmax(pdf)
 
 
-	def calc_memory_bias_vector(self):
+	def _calc_memory_bias_vector(self):
 		sigma = self.memory_sigma
 		decay = self.memory_decay
 		size = int(self.memory_size)
@@ -298,8 +301,8 @@ class NavigationAlgorithm:
 		i = size
 		for point in self.visited_points[-size:]:
 		#for point in [PG.mouse.get_pos()]:
-			effect_magnitude = gaussian_derivative(Vector.getDistanceBetweenPoints(point, self.robot.location))
-			effect_vector = (decay**i) * effect_magnitude * np.subtract(point, self.robot.location)
+			effect_magnitude = gaussian_derivative(Vector.getDistanceBetweenPoints(point, self._robot.location))
+			effect_vector = (decay**i) * effect_magnitude * np.subtract(point, self._robot.location)
 			vec += effect_vector
 			i -= 1
 		return vec

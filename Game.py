@@ -1,3 +1,8 @@
+#!/usr/bin/python
+
+## @package Game
+#
+
 import pygame	as PG
 import numpy	as np
 
@@ -25,27 +30,27 @@ class Game:
 	#
 	def __init__(self, cmdargs):
 		PG.init()
-		self.cmdargs	   = cmdargs
+		self._cmdargs	   = cmdargs
 
-		self.display_every_frame = True
+		self._display_every_frame = True
 		if cmdargs.batch_mode and not cmdargs.display_every_frame:
-			self.display_every_frame = False
+			self._display_every_frame = False
 
-		self.is_paused = False
-		self.doing_step = False
+		self._is_paused = False
+		self._doing_step = False
 
 		# Initialize the game display to 800x600
-		self.gameDisplay = PG.display.set_mode((800, 600))
+		self._gameDisplay = PG.display.set_mode((800, 600))
 
 		# Init environment
-		self.env = Environment(self.gameDisplay.get_width(), self.gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
-		self.target = Target((740,50))
+		self._env = Environment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
+		self._target = Target((740,50))
 
 		# Init robots
-		radar = Radar(self.env, resolution = cmdargs.radar_resolution);
-		self.normal_robot  = Robot (self.target, (50, 550), radar, cmdargs, using_safe_mode =False, name="NormalRobot")
-		self.safe_robot    = Robot (self.target, (50, 550), radar, cmdargs, using_safe_mode = True, name="SafeRobot")
-		self.robot_list    = [self.normal_robot, self.safe_robot]
+		radar = Radar(self._env, resolution = cmdargs.radar_resolution);
+		self._normal_robot  = Robot (self._target, (50, 550), radar, cmdargs, using_safe_mode =False, name="NormalRobot")
+		self._safe_robot    = Robot (self._target, (50, 550), radar, cmdargs, using_safe_mode = True, name="SafeRobot")
+		self._robot_list    = [self._normal_robot, self._safe_robot]
 
 		# Set window title
 		PG.display.set_caption(cmdargs.window_title)
@@ -66,11 +71,11 @@ class Game:
 				elif event.key == PG.K_q:
 					return 1
 				elif event.key == PG.K_e:
-					self.display_every_frame = (not self.display_every_frame)
+					self._display_every_frame = (not self._display_every_frame)
 				elif event.key == PG.K_p:
-					self.is_paused = not self.is_paused;
+					self._is_paused = not self._is_paused;
 				elif event.key == PG.K_s:
-					self.doing_step = True
+					self._doing_step = True
 		return 0
 
 
@@ -83,11 +88,11 @@ class Game:
 	# not always need to be done.
 	#
 	def update_game_image(self):
-		self.env.update_display(self.gameDisplay);
-		self.env.update_grid_data_from_display(self.gameDisplay)
-		self.target.draw(self.gameDisplay)
-		for robot in self.robot_list:
-			robot.draw(self.gameDisplay)
+		self._env.update_display(self._gameDisplay);
+		self._env.update_grid_data_from_display(self._gameDisplay)
+		self._target.draw(self._gameDisplay)
+		for robot in self._robot_list:
+			robot.draw(self._gameDisplay)
 
 	## Renders the stored game image onto the screen, to make it
 	# visible to the user.
@@ -117,36 +122,36 @@ class Game:
 			if event_status == 1:
 				return
 
-			if self.is_paused and not self.doing_step:
+			if self._is_paused and not self._doing_step:
 				clock.tick(10);
 				continue
-			self.doing_step = False
+			self._doing_step = False
 
 			allBotsAtTarget = True
 
 			# Process robot actions
-			for robot in self.robot_list:
+			for robot in self._robot_list:
 				if not (robot.distanceToTarget() < 20):
 					allBotsAtTarget = False
-					robot.NextStep(self.env.grid_data)
+					robot.NextStep(self._env.grid_data)
 
 			# Step the environment
-			self.env.next_step()
+			self._env.next_step()
 
-			if (self.cmdargs.batch_mode) and (allBotsAtTarget):
+			if (self._cmdargs.batch_mode) and (allBotsAtTarget):
 				return
 			if not allBotsAtTarget:
 				step_num += 1
-			if self.cmdargs.max_steps <= step_num:
+			if self._cmdargs.max_steps <= step_num:
 				return
 
 			# Draw everything
-			if self.display_every_frame:
+			if self._display_every_frame:
 				self.update_game_image()
 				self.render_game_image()
 
 			# Tick the clock
-			clock.tick(self.cmdargs.max_fps)
+			clock.tick(self._cmdargs.max_fps)
 
 
 	## A reduced game loop that is much faster for static maps.
@@ -166,12 +171,12 @@ class Game:
 			allBotsAtTarget = True
 
 			# Process robot actions
-			for robot in self.robot_list:
+			for robot in self._robot_list:
 				if not (robot.distanceToTarget() < 20):
 					allBotsAtTarget = False
-					robot.NextStep(self.env.grid_data)
+					robot.NextStep(self._env.grid_data)
 			step_num += 1
-			if self.cmdargs.max_steps <= step_num:
+			if self._cmdargs.max_steps <= step_num:
 				return
 
 	## Creates a result summary in CSV form
@@ -182,29 +187,29 @@ class Game:
 	# 	information about the run.
 	#
 	def make_csv_line(self):
-		output_csv = str(self.cmdargs.speedmode) + ','
-		output_csv += str(self.cmdargs.radar_resolution) +','
-		output_csv += str(self.cmdargs.radar_noise_level) +','
-		output_csv += str(self.cmdargs.robot_movement_momentum) +','
-		output_csv += str(self.cmdargs.robot_memory_sigma) +','
-		output_csv += str(self.cmdargs.robot_memory_decay) +','
-		output_csv += str(self.cmdargs.robot_memory_size) +','
-		output_csv += str(self.cmdargs.map_name) +','
-		output_csv += str(self.cmdargs.map_modifier_num) +','
-		output_csv += str(self.cmdargs.target_distribution_type) +','
-		output_csv += str(self.cmdargs.use_integer_robot_location) +','
+		output_csv = str(self._cmdargs.speedmode) + ','
+		output_csv += str(self._cmdargs.radar_resolution) +','
+		output_csv += str(self._cmdargs.radar_noise_level) +','
+		output_csv += str(self._cmdargs.robot_movement_momentum) +','
+		output_csv += str(self._cmdargs.robot_memory_sigma) +','
+		output_csv += str(self._cmdargs.robot_memory_decay) +','
+		output_csv += str(self._cmdargs.robot_memory_size) +','
+		output_csv += str(self._cmdargs.map_name) +','
+		output_csv += str(self._cmdargs.map_modifier_num) +','
+		output_csv += str(self._cmdargs.target_distribution_type) +','
+		output_csv += str(self._cmdargs.use_integer_robot_location) +','
 
-		normal_robot_stats = self.normal_robot.get_stats()
-		safe_robot_stats = self.safe_robot.get_stats()
+		normal_robot_stats = self._normal_robot.get_stats()
+		safe_robot_stats = self._safe_robot.get_stats()
 
 		output_csv += str(normal_robot_stats.num_glitches) + ","
 		output_csv += str(safe_robot_stats.num_glitches) + ","
 
-		output_csv += str(self.normal_robot.stepNum if self.check_robot_at_target(self.normal_robot) else "") + ","
-		output_csv += str(self.safe_robot.stepNum if self.check_robot_at_target(self.safe_robot) else "") + ","
+		output_csv += str(self._normal_robot.stepNum if self.check_robot_at_target(self._normal_robot) else "") + ","
+		output_csv += str(self._safe_robot.stepNum if self.check_robot_at_target(self._safe_robot) else "") + ","
 
-		output_csv += str(0 if self.check_robot_at_target(self.normal_robot) else 1) + ","
-		output_csv += str(0 if self.check_robot_at_target(self.safe_robot) else 1) 
+		output_csv += str(0 if self.check_robot_at_target(self._normal_robot) else 1) + ","
+		output_csv += str(0 if self.check_robot_at_target(self._safe_robot) else 1) 
 
 
 		return output_csv
@@ -227,8 +232,8 @@ class Game:
 	# finished.
 	#
 	def GameLoop(self):
-		time.sleep(self.cmdargs.start_delay)
-		if self.cmdargs.fast_computing:
+		time.sleep(self._cmdargs.start_delay)
+		if self._cmdargs.fast_computing:
 			self.fast_computing_game_loop()
 		else:
 			self.standard_game_loop()

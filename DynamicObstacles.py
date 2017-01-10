@@ -1,3 +1,8 @@
+#!/usr/bin/python3
+
+## @package DynamicObstacle
+#
+
 import numpy as np
 import pygame as PG
 import Vector

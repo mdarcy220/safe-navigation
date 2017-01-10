@@ -1,3 +1,8 @@
+#!/usr/bin/python3
+
+## @package Radar
+#
+
 import numpy as np
 import sys
 from Circle import *
@@ -32,7 +37,7 @@ class Radar:
 	#
 	def __init__(self, env, radius = 100, resolution = 4, degree_step = 1):
 
-		self.env         = env
+		self._env         = env
 		self.radius	 = radius
 		self.resolution  = resolution
 		self.set_degree_step(degree_step);
@@ -65,7 +70,7 @@ class Radar:
 	#
 	def ScanRadar(self, center, grid_data=None):
 		if grid_data is None:
-			grid_data = self.env.grid_data;
+			grid_data = self._env.grid_data;
 
 		radar_data = np.ones(int(360 / int(self._degree_step)))
 		currentStep = 0
@@ -144,7 +149,7 @@ class Radar:
 		beams = self._beams
 		radar_data = np.ones([nPoints], dtype=np.float64);
 		sub_dynobs_list = [];
-		for dynobs in self.env.dynamic_obstacles:
+		for dynobs in self._env.dynamic_obstacles:
 			index_range = self._get_dynobs_data_index_range(center, dynobs);
 			if index_range is None:
 				continue;
@@ -191,7 +196,7 @@ class Radar:
 		endpoint = center + np.array([np.sin(ang_in_radians), np.cos(ang_in_radians)], dtype=np.float64) * self.radius;
 		min_dist = -1;
 		closest_dynobs = None;
-		for dynobs in self.env.dynamic_obstacles:
+		for dynobs in self._env.dynamic_obstacles:
 			if dynobs.shape == 1:
 				inters = Geometry.circle_line_intersection(dynobs.coordinate, dynobs.radius, [center, endpoint]);
 			elif dynobs.shape == 2:

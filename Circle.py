@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+## @package Circle
+#
+
 from Shape import Shape
 import numpy as np
 import Geometry
@@ -16,14 +19,22 @@ class Circle(Shape):
 		self.radius = float(radius);
 
 
+	## Get the overlap of this circle with the given rectangle
+	#
 	def rectangle_overlap_angle_range(self, rect_pos, rect_dim):
 		return Geometry.circle_rectangle_overlap_angle_range(self.center, self.radius, rect_pos, rect_dim);
 
-
+	## Get the overlap o this circle with the given circle
+	#
 	def circle_overlap_angle_range(self, circle2_center, circle2_radius):
 		return Geometry.circle_circle_overlap_angle_range(self.center, self.radius, circle2_center, circle2_radius);
 
 
+	## Get the intersection point(s) of this circle with the given line
+	#
+	# @param line
+	# <br>	-- the line to get intersection points with
+	#
 	def line_intersection(self, line):
 		"""
 		Returns the points of intersection of this circle with the

@@ -1,3 +1,8 @@
+#!/usr/bin/python3
+
+## @package Environment
+#
+
 import numpy  as np
 import pygame as PG
 from  DynamicObstacles import DynamicObstacle

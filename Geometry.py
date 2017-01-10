@@ -9,8 +9,15 @@
 import numpy as np
 import Vector
 
+
+## Factor to multiply by to convert degrees to radians
+#
 DEGREE_TO_RADIAN_FACTOR = np.pi / 180.0;
+
+## Factor to multiply by to convert radians to degrees
+#
 RADIAN_TO_DEGREE_FACTOR = 180.0 / np.pi;
+
 
 ## Returns the points of intersection of the two given circles.
 # 
@@ -361,11 +368,11 @@ def rectangle_shadow_angle_range(center_point, rect_pos, rect_dim):
 # <br>	@see circle_circle_overlap_angle_range()
 #
 # 
-# @param circle1_center (numpy array)
+# @param circle_center (numpy array)
 # <br>	Format: `[x, y]`
 # <br>	-- the center of circle 1
 # 
-# @param circle1_radius (float)
+# @param circle_radius (float)
 # <br>	-- the radius of circle 1
 # 
 # 

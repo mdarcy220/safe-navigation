@@ -1,3 +1,8 @@
+#!/usr/bin/python
+
+## @package Main
+#
+
 import numpy as np
 import argparse
 import sys
