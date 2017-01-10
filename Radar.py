@@ -5,7 +5,6 @@
 
 import numpy as np
 import sys
-from Circle import *
 import Vector, Geometry
 import math
 
@@ -49,14 +48,6 @@ class Radar:
 	# <br>	Format `[x, y]`
 	# <br>	-- The center point of the scan
 	#
-	# @param grid_data (2D numpy array)
-	# <br>	Format: 2D grid with values: 0 for no obstacle, 1 for
-	# 	static obstacle, 3 for dynamic obstacle. This works like a
-	# 	bitmask where the lowest bit indicates the presence of an
-	# 	obstacle and the second-lowest bit indicates movement. The
-	# 	array should be arranged to `grid_data[x, y]` corresponds
-	# 	to the same `x` and `y` in the environment.
-	# <br>	-- Occupancy grid to indicate where obstacles are
 	#
 	# @returns (numpy array)
 	# <br>	Format: `[ang1_val, ang2_val, ..., angn_val]`
@@ -68,9 +59,8 @@ class Radar:
 	# 	size of the output is then equal to
 	# 	`floor(360/degree_step)`.
 	#
-	def ScanRadar(self, center, grid_data=None):
-		if grid_data is None:
-			grid_data = self._env.grid_data;
+	def scan(self, center):
+		grid_data = self._env.grid_data;
 
 		radar_data = np.ones(int(360 / int(self._degree_step)))
 		currentStep = 0

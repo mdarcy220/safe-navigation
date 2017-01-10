@@ -103,9 +103,9 @@ class NavigationAlgorithm:
 		# Scan the radar to get obstacle information. This
 		# radar_data variable could just as well be named
 		# obstacle_pdf, because that's what it represents.
-		radar_data = self._robot.radar.ScanRadar(self._robot.location)
+		radar_data = self._robot.radar.scan(self._robot.location)
 		if (0 < self._cmdargs.radar_noise_level):
-			radar_data += self.gaussian_noise(self._cmdargs.radar_noise_level, radar_data.size)
+			radar_data += self._gaussian_noise(self._cmdargs.radar_noise_level, radar_data.size)
 
 		# Add the obstacle distribution into the combined PDF
 		combined_pdf = self._combine_pdfs(combined_pdf, radar_data)
