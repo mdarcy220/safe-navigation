@@ -63,7 +63,9 @@ class Radar:
 	# 	size of the output is then equal to
 	# 	`floor(360/degree_step)`.
 	#
-	def ScanRadar(self, center, grid_data):
+	def ScanRadar(self, center, grid_data=None):
+		if grid_data is None:
+			grid_data = self.env.grid_data;
 
 		radar_data = np.ones(int(360 / int(self._degree_step)))
 		currentStep = 0
@@ -127,8 +129,6 @@ class Radar:
 	# <br>	Format `[x, y]`
 	# <br>	-- The center point of the scan
 	#
-	# @param grid_data UNUSED
-	#
 	# @returns (numpy array)
 	# <br>	Format: `[ang1_val, ang2_val, ..., angn_val]`
 	# <br>	-- An array of relative distances (in the range `[0, 1]`)
@@ -139,7 +139,7 @@ class Radar:
 	# 	size of the output is then equal to
 	# 	`floor(360/degree_step)`.
 	#
-	def scan_dynamic_obstacles(self, center, grid_data):
+	def scan_dynamic_obstacles(self, center):
 		nPoints = self._nPoints
 		beams = self._beams
 		radar_data = np.ones([nPoints], dtype=np.float64);

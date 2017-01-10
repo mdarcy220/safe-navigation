@@ -8,6 +8,15 @@ import matplotlib.pyplot as plt
 import time
 import scipy.signal
 
+## Represents a control input for a robot. The control consists of a speed
+# and a direction, which together define a single action for the robot to
+# take.
+#
+class RobotControlInput:
+	def __init__(self, speed=0, angle=0):
+		self.speed = speed;
+		self.angle = angle;
+
 
 ## Holds statistics about the robot's progress, used for reporting the
 # results of the simulation.
@@ -49,66 +58,31 @@ class Robot:
 	# <br>	-- A name for the robot, only used for the purpose of
 	# 	printing debugging messages.
 	#
-	def __init__(self, target, initial_position, radar, speed = 6, cmdargs=None, using_safe_mode = False, name=""):
+	def __init__(self, target, initial_position, radar, cmdargs, using_safe_mode = False, name=""):
 		self._cmdargs		= cmdargs
 		self.target		= target
 		self.location		= initial_position
-		self.speed		= speed
+		self.speed		= cmdargs.robot_speed
 		self.stats		= RobotStats()
 		self.name		= name
-		self.using_safe_mode	= using_safe_mode
-		self._drawcoll = 0
 
-		self.normal_speed		= speed
-		self.max_speed			= 10
-		if (self._cmdargs.speedmode == 5):
-			self.normal_speed = 10
-		if (not self.using_safe_mode):
-			self.normal_speed = 10
-		
-		self.speed = self.normal_speed
+		from NavigationAlgorithm import NavigationAlgorithm
+		self.nav_algo = NavigationAlgorithm(self, cmdargs, using_safe_mode);
 
-		self._speed_adjust_pdf = Distributions.Gaussian()
-		self._speed_adjust_pdf.degree_resolution = 2
-		
+		self.radar = radar
 
-		self.radar	= radar
-		self.PathList	= []
-		self._PDF	= Distributions.Gaussian()
-		if (self._cmdargs.target_distribution_type == 'rectangular'):
-			self._PDF = Distributions.Rectangular()
-		# Function that selects an angle based on a distribution
-		self._pdf_angle_selector = self.center_of_gravity_pdfselector
-		# Function that combines pdfs
-		self._combine_pdfs	= np.minimum
+		self.movement_momentum = cmdargs.robot_movement_momentum
 
-		# Memory of visited points
-		self.visited_points	= []
-		# Stores the memory and movement vectors (for drawing in debug mode)
-		self._drawing_pdf        = None
-		self._last_mbv		= np.array([0, 0])
+		# Variables to store drawing and debugging info
 		self._last_mmv		= np.array([0, 0])
+		self._drawcoll = 0
+		self.PathList	= []
 
-		# Movement and memory parameters
-		self.movement_momentum	= 0
-		self.memory_sigma 	= 25
-		self.memory_decay 	= 1
-		self.memory_size  	= 500
-		if (not (cmdargs is None)):
-			self.movement_momentum = cmdargs.robot_movement_momentum
-			self.memory_sigma = cmdargs.robot_memory_sigma
-			self.memory_decay = cmdargs.robot_memory_decay
-			self.memory_size  = cmdargs.robot_memory_size
-
-		# Number of decision steps taken in the navigation
-		self.stepNum			= 0
+		# Number of steps taken in the navigation
+		self.stepNum = 0
 
 		self._last_glitch_step	= -1
 
-		# Used to allow real-time plotting
-		if (not (cmdargs is None)) and (cmdargs.show_real_time_plot):
-			plt.ion()
-			plt.show()
 
 	def get_stats(self):
 		return self.stats
@@ -118,21 +92,6 @@ class Robot:
 		self.speed = speed
 
 
-	## Creates an array for adding noise to a distribution
-	#
-	# @param noise_level (float)
-	# <br>	-- The amplitude of the noise
-	#
-	# @param size (int)
-	# <br>	-- The size of the array to generate
-	#
-	# @returns (numpy array)
-	# <br>	-- An array of noise values, that can be added to a
-	# 	distribution to make it noisy.
-	def gaussian_noise(self, noise_level, size):
-		noise_pdf = np.random.normal(0, noise_level, size)
-		return noise_pdf
-
 
 	## Does one step of the robot's navigation.
 	#
@@ -141,88 +100,21 @@ class Robot:
 	# it takes one step in the planned direction.
 	#
 	def NextStep(self, grid_data):
-		# Variable naming note: some variables have _pdf on their
-		# name, which is meant to indicate that they represent some
-		# kind of probability distribution over the possible
-		# movement directions
-
 		self.stepNum += 1
 		self.stats.num_steps += 1
 
-		# The targetpoint PDF relates to the target/goal. It should
-		# be higher for angles that point towards the goal, and
-		# lower for angles that point away
-		targetpoint_pdf = self._PDF.get_distribution(self.angleToTarget())
-		if (self._cmdargs.target_distribution_type == 'dotproduct'):
-			targetpoint_ang = self.angleToTarget()
-			targetpoint_pdf = np.array([(self.speed*(np.cos(np.abs(targetpoint_ang - ang) * np.pi/180)+1)/2) for ang in np.arange(0, 360, self._PDF.degree_resolution)], dtype='float64')
-			targetpoint_pdf = (targetpoint_pdf / np.amax(targetpoint_pdf)) * 0.8 + 0.2
+		control_input = self.nav_algo.select_next_action();
 
-		# The combined PDF will store the combination of all the
-		# PDFs, but for now that's just the targetpoint PDF
-		self._combined_pdf = targetpoint_pdf
-
-		# Scan the radar to get obstacle information. This
-		# radar_data variable could just as well be named
-		# obstacle_pdf, because that's what it represents.
-		radar_data = self.radar.ScanRadar(self.location, grid_data)
-		if (0 < self._cmdargs.radar_noise_level):
-			radar_data += self.gaussian_noise(self._cmdargs.radar_noise_level, radar_data.size)
-
-		# Add the obstacle distribution into the combined PDF
-		self._combined_pdf = self._combine_pdfs(self._combined_pdf, radar_data)
-
-		# Process memory
-		if (not (self._cmdargs is None)) and (self._cmdargs.enable_memory):
-			# Get memory effect vector
-			mem_bias_vec = self.calc_memory_bias_vector()
-			self._last_mbv = mem_bias_vec
-
-			mem_bias_ang = Vector.getAngleBetweenPoints((0,0), mem_bias_vec)
-			mem_bias_mag = Vector.getDistanceBetweenPoints((0,0), mem_bias_vec)
-
-			# Create memory distribution based on dot product with memory vector
-			mem_bias_pdf = np.array([np.cos(np.abs(mem_bias_ang - ang) * np.pi/180) for ang in np.arange(0, 360, self._PDF.degree_resolution)])
-			mem_bias_pdf += 1 # Add 1 to get the cosine function above 0
-			if np.amax(mem_bias_pdf) > 0:
-				mem_bias_pdf = mem_bias_pdf / np.amax(mem_bias_pdf)
-
-			# Add the memory distribution to the combined PDF
-			self._combined_pdf = self._combine_pdfs(self._combined_pdf, mem_bias_pdf)
-
-			if (self.stepNum % 1) == 0:
-				self.visited_points.append(self.location)
-
-		# Possibly smooth the combined distribution, to avoid
-		# having sudden jumps in value
-		if (self._cmdargs.enable_pdf_smoothing_filter):
-			self._combined_pdf = self._putfilter(self._combined_pdf)
-
-		self._combined_pdf = np.maximum(self._combined_pdf, 0);
-		movement_ang = self._pdf_angle_selector(self._combined_pdf) * self._PDF.degree_resolution
-
-		# Adjust the speed if safe mode is enabled
-		if (self.using_safe_mode):
-			dynamic_pdf = self.radar.scan_dynamic_obstacles(self.location, grid_data)
-			#self._drawing_pdf = dynamic_pdf
-			self._adjust_speed_for_safety(dynamic_pdf, movement_ang)
-
-		if (self._cmdargs.show_real_time_plot):
-			plt.cla()
-			plt.plot(self._combined_pdf)
-			plt.plot(targetpoint_pdf)
-			plt.plot(mem_bias_pdf)
-			plt.plot(radar_data)
-			plt.axis([0,360,0,1.1])
-			plt.pause(0.00001)
+		speed = control_input.speed;
+		movement_ang = control_input.angle;
 
 		# Update the robot's motion based on the chosen direction
 		# (uses acceleration to prevent the robot from being able
 		# to instantaneously change direction, more realistic)
-		accel_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * self.speed
+		accel_vec = np.array([np.cos(movement_ang * np.pi / 180), np.sin(movement_ang * np.pi / 180)], dtype='float64') * speed
 		movement_vec = np.add(self._last_mmv * self.movement_momentum, accel_vec * (1.0 - self.movement_momentum))
 		if Vector.magnitudeOf(movement_vec) > self.speed:
-			movement_vec *= self.speed / Vector.magnitudeOf(movement_vec) # Set length equal to self.speed
+			movement_vec *= speed / Vector.magnitudeOf(movement_vec) # Set length equal to self.speed
 		self._last_mmv = movement_vec
 
 		# Update the robot's position and check for a collision
@@ -246,98 +138,6 @@ class Robot:
 		self.PathList.append(np.array(self.location, dtype=int))
 
 
-	## Smooths the given distribution
-	#
-	def _putfilter(self, inputsignal):
-		N = 10 #order of the butterworth  filter
-		Wn = 0.1 #Nyquest Sampling frequency
-		b, a = scipy.signal.butter(N, Wn, 'low') #create butterworth filter
-		outputsignal = scipy.signal.filtfilt(b, a, inputsignal)
-		return outputsignal
-
-
-	## Adjusts the speed of the robot based on the given dynamic obstacle 
-	# distribution and movement angle
-	def _adjust_speed_for_safety(self, dynamic_pdf, movement_ang):
-		closest_obs_degree	 = np.argmin (dynamic_pdf)
-		closest_obs_dist = np.min(dynamic_pdf)
-		angle_from_movement = np.absolute(Vector.angle_diff_degrees(movement_ang, closest_obs_degree))
-
-		angle_weight_pdf = self._speed_adjust_pdf.get_distribution(90)
-
-		self.speed = self.normal_speed
-		min_speed = 2
-		max_speed = 10
-		speed_range = 2*(max_speed - min_speed)
-
-		front_pdf = 1 - dynamic_pdf.take(np.arange(-90, 90, 1), mode='wrap')
-		front_pdf[front_pdf > 0.05] = 1
-		front_pdf *= angle_weight_pdf
-		front_obs_ratio = front_pdf.sum() / front_pdf.size
-
-		back_pdf = 1- dynamic_pdf.take(np.arange(90, 270, 1), mode='wrap')
-		back_pdf[back_pdf > 0.05] = 1
-		back_pdf *= angle_weight_pdf
-		back_obs_ratio = back_pdf.sum() / back_pdf.size
-
-		self.speed = self.normal_speed + (1.25*back_obs_ratio - front_obs_ratio) * (speed_range / 2.0)
-		self.speed = np.clip(self.speed, min_speed, max_speed)
-
-
-	def center_of_gravity_pdfselector(self, pdf):
-		width = 60
-		maxval_ind = np.argmax(pdf)
-		sum_num = 0
-		sum_den = 0
-		for n in np.arange(int(maxval_ind - width / 2), int(maxval_ind + width/2), 1):
-			sum_num += pdf[n % 360] * n
-			sum_den += pdf[n % 360]
-		center_of_mass = int(sum_num / (sum_den + 0.00001)) # Add a small number (0.00001) in case sum_den is 0
-		return center_of_mass % 360
-
-
-	def threshold_midpoint_pdfselector(self, pdf):
-		maxval_ind = np.argmax(pdf)
-		maxval = pdf[maxval_ind]
-		threshold = 0.8 * maxval
-		runStart = 0
-		runLen = 0
-		runPos = 0
-		bestLen = 0
-		bestStart = maxval_ind
-		while runPos < len(pdf):
-			if threshold <= pdf[runPos]:
-				runLen += 1
-			else:
-				if bestLen < runLen:
-					bestStart = runStart
-					bestLen = runLen
-				runStart = runPos
-				runLen = 0
-			runPos += 1
-		return bestStart+int(bestLen/2)
-
-
-	def max_value_pdfselector(self, pdf):
-		return np.argmax(pdf)
-
-
-	def calc_memory_bias_vector(self):
-		sigma = self.memory_sigma
-		decay = self.memory_decay
-		size = int(self.memory_size)
-		sigmaSquared = sigma * sigma
-		gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
-		vec = np.array([0, 0], dtype='float64')
-		i = size
-		for point in self.visited_points[-size:]:
-		#for point in [PG.mouse.get_pos()]:
-			effect_magnitude = gaussian_derivative(Vector.getDistanceBetweenPoints(point, self.location))
-			effect_vector = (decay**i) * effect_magnitude * np.subtract(point, self.location)
-			vec += effect_vector
-			i -= 1
-		return vec
-
 
 	## Draws this `Robot` to the given surface
 	#
@@ -348,7 +148,7 @@ class Robot:
 		#PG.draw.circle(screen, (0, 0, 255), np.array(self.location, dtype=int), 4, 0)
 		BlueColor  = (0, 0, 255)
 		GreenColor = (10, 100, 10)
-		if (self.using_safe_mode):
+		if (self.nav_algo.using_safe_mode):
 			PathColor = GreenColor
 		else:
 			PathColor = BlueColor
@@ -370,7 +170,7 @@ class Robot:
 			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), self.radar.radius, 2)
 
 			# Draw distribution values around robot
-			#self._draw_pdf(screen, self._drawing_pdf)
+			#self._draw_pdf(screen, self.nav_algo.debug_info["drawing_pdf"])
 
 
 	def _draw_pdf(self, screen, pdf):
