@@ -1,11 +1,8 @@
 #!/usr/bin/python3
 
-## @package NavigationAlgorithm
-#
-
 
 import numpy  as np
-import pygame as PG
+from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
 from ObstaclePredictor import DummyObstaclePredictor
 import Distributions
@@ -15,10 +12,13 @@ import time
 import scipy.signal
 
 
-## A navigation algorithm to be used with robots.
+## A navigation algorithm to be used with robots, based on fuzzy logic.
 #
+# @see
+# \ref NavigationAlgorithm.AbstractNavAlgo.AbstractNavigationAlgorithm
+# 	"AbstractNavigationAlgorithm"
 #
-class NavigationAlgorithm:
+class FuzzyNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	## Initializes the navigation algorithm.
 	# 
@@ -66,10 +66,8 @@ class NavigationAlgorithm:
 		# Function that combines pdfs
 		self._combine_pdfs	= np.minimum
 
-		# Memory of visited points
+		# Memory parameters
 		self.visited_points	= []
-
-		# Movement and memory parameters
 		self.memory_sigma = cmdargs.robot_memory_sigma
 		self.memory_decay = cmdargs.robot_memory_decay
 		self.memory_size  = cmdargs.robot_memory_size
@@ -86,7 +84,7 @@ class NavigationAlgorithm:
 	# well as internally stored information about previous locations,
 	# to compute the next action the robot should take.
 	#
-	# @returns (RobotControlInput object)
+	# @returns (`Robot.RobotControlInput` object)
 	# <br>	-- A control input representing the next action the robot
 	# 	should take.
 	#
@@ -146,7 +144,7 @@ class NavigationAlgorithm:
 				combined_pdf,
 				targetpoint_pdf,
 				mem_bias_pdf,
-				radar_data
+				normalized_radar_data
 			]);
 
 

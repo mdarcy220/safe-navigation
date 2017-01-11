@@ -70,8 +70,8 @@ class Robot:
 		self.stats		= RobotStats()
 		self.name		= name
 
-		from NavigationAlgorithm import NavigationAlgorithm
-		self._nav_algo = NavigationAlgorithm(self, cmdargs, using_safe_mode);
+		from NavigationAlgorithm import FuzzyNavigationAlgorithm
+		self._nav_algo = FuzzyNavigationAlgorithm(self, cmdargs, using_safe_mode);
 
 		self.radar = radar
 
