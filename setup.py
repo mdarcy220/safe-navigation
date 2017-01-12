@@ -16,7 +16,9 @@ setup(
 		"Geometry.py",
 		"Robot.py",
 		"Target.py",
-		"Vector.py"
+		"Vector.py",
+		"NavigationAlgorithm/*.py",
+		"ObstaclePredictor.py"
 	])
 )
 

@@ -1,5 +1,5 @@
 
-SOURCES = Circle.py Distributions.py DynamicObstacles.py Environment.py Game.py Geometry.py Main.py Radar.py Robot.py Shape.py Target.py Vector.py
+SOURCES = Circle.py Distributions.py DynamicObstacles.py Environment.py Game.py Geometry.py Main.py Radar.py Robot.py Shape.py Target.py Vector.py OpstaclePredictor.py NavigationAlgorithm/*.py
 DOXYGEN_CONFIG_FILE = doxygen.conf
 
 default: cython
@@ -14,6 +14,6 @@ doxygen: $(SOURCES) $(DOXYGEN_CONFIG_FILE)
 
 .PHONY: clean
 clean:
-	rm -f *.c *.so
+	rm -f *.c *.so NavigationAlgorithm/*.c NavigationAlgorithm/*.so
 	rm -rf build __pycache__
 

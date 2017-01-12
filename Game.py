@@ -48,8 +48,9 @@ class Game:
 
 		# Init robots
 		radar = Radar(self._env, resolution = cmdargs.radar_resolution);
-		self._normal_robot  = Robot (self._target, (50, 550), radar, cmdargs, using_safe_mode =False, name="NormalRobot")
-		self._safe_robot    = Robot (self._target, (50, 550), radar, cmdargs, using_safe_mode = True, name="SafeRobot")
+		initial_position = np.array([50, 550]);
+		self._normal_robot  = Robot (self._target, initial_position, radar, cmdargs, using_safe_mode =False, name="NormalRobot")
+		self._safe_robot    = Robot (self._target, initial_position, radar, cmdargs, using_safe_mode = True, name="SafeRobot")
 		self._robot_list    = [self._normal_robot, self._safe_robot]
 
 		# Set window title

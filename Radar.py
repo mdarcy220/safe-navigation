@@ -126,6 +126,19 @@ class Radar:
 			currentStep += 1
 
 
+	## Gets the degree step
+	#
+	def get_degree_step(self):
+		return self._degree_step;
+
+
+	## Gets the size of the radar data returned from the scanning
+	# methods.
+	#
+	def get_data_size(self):
+		return self._nPoints;
+
+
 	def _get_dynobs_data_index_range(self, scan_center, dynobs):
 		angle_range = [0, 360];
 		if dynobs.shape == 1:

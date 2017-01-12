@@ -6,4 +6,4 @@
 # A package containing safe navigation algorithms
 
 from .FuzzyNavAlgo import FuzzyNavigationAlgorithm
-
+from .SamplingNavAlgo import SamplingNavigationAlgorithm
