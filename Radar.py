@@ -222,7 +222,7 @@ class Radar:
 	#
 	def get_dynobs_at_angle(self, center, angle):
 		ang_in_radians = angle * np.pi / 180.0;
-		endpoint = center + np.array([np.sin(ang_in_radians), np.cos(ang_in_radians)], dtype=np.float64) * self.radius;
+		endpoint = center + Vector.unitVectorFromAngle(ang_in_radians) * self.radius;
 		min_dist = -1;
 		closest_dynobs = None;
 		for dynobs in self._env.dynamic_obstacles:
