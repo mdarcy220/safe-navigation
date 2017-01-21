@@ -69,14 +69,13 @@ class Robot:
 		self.speed		= cmdargs.robot_speed
 		self.stats		= RobotStats()
 		self.name		= name
+		self.radar = radar
 
-		from NavigationAlgorithm import FuzzyNavigationAlgorithm, SamplingNavigationAlgorithm
+		from NavigationAlgorithm import FuzzyNavigationAlgorithm, SamplingNavigationAlgorithm, MultiLevelNavigationAlgorithm
 		if using_safe_mode:
-			self._nav_algo = SamplingNavigationAlgorithm(self, cmdargs)
+			self._nav_algo = MultiLevelNavigationAlgorithm(self, cmdargs, using_safe_mode)
 		else:
 			self._nav_algo = FuzzyNavigationAlgorithm(self, cmdargs, using_safe_mode);
-
-		self.radar = radar
 
 		self.movement_momentum = cmdargs.robot_movement_momentum
 
