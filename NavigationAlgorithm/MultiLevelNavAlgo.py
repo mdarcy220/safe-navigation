@@ -5,6 +5,7 @@
 # Classes for the multi-level navigation algorithm.
 #
 
+import sys;
 import numpy as np;
 import Vector;
 from queue import Queue, PriorityQueue;
@@ -201,7 +202,11 @@ class MultiLevelNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._robot = robot;
 		self._cmdargs = cmdargs;
 
-		self.debug_info = {};
+		self.debug_info = {
+			'node_list': [],
+			'drawing_pdf': np.zeros(360),
+			'multilevel.next_node': Node(np.array([0,0]))
+		};
 
 		self._localplanner = SamplingNavigationAlgorithm(robot, cmdargs);
 
@@ -216,10 +221,29 @@ class MultiLevelNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._goal_node = Node(robot.target.position);
 		self._node_list.append(self._goal_node);
 
+		self.debug_info['node_list'] = self._node_list;
+
 		self._radar_data = np.zeros(robot.radar.get_data_size());
 		self._cur_path = [];
 		self._cur_path_index = 0;
 		self._steps_since_last_waypoint = 0;
+
+		if False:
+			for i in range(500):
+				tmp_pos = np.array([np.random.uniform(low=0.0, high=800.0), np.random.uniform(low=0.0, high=600.0)]);
+				tmp_node = Node(tmp_pos);
+				for node in self._node_list:
+					tmp_dist = Vector.getDistanceBetweenPoints(node.pos, tmp_node.pos);
+					if tmp_dist < 25:
+						tmp_node = None;
+						break;
+				if tmp_node is None:
+					continue;
+				for node in self._node_list:
+					tmp_dist = Vector.getDistanceBetweenPoints(node.pos, tmp_node.pos);
+					if tmp_dist < self._CHECK_RADIUS:
+						Node.connect_nodes_undirected(tmp_node, node, weight=tmp_dist);
+				self._node_list.append(tmp_node);
 
 	## Selects the next action.
 	#
@@ -227,12 +251,13 @@ class MultiLevelNavigationAlgorithm(AbstractNavigationAlgorithm):
 	#
 	def select_next_action(self):
 		self._radar_data = self._robot.radar.scan(self._robot.location);
-
+		self.debug_info['drawing_pdf'] = self._radar_data;
 		if self._cur_path_index < len(self._cur_path):
 			next_waypoint = self._cur_path[self._cur_path_index].to_node;
 			if self._is_at_node(next_waypoint):
 				self._cur_path_index += 1;
-				self._steps_since_last_waypoint = 0
+				self._steps_since_last_waypoint = 0;
+				self._recheck_nearby_nodes();
 			elif 15 < self._steps_since_last_waypoint:
 				last_waypoint = self._cur_path[self._cur_path_index].from_node;
 				for edge in last_waypoint.edges:
@@ -248,6 +273,32 @@ class MultiLevelNavigationAlgorithm(AbstractNavigationAlgorithm):
 		return self._select_next_action_local();
 
 
+	def _recheck_nearby_nodes(self):
+		cur_pos = self._robot.location;
+		cur_node = self._get_closest_node_to(cur_pos)
+		check_points = [];
+
+		# Step 1.a: include pre-existing nearby points
+		check_radius_squared = self._CHECK_RADIUS * self._CHECK_RADIUS;
+		for node in self._node_list:
+			vec = node.pos - cur_node.pos;
+			if np.dot(vec, vec) < check_radius_squared:
+				cur_edge = None;
+				for edge in cur_node.edges:
+					if edge.to_node == node:
+						if self._has_local_path_to(node.pos):
+							edge.weight = Vector.getDistanceBetweenPoints(node.pos, cur_node.pos);
+						else:
+							edge.weight = float("inf");
+				for edge in node.edges:
+					if edge.to_node == cur_node:
+						if self._has_local_path_to(node.pos):
+							edge.weight = Vector.getDistanceBetweenPoints(node.pos, cur_node.pos);
+						else:
+							edge.weight = float("inf");
+			
+
+
 	def _update_global_plan(self):
 		cur_pos = self._robot.location;
 		cur_node = self._get_closest_node_to(cur_pos)
@@ -260,27 +311,40 @@ class MultiLevelNavigationAlgorithm(AbstractNavigationAlgorithm):
 		tbc_points = self._get_nodes_to_be_checked(cur_node);
 
 		for node in tbc_points:
-			weight = float("inf");
-			if self._has_local_path_to(node.pos):
-				weight = Vector.getDistanceBetweenPoints(node.pos, cur_node.pos)
-			# Update edge
-			Node.connect_nodes_undirected(cur_node, node, weight);
+			has_edge = False;
+			for edge in cur_node.edges:
+				if edge.to_node == node:
+					has_edge = True;
+					break;
+			if not has_edge:
+				weight = float("inf");
+				if self._has_local_path_to(node.pos):
+					weight = Vector.getDistanceBetweenPoints(node.pos, cur_node.pos)
+				# Update edge
+				Node.connect_nodes_undirected(cur_node, node, weight);
 
 		cur_node.visited = True;
 
 		next_node, path = self._find_next_node_to_explore(cur_node, heuristic=self._euclidean_heuristic);
 		if next_node is None:
-			for i in range(int(len(self._node_list)/4)):
-				self._node_list[np.random.randint(len(self._node_list))].visited = False;
-			self._cur_path_index -= 1;
-			self._graph_branch_factor += 1;
+			# Only take emergency measures if not colliding with obstacle
+			if not np.sum(self._radar_data) < 1e-8:
+				for i in range(int(len(self._node_list)/4)):
+					self._node_list[np.random.randint(len(self._node_list))].visited = False;
+				self._graph_branch_factor += 1;
+			self._cur_path_index = max(self._cur_path_index - 1, 0);
 			return;
+		self.debug_info['multilevel.next_node'] = next_node;
 		self._cur_path = path;
 		self._cur_path_index = 1;
 
 
 	def _select_next_action_local(self):
-		next_waypoint = self._cur_path[self._cur_path_index].to_node;
+		next_waypoint = self._node_list[np.random.randint(len(self._node_list))];
+		if self._cur_path_index < len(self._cur_path):
+			next_waypoint = self._cur_path[self._cur_path_index].to_node;
+		else:
+			print("Next waypoint out of bounds in select_next_action_local", file=sys.stderr);
 		angle = Vector.getAngleBetweenPoints(self._robot.location, next_waypoint.pos);
 		speed = Vector.getDistanceBetweenPoints(self._robot.location, next_waypoint.pos);
 		if self._normal_speed < speed:
@@ -393,19 +457,27 @@ class MultiLevelNavigationAlgorithm(AbstractNavigationAlgorithm):
 				check_points.append(node);
 
 		# Step 1.b: Generate new points
+		sep_dist = (np.mean(self._radar_data) + 2*np.min(self._radar_data))/3.5
+		sampleweights = np.power(self._radar_data, np.full(360, 2.2))
+		sampleweights_sum = np.sum(sampleweights);
+		if sampleweights_sum < 1e-8:
+			sampleweights = np.ones(sampleweights.shape[0]);
+			sampleweights_sum = np.sum(sampleweights);
+		sampleweights = sampleweights / sampleweights_sum;
 		if len(check_points) < self._graph_branch_factor:
-			max_dist = self._CHECK_RADIUS / 1.01;
-			min_dist = self._CHECK_RADIUS / 3.0;
-			for i in range(0, 40):
+			min_dist = sep_dist#self._CHECK_RADIUS / 2.6;
+			for i in range(0, int((self._graph_branch_factor - len(check_points)))):
 				# Generate a new point in the robot's visual range
-				angle = float(i)*180/20.0
-				dist = np.random.uniform(min(max_dist, self._radar_data[int(np.round(angle/self._robot.radar.get_degree_step()))]) - min_dist) + min_dist;
-				vec = Vector.unitVectorFromAngle(angle) * dist;
+				angle = np.random.choice(360, p=sampleweights)#float(i)*180/10.0 % 360
+				max_dist = min(self._CHECK_RADIUS / 1.01, self._radar_data[int(np.round(angle/self._robot.radar.get_degree_step()))]);
+				dist = self._radar_data[int(np.round(angle/self._robot.radar.get_degree_step()))]*(np.random.uniform(low=0.6, high=0.89));
+				vec = Vector.unitVectorFromAngle(angle*np.pi/180) * dist;
 				node = Node(cur_node.pos + vec);
+
 				should_append = True
 				for node2 in self._node_list:
 					vec = node2.pos - node.pos;
-					if np.dot(vec, vec) < 25*25:
+					if np.dot(vec, vec) < sep_dist*sep_dist:
 						should_append = False
 						break;
 				if should_append:
@@ -418,4 +490,4 @@ class MultiLevelNavigationAlgorithm(AbstractNavigationAlgorithm):
 		ang = Vector.getAngleBetweenPoints(self._robot.location, position);
 		index = int(np.round(ang)) % 360;
 
-		return Vector.getDistanceBetweenPoints(self._robot.location, position) < self._radar_data[index]-7;
+		return Vector.getDistanceBetweenPoints(self._robot.location, position) < self._radar_data[index]-5;

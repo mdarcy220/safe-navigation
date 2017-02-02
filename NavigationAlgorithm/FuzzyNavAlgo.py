@@ -38,7 +38,8 @@ class FuzzyNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self.using_safe_mode = using_safe_mode
 
 		self.debug_info = {
-			"last_mbv": np.array([0, 0])
+			"last_mbv": np.array([0, 0]),
+			'drawing_pdf': np.zeros(360)
 		};
 
 		self.normal_speed = cmdargs.robot_speed
