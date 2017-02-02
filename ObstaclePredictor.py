@@ -207,7 +207,7 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
         self.transitionProb = 0.9
         self.max_vel = 30 #Maximum velocity of obstacle
         self.max_prob = 0.9 #Maximum possible pobability
-        self.neighbour_range = 3
+        self.neighbour_range = 20
         self.future_obs_points = {}
 
         self.last_clustered_obs = None
@@ -411,7 +411,7 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
     def _assignProb(self, obs_point):
         neigh_points = self._generate_neighbour_points(obs_point)
         for point in neigh_points:
-            prob = 1 - Vector.getDistanceBetweenPoints(point, obs_point) * 0.1
+            prob = 1 - Vector.getDistanceBetweenPoints(point, obs_point) * 0.05
             if prob > self.obs_predictions[point]:
                 self.obs_predictions[point] = prob
 

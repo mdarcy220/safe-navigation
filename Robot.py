@@ -73,9 +73,9 @@ class Robot:
 
 		from NavigationAlgorithm import FuzzyNavigationAlgorithm, SamplingNavigationAlgorithm, MultiLevelNavigationAlgorithm
 		if using_safe_mode:
-			self._nav_algo = MultiLevelNavigationAlgorithm(self, cmdargs, using_safe_mode)
+			self._nav_algo = FuzzyNavigationAlgorithm(self, cmdargs, using_safe_mode, with_predictor=True);
 		else:
-			self._nav_algo = FuzzyNavigationAlgorithm(self, cmdargs, using_safe_mode);
+			self._nav_algo = FuzzyNavigationAlgorithm(self, cmdargs, using_safe_mode, with_predictor=False);
 
 		self.movement_momentum = cmdargs.robot_movement_momentum
 

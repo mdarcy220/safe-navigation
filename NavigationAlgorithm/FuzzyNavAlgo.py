@@ -32,10 +32,11 @@ class FuzzyNavigationAlgorithm(AbstractNavigationAlgorithm):
 	# <br>	-- Whether the robot should operate in "safe mode", which
 	# 	slightly changes the way the navigation algorithm works.
 	#
-	def __init__(self, robot, cmdargs, using_safe_mode=False):
+	def __init__(self, robot, cmdargs, using_safe_mode=False, with_predictor=False):
 		self._robot = robot;
 		self._cmdargs = cmdargs;
 		self.using_safe_mode = using_safe_mode
+		self.with_predictor = with_predictor;
 
 		self.debug_info = {
 			"last_mbv": np.array([0, 0]),
@@ -128,6 +129,9 @@ class FuzzyNavigationAlgorithm(AbstractNavigationAlgorithm):
 			# Add the memory distribution to the combined PDF
 			combined_pdf = self._combine_pdfs(combined_pdf, mem_bias_pdf)
 
+		if self.with_predictor:
+			obstacle_predictor_pdf = self._create_obstacle_predictor_pdf();
+			combined_pdf = self._combine_pdfs(combined_pdf, obstacle_predictor_pdf);
 
 		# Possibly smooth the combined distribution, to avoid
 		# having sudden jumps in value
@@ -145,11 +149,20 @@ class FuzzyNavigationAlgorithm(AbstractNavigationAlgorithm):
 				combined_pdf,
 				targetpoint_pdf,
 				mem_bias_pdf,
-				normalized_radar_data
+				normalized_radar_data,
+				obstacle_predictor_pdf
 			]);
 
 
 		return RobotControlInput(speed, direction);
+
+
+	def _create_obstacle_predictor_pdf(self):
+		pdf = np.full(360, 1.0, dtype=np.float64);
+		for angle in np.arange(0, 360, self._PDF.degree_resolution):
+			point = self._robot.location + Vector.unitVectorFromAngle(angle*np.pi/180)*self._robot.speed*2.0;
+			pdf[int(angle/self._PDF.degree_resolution)] = 1.0 - self._obstacle_predictor.get_prediction(point, 1);
+		return pdf;
 
 
 	def _create_memory_bias_pdf(self):
