@@ -9,7 +9,6 @@ from Counter import Counter
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster
 from collections import defaultdict
-from Geometry import distance_btw_points
 from collections import OrderedDict
 
 ## Abstract base class for obstacle predictors.
@@ -340,8 +339,8 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
                     last_low, last_high = self._get_end_points(last_points)
                     last_mid = (float(last_low[0] + last_high[0]) / 2, float(last_low[1] + last_high[1]) / 2)
 
-                    d1 = distance_btw_points(last_low, low)
-                    d2 = distance_btw_points(last_high, high)
+                    d1 = Vector.getDistanceBetweenPoints(last_low, low)
+                    d2 = Vector.getDistanceBetweenPoints(last_high, high)
                     d = (d1 + d2 / 2)
                     distances[id][last_id] = d
 
