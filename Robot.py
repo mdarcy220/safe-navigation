@@ -169,6 +169,21 @@ class Robot:
 
 			# Draw circle representing radar range
 			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), self.radar.radius, 2)
+#			if "node_list" in self._nav_algo.debug_info.keys():
+#				for node in self._nav_algo.debug_info["node_list"]:
+#					for edge in node.edges:
+#						if edge.weight < 20000.0:
+#							PG.draw.line(screen, (255, 255, 255), edge.from_node.pos, edge.to_node.pos, 1);
+#						else:
+#							pass
+#				for node in self._nav_algo.debug_info["node_list"]:
+#					color = (255, 128, 128);
+#					if not node.visited:
+#						color = (64, 255, 64)
+#					PG.draw.circle(screen, color, np.array(node.pos, dtype=int), 5);
+#			if 'multilevel.next_node' in self._nav_algo.debug_info.keys():
+#				next_node = self._nav_algo.debug_info['multilevel.next_node'];
+#				PG.draw.circle(screen, (255, 255, 64), np.array(next_node.pos, dtype=int), 5);
 
 			# Draw distribution values around robot
 			#self._draw_pdf(screen, self._nav_algo.debug_info["drawing_pdf"])
@@ -177,12 +192,13 @@ class Robot:
 	def _draw_pdf(self, screen, pdf):
 		if pdf is None:
 			return;
-		scale = self.radar.radius
+		deg_res = 360 / float(len(pdf))
+		scale = 1.0#self.radar.radius
 		last_point = [self.location[0] + (pdf[0] * scale), self.location[1]]
 		for index in np.arange(0, len(pdf), 1):
-			ang = index * self._PDF.degree_resolution * np.pi / 180
+			ang = index * deg_res * np.pi / 180
 			cur_point = self.location + scale*pdf[index]*np.array([np.cos(ang), np.sin(ang)], dtype='float64')
-			PG.draw.line(screen, (0,200,200), last_point, cur_point, 1)
+			PG.draw.line(screen, (200, 0, 200), last_point, cur_point, 1)
 			last_point = cur_point
 
 
