@@ -5,7 +5,7 @@ import numpy  as np
 import Vector
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
-from ObstaclePredictor import DummyObstaclePredictor
+from ObstaclePredictor import DummyObstaclePredictor, HMMObstaclePredictor
 from queue import Queue, PriorityQueue
 
 
@@ -35,6 +35,8 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._mem_bias_vec = np.array([0.7, 0.7])
 		self.using_safe_mode = True
 
+		#Obstecle Predictor
+		self._obstacle_predictor = HMMObstaclePredictor(360);
 
 	## Next action selector method.
 	#
@@ -43,8 +45,16 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 	# 	"AbstractNavigationAlgorithm.select_next_action()"
 	#
 	def select_next_action(self):
+		dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
 		self._stepNum += 1;
 		self._radar_data = self._robot.radar.scan(self._robot.location);
+
+		self._obstacle_predictor.add_observation(self._robot.location,
+				self._radar_data,
+				dynamic_radar_data,
+				self._obstacle_predictor_dynobs_getter_func
+		);
+
 		# Init queue
 		traj_queue = Queue();
 		traj_queue.put([]);
@@ -204,7 +214,9 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		return 1.0 - (sum_radar/(radar_range*width))
 
 
-
 	def _is_trajectory_feasible(self, traj):
 		return self._safety_heuristic(traj) < self._safety_threshold;
+
+	def _obstacle_predictor_dynobs_getter_func(self, angle):
+		return self._robot.radar.get_dynobs_at_angle(self._robot.location, angle)
 
