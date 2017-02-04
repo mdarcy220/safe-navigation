@@ -281,7 +281,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		if (radar_data[index1]-5) <= endpoint_dist or (radar_data[index2]-5) <= endpoint_dist:
 			return 1.0;
 
-		return self._obstacle_predictor.get_prediction(endpoint, 1);
+		return self._obstacle_predictor.get_prediction(endpoint, len(traj));
 
 
 	def _is_trajectory_feasible(self, traj):
