@@ -129,6 +129,7 @@ class FuzzyNavigationAlgorithm(AbstractNavigationAlgorithm):
 			# Add the memory distribution to the combined PDF
 			combined_pdf = self._combine_pdfs(combined_pdf, mem_bias_pdf)
 
+		obstacle_predictor_pdf = np.zeros(self._robot.radar.get_data_size());
 		if self.with_predictor:
 			obstacle_predictor_pdf = self._create_obstacle_predictor_pdf();
 			combined_pdf = self._combine_pdfs(combined_pdf, obstacle_predictor_pdf);
