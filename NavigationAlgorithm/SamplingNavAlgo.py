@@ -7,7 +7,7 @@ from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
 from ObstaclePredictor import DummyObstaclePredictor, HMMObstaclePredictor
 from queue import Queue, PriorityQueue
-
+import Distributions
 
 
 ## A navigation algorithm to be used with robots, based on trajectory 
@@ -22,10 +22,17 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._robot = robot;
 		self._cmdargs = cmdargs;
 		self._normal_speed = cmdargs.robot_speed;
-		self._max_sampling_iters = 400
+		self._max_sampling_iters = 40
 		self._radar_data = None
+		self._dynamic_radar_data = None
 		self._safety_threshold = 0.25;
 		self._stepNum = 0;
+
+		self.debug_info = {
+			'node_list': [],
+			'drawing_pdf': np.zeros(360),
+			"cur_dist": np.zeros(360),
+		};
 
 		# Memory parameters
 		self.visited_points	= []
@@ -35,7 +42,9 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._mem_bias_vec = np.array([0.7, 0.7])
 		self.using_safe_mode = True
 
-		#Obstecle Predictor
+		self._gaussian = Distributions.Gaussian()
+
+		# Obstecle Predictor
 		self._obstacle_predictor = HMMObstaclePredictor(360);
 
 	## Next action selector method.
@@ -45,15 +54,17 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 	# 	"AbstractNavigationAlgorithm.select_next_action()"
 	#
 	def select_next_action(self):
-		dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
+		self._dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
 		self._stepNum += 1;
 		self._radar_data = self._robot.radar.scan(self._robot.location);
 
 		self._obstacle_predictor.add_observation(self._robot.location,
 				self._radar_data,
-				dynamic_radar_data,
+				self._dynamic_radar_data,
 				self._obstacle_predictor_dynobs_getter_func
 		);
+
+		self.debug_info["cur_dist"] = self._create_distribution_at(self._robot.location, 0);
 
 		# Init queue
 		traj_queue = Queue();
@@ -106,6 +117,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		elif traj2_empty:
 			return -1;
 
+
 		safety1 = self._safety_heuristic(traj1);
 		safety2 = self._safety_heuristic(traj2);
 
@@ -118,7 +130,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		heuristic1 = self._eval_distance_heuristic(traj1);
 		heuristic2 = self._eval_distance_heuristic(traj2);
-		return int(np.sign(heuristic1*(safety1+0.01) - heuristic2*(safety2+0.01)));
+		return int(np.sign(heuristic1+0*(safety1+0.01) - heuristic2+0*(safety2+0.01)));
 
 
 	def _sample_child_trajectories(self, seed_traj):
@@ -131,11 +143,6 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		seed_endpoint = seed_traj[-1] if 0 < len(seed_traj) else self._robot.location;
 
-		# Append a "stopping" trajectory
-		new_traj = list(seed_traj);
-		new_traj.append(seed_endpoint);
-		children.append(new_traj)
-
 		# Append a "straight to the goal" trajectory
 		angle_to_goal = self._robot.angleToTarget() * np.pi / 180.0
 		towards_goal = Vector.unitVectorFromAngle(angle_to_goal) * self._normal_speed;
@@ -145,8 +152,16 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		children.append(new_traj);
 
 		# Append some random trajectories
-		for i in range(8):
-			vec = Vector.unitVectorFromAngle(np.random.normal(2*np.pi)) * self._normal_speed;
+		pdf = self._create_distribution_at(seed_endpoint, 0);
+		pdf_sum = np.sum(pdf);
+		if pdf_sum != 0:
+			pdf = pdf / np.sum(pdf)
+		else:
+			pdf = np.zeros(360)
+			pdf[0] = 1
+		for i in range(12):
+			angle = np.random.choice(360, p=pdf)
+			vec = Vector.unit_vec_from_radians(angle*np.pi/180) * self._normal_speed;
 			waypoint = np.add(seed_endpoint, vec);
 			new_traj = list(seed_traj);
 			new_traj.append(waypoint);
@@ -155,16 +170,81 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		return children;
 
 
+	def _create_distribution_at(self, center, time_offset):
+		targetpoint_pdf = self._gaussian.get_distribution(Vector.degrees_between(center, self._robot.target.position))
+
+		# The combined PDF will store the combination of all the
+		# PDFs, but for now that's just the targetpoint PDF
+		combined_pdf = targetpoint_pdf
+
+		raw_radar_data = self._radar_data_at(center, time_offset)
+
+		normalized_radar_data = raw_radar_data / self._robot.radar.radius;
+
+		# Add the obstacle distribution into the combined PDF
+		combined_pdf = np.minimum(combined_pdf, normalized_radar_data)
+
+		# Process memory
+		if self._cmdargs.enable_memory:
+			mem_bias_pdf = self._create_memory_bias_pdf_at(center, time_offset);
+
+			# Add the memory distribution to the combined PDF
+			combined_pdf = np.minimum(combined_pdf, mem_bias_pdf)
+
+		combined_pdf = np.maximum(combined_pdf, 0);
+
+		return combined_pdf;
+
+
+	def _radar_data_at(self, center, time_offset):
+		return self._radar_data;
+
+
+	def _create_memory_bias_pdf_at(self, center, time_offset):
+		# Get memory effect vector
+		mem_bias_vec = self._calc_memory_bias_vector()
+		self.debug_info["last_mbv"] = mem_bias_vec
+
+		mem_bias_ang = Vector.degrees_between([0, 0], mem_bias_vec)
+		mem_bias_mag = Vector.distance_between([0, 0], mem_bias_vec)
+
+		# Create memory distribution based on dot product with memory vector
+		mem_bias_pdf = np.array([np.cos(np.abs(mem_bias_ang - ang) * np.pi/180) for ang in np.arange(0, 360, self._gaussian.degree_resolution)])
+		mem_bias_pdf += 1 # Add 1 to get the cosine function above 0
+		if np.amax(mem_bias_pdf) > 0:
+			mem_bias_pdf = mem_bias_pdf / np.amax(mem_bias_pdf)
+
+		if (self._stepNum % 1) == 0:
+			self.visited_points.append(self._robot.location)
+
+		return mem_bias_pdf;
+
+
+	def _calc_memory_bias_vector_at(self, center, time_offset):
+		sigma = self.memory_sigma
+		decay = self.memory_decay
+		size = int(self.memory_size)
+		sigmaSquared = sigma * sigma
+		gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
+		vec = np.array([0, 0], dtype='float64')
+		i = size
+		for point in self.visited_points[-size:]:
+			effect_magnitude = gaussian_derivative(Vector.distance_between(point, center))
+			effect_vector = (decay**i) * effect_magnitude * np.subtract(point, center)
+			vec += effect_vector
+			i -= 1
+		return vec
+
+
 	def _eval_distance_heuristic(self, traj):
+		if len(traj) > 2:
+			return 5.0
 		endpoint = traj[-1];
 		targetpoint = self._robot.target.position;
-		target_vec = targetpoint - self._robot.location;
-		target_vec = target_vec / Vector.magnitudeOf(target_vec);
-		my_vec = (endpoint - self._robot.location);
-		mem_vec = self._mem_bias_vec;
-		base_heuristic = (-min(np.dot(my_vec, target_vec), np.dot(my_vec, mem_vec)))
-		len_mod_factor = len(traj) if 0 <= np.sign(base_heuristic) else 1.0/len(traj);
-		return base_heuristic*len_mod_factor;
+		angle = Vector.degrees_between(self._robot.location, endpoint);
+		if Vector.distance_between(endpoint, self._robot.location) < 0.1:
+			return 10.0;
+		return 1.0-self.debug_info["cur_dist"][int(angle)]
 
 
 	def _calc_memory_bias_vector(self):
@@ -201,17 +281,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		if (radar_data[index1]-5) <= endpoint_dist or (radar_data[index2]-5) <= endpoint_dist:
 			return 1.0;
 
-		index3 = (index1 + 1) % data_size;
-		index4 = (index2 - 1) % data_size;
-
-		f1 = radar_data[index1] - endpoint_dist;
-		f2 = radar_data[index2] - endpoint_dist;
-		f3 = radar_range - endpoint_dist;
-
-		width=60
-		sum_radar = np.sum(radar_data.take(range(int(index1-width/2), int(index1+width/2)), mode='wrap'))
-
-		return 1.0 - (sum_radar/(radar_range*width))
+		return self._obstacle_predictor.get_prediction(endpoint, 1);
 
 
 	def _is_trajectory_feasible(self, traj):
