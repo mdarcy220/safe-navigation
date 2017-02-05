@@ -81,7 +81,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 				best_traj = traj
 			if self._is_trajectory_feasible(best_traj) and not self._is_trajectory_feasible(traj) and i > 1:
 				continue
-			child_trajs = self._sample_child_trajectories([]);
+			child_trajs = self._sample_child_trajectories(traj);
 			for child_traj in child_trajs:
 				traj_queue.put_nowait(child_traj);
 
@@ -152,14 +152,14 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		children.append(new_traj);
 
 		# Append some random trajectories
-		pdf = self._create_distribution_at(seed_endpoint, 0);
+		pdf = self._create_distribution_at(seed_endpoint, len(seed_traj));
 		pdf_sum = np.sum(pdf);
 		if pdf_sum != 0:
 			pdf = pdf / np.sum(pdf)
 		else:
 			pdf = np.zeros(360)
 			pdf[0] = 1
-		for i in range(12):
+		for i in range(6):
 			angle = np.random.choice(360, p=pdf)
 			vec = Vector.unit_vec_from_radians(angle*np.pi/180) * self._normal_speed;
 			waypoint = np.add(seed_endpoint, vec);
@@ -197,7 +197,27 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 
 	def _radar_data_at(self, center, time_offset):
-		return self._radar_data;
+		if np.array_equal(center, self._robot.location) and time_offset == 0:
+			return self._radar_data;
+
+		radius = self._robot.radar.radius;
+		resolution = self._robot.radar.resolution;
+		degree_step = self._robot.radar.get_degree_step();
+		nPoints = self._robot.radar.get_data_size();
+		radar_data = np.full([nPoints], radius, dtype=np.float64);
+		currentStep = 0;
+		for degree in np.arange(0, 360, degree_step):
+			ang_in_radians = degree * np.pi / 180
+			cos_cached = np.cos(ang_in_radians)
+			sin_cached = np.sin(ang_in_radians)
+			for i in np.arange(0, radius, resolution):
+				x = int(cos_cached * i + center[0])
+				y = int(sin_cached * i + center[1])
+				if 0.3 < self._obstacle_predictor.get_prediction([x, y], time_offset):
+					radar_data[currentStep] = i
+					break
+			currentStep = currentStep + 1
+		return radar_data
 
 
 	def _create_memory_bias_pdf_at(self, center, time_offset):
