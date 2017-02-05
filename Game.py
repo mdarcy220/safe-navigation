@@ -39,6 +39,8 @@ class Game:
 		self._is_paused = False
 		self._doing_step = False
 
+		self._step_num = 0;
+
 		# Initialize the game display to 800x600
 		self._gameDisplay = PG.display.set_mode((800, 600))
 
@@ -116,7 +118,7 @@ class Game:
 	#
 	def standard_game_loop(self):
 		clock = PG.time.Clock()
-		step_num = 0
+		self._step_num = 0
 		while True:
 			# Handle events
 			event_status = self.handle_pygame_events()
@@ -142,8 +144,8 @@ class Game:
 			if (self._cmdargs.batch_mode) and (allBotsAtTarget):
 				return
 			if not allBotsAtTarget:
-				step_num += 1
-			if self._cmdargs.max_steps <= step_num:
+				self._step_num += 1
+			if self._cmdargs.max_steps <= self._step_num:
 				return
 
 			# Draw everything
