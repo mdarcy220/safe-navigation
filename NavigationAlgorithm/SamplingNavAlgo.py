@@ -81,9 +81,10 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 				best_traj = traj
 			if self._is_trajectory_feasible(best_traj) and not self._is_trajectory_feasible(traj) and i > 1:
 				continue
-			child_trajs = self._sample_child_trajectories(traj);
-			for child_traj in child_trajs:
-				traj_queue.put_nowait(child_traj);
+			if traj_queue.qsize() + i < self._max_sampling_iters:
+				child_trajs = self._sample_child_trajectories(traj);
+				for child_traj in child_trajs:
+					traj_queue.put_nowait(child_traj);
 
 		next_point = best_traj[0];
 		direction = Vector.getAngleBetweenPoints(self._robot.location, next_point);
