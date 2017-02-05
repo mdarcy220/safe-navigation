@@ -1,8 +1,17 @@
+#!/usr/bin/python3
+
+## @package Environment
+#
+
 import numpy  as np
 import pygame as PG
 from  DynamicObstacles import DynamicObstacle
 import sys
 
+
+## Holds information related to the simulation environment, such as the
+# position and motion of dynamic obstacles, and the static map.
+#
 class Environment:
 
 	def __init__(self, width, height, map_filename, cmdargs=None):
@@ -11,12 +20,27 @@ class Environment:
 		self.height = height
 		self.grid_data = np.zeros((self.width, self.height), dtype=int)
 		self.dynamic_obstacles = []
-		self.map_modifiers = [None]
 
+		# Note: Order is important here:
+		#  - init_map_modifiers() MUST be called BEFORE
+		#    loading and initilizing the map, or else the modifiers
+		#    will not work
+		#  - The map modifier must be applied before setting the
+		#    speed mode
+
+		# Init map modifiers
+		self.map_modifiers = [None];
 		self._init_map_modifiers();
+
+		# Load the static map and apply the modifier to produce
+		# dynamic obstacles
 		self.load_map(map_filename)
+		if (cmdargs):
+			self.apply_map_modifier_by_number(self.cmdargs.map_modifier_num)
+		# Set the speed mode
 		self.set_speed_mode(self.cmdargs.speedmode)
 
+		# Initialize the grid data
 		self._grid_data_display = PG.Surface((self.width, self.height))
 		self._update_grid_data();
 
@@ -27,25 +51,39 @@ class Environment:
 
 
 	def _init_map_modifiers(self):
-		self.map_modifiers.append(Environment.Map1);
-		self.map_modifiers.append(Environment.Map2);
-		self.map_modifiers.append(Environment.Map3);
-		self.map_modifiers.append(Environment.Map4);
-		self.map_modifiers.append(Environment.Map5);
+		self.map_modifiers.append(Environment._map_mod_1);
+		self.map_modifiers.append(Environment._map_mod_2);
+		self.map_modifiers.append(Environment._map_mod_3);
+		self.map_modifiers.append(Environment._map_mod_4);
+		self.map_modifiers.append(Environment._map_mod_5);
 		self.map_modifiers.append(None); 
-		self.map_modifiers.append(Environment.Map7);
-		self.map_modifiers.append(Environment.Map8);
-		self.map_modifiers.append(Environment.Map9);
-		self.map_modifiers.append(Environment.Map10);
+		self.map_modifiers.append(Environment._map_mod_7);
+		self.map_modifiers.append(Environment._map_mod_8);
+		self.map_modifiers.append(Environment._map_mod_9);
+		self.map_modifiers.append(Environment._map_mod_10);
 
 
 	def load_map(self, map_filename):
 		image = PG.image.load(map_filename)
 		self.static_base_image = image
-		if (self.cmdargs):
-			self.apply_map_modifier_by_number(self.cmdargs.map_modifier_num)
 
 
+	## Sets the speed mode of the obstacles
+	#
+	# Currently, these modes are defined as follows:
+	# <br>	0. No speed mode (leave speeds as default)
+	# <br>	1. All obstacles move at speed 4
+	# <br>	2. All obstacles move at speed 8
+	# <br>	3. Obstacles move at the robot's normal speed
+	# <br>	4. Roughly half the obstacles move at speed 4, the other
+	# 	half move at speed 8
+	# <br>	5. All obstacles move at speed 6
+	# <br>	6. All obstacles move at speed 12
+	#
+	#
+	# @param speedmode (int)
+	# <br>	-- The number of the speed mode to set
+	#
 	def set_speed_mode(self, speedmode):
 		for obstacle in self.dynamic_obstacles:
 			if speedmode == 0:
@@ -63,9 +101,10 @@ class Environment:
 			elif speedmode == 6:
 				obstacle.speed = 12
 			else:
-				print("Invalid speed mode. Assuming mode 0.", sys.stderr);
+				sys.stderr.write("Invalid speed mode. Assuming mode 0.\n");
+				sys.stderr.flush();
+				break;
 
-		
 
 	def apply_map_modifier_by_number(self, modifier_num):
 
@@ -78,7 +117,7 @@ class Environment:
 		map_modifier(self);
 
 
-	def make_randompath_dynamic_obstacle(self,
+	def _make_randompath_dynamic_obstacle(self,
 						x_low=1,
 						x_high=None,
 						y_low=1,
@@ -115,10 +154,10 @@ class Environment:
 		return dynobs
 
 
-	def Map1(self):
+	def _map_mod_1(self):
 
 		for i in range(1, 20):
-			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=35, speed_high=7.0)
+			dynobs = self._make_randompath_dynamic_obstacle(radius_low=10, radius_high=35, speed_high=7.0)
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(4):
 			dynobs = DynamicObstacle()
@@ -142,7 +181,7 @@ class Environment:
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map2(self,image):
+	def _map_mod_2(self,image):
 
 		x1 = 100
 		x2 = 400
@@ -182,7 +221,7 @@ class Environment:
 
 
 
-	def Map3(self):
+	def _map_mod_3(self):
 		for j in np.arange(8):
 			dynobs = DynamicObstacle()
 			x = int(np.random.uniform(100, 700))
@@ -195,10 +234,10 @@ class Environment:
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map4(self):
+	def _map_mod_4(self):
 
 		for i in range(1, 20):
-			dynobs = self.make_randompath_dynamic_obstacle()
+			dynobs = self._make_randompath_dynamic_obstacle()
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(10):
 			dynobs = DynamicObstacle()
@@ -222,10 +261,10 @@ class Environment:
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map5(self):
+	def _map_mod_5(self):
 
 		for i in range(1, 20):
-			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
+			dynobs = self._make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
 			self.dynamic_obstacles.append(dynobs)
 		for j in np.arange(10):
 			dynobs = DynamicObstacle()
@@ -251,7 +290,7 @@ class Environment:
 
 
 
-	def Map7(self):
+	def _map_mod_7(self):
 		x = [200, 300, 440, 560]
 		y = [50, 200, 350, 500]
 
@@ -290,7 +329,7 @@ class Environment:
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map8(self):
+	def _map_mod_8(self):
 
 		x = [100, 400, 600, 100,700,650]
 		y = [50, 350, 175, 200, 400,500]
@@ -304,23 +343,28 @@ class Environment:
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def Map9(self):
+	def _map_mod_9(self):
 		for i in range(1, 15):
-			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
+			dynobs = self._make_randompath_dynamic_obstacle(radius_low=10, radius_high=25)
 			self.dynamic_obstacles.append(dynobs)
 
 	# Swarm of obstacles
-	def Map10(self):
+	def _map_mod_10(self):
 		for i in range(1, 70):
-			dynobs = self.make_randompath_dynamic_obstacle(radius_low=10, radius_high=15, speed_high=11.0)
+			dynobs = self._make_randompath_dynamic_obstacle(radius_low=10, radius_high=15, speed_high=11.0)
 			self.dynamic_obstacles.append(dynobs)
 
 
-	def update_dynamic_obstacles(self):
+	def _update_dynamic_obstacles(self):
 		for dynobs in self.dynamic_obstacles:
 			dynobs.next_step();
 
 
+	## Draws the environment onto the given display.
+	#
+	# @param display (pygame.Surface object)
+	# <br>	-- The display to draw onto
+	#
 	def update_display(self, display):
 		display.blit(self.static_base_image, (0, 0))
 		for i in self.dynamic_obstacles:
@@ -330,6 +374,18 @@ class Environment:
 				PG.draw.rect(display, i.fillcolor, i.coordinate.tolist() + i.size)
 
 
+	## Update the grid data from the given display.
+	#
+	# This method uses a `pygame.Surface` to construct an occupancy
+	# grid of obstacles, by checking which pixels correspond to the
+	# colors of static and dynamic obstacles.
+	#
+	# Note that this method updates this `Environment`'s internal
+	# `grid_data` field rather than returning the result.
+	#
+	# @param display (`pygame.Surface`)
+	# <br>	-- The display to use
+	#
 	def update_grid_data_from_display(self, display):
 		self.needs_grid_data_update = False
 
@@ -357,14 +413,16 @@ class Environment:
 		dynamic_obstacle_pixel_val = 0x227722 & pixel_mask # (34, 119, 34) represented as integer
 		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] = 3
 		
-		# Uncomment the following two lines to see the grid_data directly
+		# Uncomment the following lines to see the grid_data directly
 		pix_arr[self.grid_data==0] = 0
 		pix_arr[self.grid_data==3] = 0x115599
 		pix_arr[self.grid_data==1] = 0xFFFFFF
 
 
+	## Step the environment, updating dynamic obstacles and grid data.
+	#
 	def next_step(self):
 		if self.needs_grid_data_update:
 			self._update_grid_data();
-		self.update_dynamic_obstacles();
+		self._update_dynamic_obstacles();
 		self.needs_grid_data_update = True

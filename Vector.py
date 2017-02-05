@@ -4,8 +4,11 @@ import numpy as np;
 #
 # Provides basic vector math routines
 #
- 
-## Gets the angle from PointA to PointB
+
+## @deprecated
+# Gets the angle between points A and B
+#
+# DEPRECATED: Use `degrees_between()` instead
 #
 # @param PointA (numpy array)
 # <br>	Format: `[x, y]`
@@ -18,12 +21,57 @@ import numpy as np;
 # @returns (float)
 # <br>	-- The angle from the first point to the second point, in degrees
 #
+# @see `degrees_between()`
+#
 def getAngleBetweenPoints(PointA, PointB):
-	vectorAB = np.subtract(PointB, PointA)
-	return (np.arctan2(vectorAB[1], vectorAB[0]) * 180 / np.pi) % 360
+	return degrees_between(PointA, PointB);
 
 
-## Gets the distance from PointA to PointB
+## Gets the angle from point a to point b
+#
+# The return value of this function is guaranteed to be such that `point_b`
+# is equal to `point_a + [np.cos(angle*np.pi/180), np.sin(angle*np.pi/180)]
+# * scale`, where `scale` is the distance between points a and b.
+#
+# @param point_a (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- The first point
+#
+# @param PointB (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- The second point
+#
+# @returns (float)
+# <br>	-- The angle from the first point to the second point, in degrees
+#
+def degrees_between(point_a, point_b):
+	vectorAB = np.subtract(point_b, point_a);
+	return (np.arctan2(vectorAB[1], vectorAB[0]) * 180 / np.pi) % 360;
+	
+
+
+## Gets the distance between the given two points
+#
+# @param point_a (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- The first point
+#
+# @param point_b (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- The second point
+#
+# @returns (float)
+# <br>	-- The Euclidean distance between the points
+#
+def distance_between(point_a, point_b):
+	vectorAB = np.subtract(point_a, point_b);
+	return magnitudeOf(vectorAB);
+
+
+## @deprecated
+# Gets the distance from PointA to PointB
+#
+# DEPRECATED: Use `distance_between()` instead
 #
 # @param PointA (numpy array)
 # <br>	Format: `[x, y]`
@@ -36,9 +84,29 @@ def getAngleBetweenPoints(PointA, PointB):
 # @returns (float)
 # <br>	-- The Euclidean distance between the points
 #
+# @see `distance_between()`
+#
 def getDistanceBetweenPoints(PointA, PointB):
-	vectorAB = np.subtract(PointA, PointB)
-	return magnitudeOf(vectorAB)
+	return distance_between(PointA, PointB);
+
+
+## @deprecated Use `unit_vec_from_radians()` instead
+#
+# DEPRECATED.
+# Creates a unit vector pointing at the specified angle.
+#
+# @param angle (float)
+# <br>	-- The angle, in radians
+#
+# @returns (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- A unit vector pointing at the specified angle.
+#
+# @see `unit_vec_from_radians()`
+# @see `unit_vec_from_degrees()`
+#
+def unitVectorFromAngle(angle):
+	return unit_vec_from_radians(angle);
 
 
 ## Creates a unit vector pointing at the specified angle.
@@ -50,8 +118,21 @@ def getDistanceBetweenPoints(PointA, PointB):
 # <br>	Format: `[x, y]`
 # <br>	-- A unit vector pointing at the specified angle.
 #
-def unitVectorFromAngle(angle):
+def unit_vec_from_radians(angle):
 	return np.array([np.cos(angle), np.sin(angle)], dtype='float64')
+
+
+## Creates a unit vector pointing at the specified angle.
+#
+# @param angle (float)
+# <br>	-- The angle, in degrees
+#
+# @returns (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- A unit vector pointing at the specified angle.
+#
+def unit_vec_from_degrees(angle):
+	return unit_vec_from_radians(angle * np.pi / 180);
 
 
 ## Calculates the magnitude of the given vector
@@ -64,6 +145,21 @@ def unitVectorFromAngle(angle):
 # <br>	-- the magnitude of the vector
 #
 def magnitudeOf(vec):
+	return np.sqrt(np.dot(vec, vec))
+
+
+## Calculates the angle of the given vector
+#
+# The return value is the same as calling `degrees_between([0, 0], vec)`
+#
+# @param vec (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- The vector
+#
+# @returns (float)
+# <br>	-- the angle of the vector, in degrees
+#
+def angle_degree_of(vec):
 	return np.sqrt(np.dot(vec, vec))
 
 

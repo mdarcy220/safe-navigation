@@ -1,3 +1,8 @@
+#!/usr/bin/python
+
+## @package Main
+#
+
 import numpy as np
 import argparse
 import sys
@@ -80,6 +85,13 @@ def get_cmdline_args():
 			dest='robot_memory_decay',
 			type=float,
 			default=1,
+			action='store'
+	);
+	parser.add_argument('--max-fps',
+			help='Max number of frames per second. Note that setting this to a small value will NOT improve the performance of the simulation, because it runs at one step per frame. For best performance, set this to a very high value, but low values may be useful for debugging.',
+			dest='max_fps',
+			type=int,
+			default=0,
 			action='store'
 	);
 	parser.add_argument('--max-steps',
