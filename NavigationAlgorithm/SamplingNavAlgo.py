@@ -45,7 +45,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._gaussian = Distributions.Gaussian()
 
 		# Obstecle Predictor
-		self._obstacle_predictor = HMMObstaclePredictor(360);
+		self._obstacle_predictor = HMMObstaclePredictor(360, robot.radar.radius);
 
 	## Next action selector method.
 	#

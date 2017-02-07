@@ -198,17 +198,18 @@ class DummyObstaclePredictor(AbstractObstaclePredictor):
 class HMMObstaclePredictor(AbstractObstaclePredictor):
     ## See the corresponding superclass method for details
     #
-    def __init__(self, data_size):
+    def __init__(self, data_size, radar_range):
         self.data_size = data_size;
-        self.radar_range = 100;
+        self.radar_range = radar_range;
         self.obs_predictions = defaultdict(lambda: 0);
         self.max_vel = 30 #Maximum velocity of obstacle
         self.max_prob = 0.9 #Maximum possible pobability
-        self.neighbour_range = 10
+        self.neighbour_range = 20
         self.future_obs_points = {}
-        self.timestep = 0
+        self.current_timestep = 0
         self.maxtimestep = 4
 
+        self.last_location = None
         self.last_clustered_obs = None
         self.current_clustered_obs = None
 
@@ -219,7 +220,7 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
     #
     def add_observation(self, location, radar_all, radar_dynamic, get_obs_at_angle):
 
-        self.timestep = 0
+        self.current_timestep = 0
 
         #Reset prediction grid every time stamp
         self.obs_predictions = defaultdict(lambda: 0);
@@ -240,7 +241,7 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
 
         if(clustered_obs):
             #Map last time stamp's obstacles with current time stamp's obstacles and
-            distances, angles = self._map_obs(location)
+            distances, angles = self._calculate_obstacle_vectors(location)
             #Predict future obstacle positions
             if distances and angles:
                 i = 0
@@ -252,15 +253,17 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
         else:
             self.current_clustered_obs = None
 
-        self.last_clustered_obs = self.current_clustered_obs
+        self.last_clustered_obs = self.current_clustered_obs;
+        self.last_location = location;
 
     ## See the corresponding superclass method for details
     #
     def get_prediction(self, location, time):
         #calculate vector from robot location to the requested location
-
+               
         grid_cell = tuple(np.array(location, dtype=np.int32).tolist());
-        return self.obs_predictions[(grid_cell, time)];
+        prob = self.obs_predictions[(grid_cell, time)];
+        return prob;
 
     def _convert_radar_to_grid(self, location, radar_dynamic, get_obs_at_angle):
         obstacle_points = []
@@ -271,7 +274,7 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
             index = int(np.round(angle * (self.data_size / 360.0)));
             distance = radar_dynamic[index];
 
-            if distance != self.radar_range:
+            if distance < self.radar_range:
                 obs_coordinate = (location + (distance * Vector.unitVectorFromAngle(angle * np.pi / 180)));
                 obs_cell = tuple(np.array(obs_coordinate, dtype=np.int32).tolist());
                 obstacle_points.append(obs_cell)
@@ -303,7 +306,7 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
             self.current_clustered_obs = self._switch_key_value(clustered_obs)
         return clustered_obs
 
-    def _map_obs(self, robot_location):
+    def _calculate_obstacle_vectors(self, robot_location):
         distances = {}
         angles = {}
 
@@ -334,20 +337,15 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
         temp = []
 
         for id, points in clustered_obs_fliped.items():
-           # low, high = self._get_end_points(points)
-           # mid = (float(low[0] + high[0])/ 2 , float(low[1] + high[1])/ 2)
             closest = self._get_closest_point(robot_location, points);            
 
             if last_clustered_obs_fliped:
                 distances[id] = {}
                 angles[id] = {}
                 for last_id, last_points in last_clustered_obs_fliped.items():
-                    last_closest = self._get_closest_point(robot_location, last_points);
-                   # last_low, last_high = self._get_end_points(last_points)
-                   # last_mid = (float(last_low[0] + last_high[0]) / 2, float(last_low[1] + last_high[1]) / 2)
+                    last_closest = self._get_closest_point(self.last_location, last_points);
 
                     d = Vector.getDistanceBetweenPoints(last_closest, closest)
-               
                     distances[id][last_id] = d
 
                     angle = Vector.getAngleBetweenPoints(last_closest, closest)
@@ -428,13 +426,11 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
 
     def _assignProb(self, distances, angles, clustered_obs):
 
-        self.timestep += 1
+        self.current_timestep += 1
         future_clustered_obstacles = {}
         # Calculate future posiiton of obstacles and assign probability
         for obs_point, id in clustered_obs.items():
             if id in distances.keys():
-                if len(distances[id].values()) == 0:
-                    a = 10
                 distance = list(distances[id].values())[0]
                 angle = list(angles[id].values())[0]
                 future_obs_coordinate = (obs_point + (distance * Vector.unitVectorFromAngle(angle * np.pi / 180)));
@@ -442,9 +438,9 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
                 future_clustered_obstacles[future_obs_cell] = id
                 neigh_points = self._generate_neighbour_points(future_obs_cell)
                 for point in neigh_points:
-                    prob = 1 - Vector.getDistanceBetweenPoints(point, obs_point) * 0.05
-                    if prob > self.obs_predictions[(point, self.timestep)]:
-                        self.obs_predictions[(point, self.timestep)] = prob
+                    prob = (0.9 ** self.current_timestep) * (1 - (Vector.getDistanceBetweenPoints(point, obs_point) / self.neighbour_range));
+                    if prob > self.obs_predictions[(point, self.current_timestep)]:
+                        self.obs_predictions[(point, self.current_timestep)] = prob
 
         return future_clustered_obstacles
 
