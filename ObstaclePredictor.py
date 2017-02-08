@@ -220,6 +220,8 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
     #
     def add_observation(self, location, radar_all, radar_dynamic, get_obs_at_angle):
 
+        future_obstacles = {}
+
         self.current_timestep = 0
 
         #Reset prediction grid every time stamp
@@ -249,12 +251,15 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
                 while i < self.maxtimestep:     					
                     future_clustered_obs = self._assignProb(distances, angles, future_clustered_obs)
                     i += 1
+                    future_obstacles[i] = future_clustered_obs
 
         else:
             self.current_clustered_obs = None
 
         self.last_clustered_obs = self.current_clustered_obs;
         self.last_location = location;
+
+        return future_obstacles
 
     ## See the corresponding superclass method for details
     #

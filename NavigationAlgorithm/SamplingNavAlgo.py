@@ -58,13 +58,14 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._stepNum += 1;
 		self._radar_data = self._robot.radar.scan(self._robot.location);
 
-		self._obstacle_predictor.add_observation(self._robot.location,
+		future_obstacles = self._obstacle_predictor.add_observation(self._robot.location,
 				self._radar_data,
 				self._dynamic_radar_data,
 				self._obstacle_predictor_dynobs_getter_func
 		);
 
 		self.debug_info["cur_dist"] = self._create_distribution_at(self._robot.location, 0);
+		self.debug_info["future_obstacles"] = future_obstacles;
 
 		# Init queue
 		traj_queue = Queue();

@@ -13,6 +13,7 @@ import Vector
 import matplotlib.pyplot as plt
 import time
 import scipy.signal
+from pygame import gfxdraw
 
 ## Represents a control input for a robot. The control consists of a speed
 # and a direction, which together define a single action for the robot to
@@ -187,6 +188,11 @@ class Robot:
 
 			# Draw distribution values around robot
 			#self._draw_pdf(screen, self._nav_algo.debug_info["drawing_pdf"])
+
+			if "future_obstacles" in self._nav_algo.debug_info.keys():
+				if self._nav_algo.debug_info["future_obstacles"]:
+					for x,y in self._nav_algo.debug_info["future_obstacles"][1].keys():
+						gfxdraw.pixel(screen, x, y, (255,0,0))
 
 
 	def _draw_pdf(self, screen, pdf):
