@@ -25,7 +25,8 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._max_sampling_iters = 40
 		self._radar_data = None
 		self._dynamic_radar_data = None
-		self._safety_threshold = 0.25;
+		self._current_mem_bias_pdf = None
+		self._safety_threshold = 0.20;
 		self._stepNum = 0;
 
 		self.debug_info = {
@@ -58,34 +59,27 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._stepNum += 1;
 		self._radar_data = self._robot.radar.scan(self._robot.location);
 
-		future_obstacles = self._obstacle_predictor.add_observation(self._robot.location,
+		self.debug_info["future_obstacles"] = self._obstacle_predictor.add_observation(self._robot.location,
 				self._radar_data,
 				self._dynamic_radar_data,
 				self._obstacle_predictor_dynobs_getter_func
 		);
 
 		self.debug_info["cur_dist"] = self._create_distribution_at(self._robot.location, 0);
-		self.debug_info["future_obstacles"] = future_obstacles;
+
 
 		# Init queue
 		traj_queue = Queue();
-		traj_queue.put([]);
+		for i in range(self._max_sampling_iters):
+			traj_queue.put_nowait(self._gen_trajectory(self._robot.location, length=1));
 
 		best_traj = [self._robot.location];
 
-		for i in range(self._max_sampling_iters):
-			if traj_queue.empty():
-				break
+		while not traj_queue.empty():
 			traj = traj_queue.get_nowait();
 			comp_result = self._compare_trajectories(traj, best_traj);
 			if comp_result < 0:
 				best_traj = traj
-			if self._is_trajectory_feasible(best_traj) and not self._is_trajectory_feasible(traj) and i > 1:
-				continue
-			if traj_queue.qsize() + i < self._max_sampling_iters:
-				child_trajs = self._sample_child_trajectories(traj);
-				for child_traj in child_trajs:
-					traj_queue.put_nowait(child_traj);
 
 		next_point = best_traj[0];
 		direction = Vector.getAngleBetweenPoints(self._robot.location, next_point);
@@ -130,10 +124,30 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		elif self._safety_threshold < safety2:
 			return -1;
 
-		heuristic1 = self._eval_distance_heuristic(traj1);
-		heuristic2 = self._eval_distance_heuristic(traj2);
-		return int(np.sign(heuristic1+0*(safety1+0.01) - heuristic2+0*(safety2+0.01)));
+		distance_h1 = self._eval_distance_heuristic(traj1);
+		distance_h2 = self._eval_distance_heuristic(traj2);
+		heuristic1 = 0.9*distance_h1 + 0.1*safety1;
+		heuristic2 = 0.9*distance_h2 + 0.2*safety2;
+		return int(np.sign(heuristic1 - heuristic2));
 
+
+	def _gen_trajectory(self, start_point, length=1):
+		new_traj = [];
+		last_point = start_point;
+		for i in range(length):
+			pdf = self._create_distribution_at(start_point, 0);
+			pdf_sum = np.sum(pdf);
+			if pdf_sum != 0:
+				pdf = pdf / np.sum(pdf)
+			else:
+				pdf = np.full(360, 1/360.0)
+			angle = np.random.choice(360, p=pdf)
+			vec = Vector.unit_vec_from_radians(angle*np.pi/180) * self._normal_speed;
+			waypoint = np.add(start_point, vec);
+			new_traj.append(waypoint);
+			last_point = waypoint;
+		return new_traj;
+		
 
 	def _sample_child_trajectories(self, seed_traj):
 		# Note: When appending to this `children` variable, we use
@@ -223,6 +237,8 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 
 	def _create_memory_bias_pdf_at(self, center, time_offset):
+		if np.array_equal(center, self._robot.location) and time_offset == 0 and self._current_mem_bias_pdf is not None:
+			return self._current_mem_bias_pdf;
 		# Get memory effect vector
 		mem_bias_vec = self._calc_memory_bias_vector()
 		self.debug_info["last_mbv"] = mem_bias_vec
@@ -264,9 +280,10 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		endpoint = traj[-1];
 		targetpoint = self._robot.target.position;
 		angle = Vector.degrees_between(self._robot.location, endpoint);
-		if Vector.distance_between(endpoint, self._robot.location) < 0.1:
+		distance = Vector.distance_between(endpoint, self._robot.location);
+		if distance  < 0.1:
 			return 10.0;
-		return 1.0-self.debug_info["cur_dist"][int(angle)]
+		return 1.0 - (self.debug_info["cur_dist"][int(angle)] * 1.0);
 
 
 	def _calc_memory_bias_vector(self):
@@ -289,21 +306,26 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		if len(traj) == 0:
 			return 0.0;
 		radar_data = self._radar_data;
-		endpoint = traj[-1];
+		safety = 1.0;
 		degree_step = self._robot.radar.get_degree_step();
 		data_size = self._robot.radar.get_data_size();
 		radar_range = self._robot.radar.radius;
+		time_offset = 1;
+#		endpoint = traj[-1];
+		for endpoint in traj:
 
-		endpoint_dist = Vector.getDistanceBetweenPoints(self._robot.location, endpoint);
-		angle_to_endpoint = Vector.getAngleBetweenPoints(self._robot.location, endpoint);
+			endpoint_dist = Vector.getDistanceBetweenPoints(self._robot.location, endpoint);
+			angle_to_endpoint = Vector.getAngleBetweenPoints(self._robot.location, endpoint);
 
-		index1 = int(np.ceil(angle_to_endpoint / degree_step)) % data_size;
-		index2 = int(np.floor(angle_to_endpoint / degree_step)) % data_size;
+			index1 = int(np.ceil(angle_to_endpoint / degree_step)) % data_size;
+			index2 = int(np.floor(angle_to_endpoint / degree_step)) % data_size;
 
-		if (radar_data[index1]-5) <= endpoint_dist or (radar_data[index2]-5) <= endpoint_dist:
-			return 1.0;
+			if (radar_data[index1]-5) <= endpoint_dist or (radar_data[index2]-5) <= endpoint_dist:
+				return 1.0;
 
-		return self._obstacle_predictor.get_prediction(endpoint, len(traj));
+			safety *= 1.0 - self._obstacle_predictor.get_prediction(endpoint, time_offset);
+			time_offset += 1;
+		return 1.0 - safety;
 
 
 	def _is_trajectory_feasible(self, traj):
