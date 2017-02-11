@@ -22,12 +22,15 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._robot = robot;
 		self._cmdargs = cmdargs;
 		self._normal_speed = cmdargs.robot_speed;
-		self._max_sampling_iters = 40
+		self._max_sampling_iters = 50
 		self._radar_data = None
 		self._dynamic_radar_data = None
 		self._current_mem_bias_pdf = None
 		self._safety_threshold = 0.20;
 		self._stepNum = 0;
+
+		self._cur_traj = [];
+		self._cur_traj_index = 0;
 
 		self.debug_info = {
 			'node_list': [],
@@ -55,39 +58,53 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 	# 	"AbstractNavigationAlgorithm.select_next_action()"
 	#
 	def select_next_action(self):
-		self._dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
 		self._stepNum += 1;
+
+		# Scan the radar
+		self._dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
 		self._radar_data = self._robot.radar.scan(self._robot.location);
 
+		# Give the current observation to the obstacle motion predictor
 		self.debug_info["future_obstacles"] = self._obstacle_predictor.add_observation(self._robot.location,
 				self._radar_data,
 				self._dynamic_radar_data,
 				self._obstacle_predictor_dynobs_getter_func
 		);
 
-		self.debug_info["cur_dist"] = self._create_distribution_at(self._robot.location, 0);
+		# Replan if the current trajectory is either finished or no 
+		# longer safe
+		if len(self._cur_traj) <= self._cur_traj_index or self._safety_threshold < self._safety_heuristic(self._cur_traj[self._cur_traj_index:]):
+			self.debug_info["cur_dist"] = self._create_distribution_at(self._robot.location, 0);
 
 
-		# Init queue
-		traj_queue = Queue();
-		for i in range(self._max_sampling_iters):
-			traj_queue.put_nowait(self._gen_trajectory(self._robot.location, length=1));
+			# Init queue
+			traj_queue = Queue();
+			for i in range(self._max_sampling_iters):
+				traj_queue.put_nowait(self._gen_trajectory(self._robot.location, length=2));
 
-		best_traj = [self._robot.location];
+			best_traj = [self._robot.location];
 
-		while not traj_queue.empty():
-			traj = traj_queue.get_nowait();
-			comp_result = self._compare_trajectories(traj, best_traj);
-			if comp_result < 0:
-				best_traj = traj
+			# Choose the best trajectory
+			while not traj_queue.empty():
+				traj = traj_queue.get_nowait();
+				comp_result = self._compare_trajectories(traj, best_traj);
+				if comp_result < 0:
+					best_traj = traj;
+			self._cur_traj = best_traj;
+			self._cur_traj_index = 0;
 
-		next_point = best_traj[0];
+		# Set the robot to head towards the next point along the trajectory
+		next_point = self._cur_traj[self._cur_traj_index];
+		self._cur_traj_index += 1;
 		direction = Vector.getAngleBetweenPoints(self._robot.location, next_point);
+
+		# Add the current location to the memory
 		if self._stepNum % 1 == 0:
 			self.visited_points.append(self._robot.location);
 			self._mem_bias_vec = self._calc_memory_bias_vector();
 			if Vector.magnitudeOf(self._mem_bias_vec) > 0:
 				self._mem_bias_vec = self._mem_bias_vec / Vector.magnitudeOf(self._mem_bias_vec);
+
 		if np.array_equal(next_point, self._robot.location):
 			# Next point is equal to current point, so stop the
 			# robot
@@ -127,7 +144,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		distance_h1 = self._eval_distance_heuristic(traj1);
 		distance_h2 = self._eval_distance_heuristic(traj2);
 		heuristic1 = 0.9*distance_h1 + 0.1*safety1;
-		heuristic2 = 0.9*distance_h2 + 0.2*safety2;
+		heuristic2 = 0.9*distance_h2 + 0.1*safety2;
 		return int(np.sign(heuristic1 - heuristic2));
 
 
@@ -135,15 +152,19 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		new_traj = [];
 		last_point = start_point;
 		for i in range(length):
+			# Create a probability distribution to sample from
+			# (normalized so it sums to 1)
 			pdf = self._create_distribution_at(start_point, 0);
 			pdf_sum = np.sum(pdf);
 			if pdf_sum != 0:
-				pdf = pdf / np.sum(pdf)
+				pdf = pdf / np.sum(pdf);
 			else:
-				pdf = np.full(360, 1/360.0)
-			angle = np.random.choice(360, p=pdf)
+				pdf = np.full(360, 1/360.0);
+
+			# Sample the next waypoint from the distribution
+			angle = np.random.choice(360, p=pdf);
 			vec = Vector.unit_vec_from_radians(angle*np.pi/180) * self._normal_speed;
-			waypoint = np.add(start_point, vec);
+			waypoint = np.add(last_point, vec);
 			new_traj.append(waypoint);
 			last_point = waypoint;
 		return new_traj;
@@ -283,7 +304,9 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		distance = Vector.distance_between(endpoint, self._robot.location);
 		if distance  < 0.1:
 			return 10.0;
-		return 1.0 - (self.debug_info["cur_dist"][int(angle)] * 1.0);
+		if angle >= 360.0:
+			angle = 0;
+		return 1.0 - (self.debug_info["cur_dist"][int(angle)] * 1.0) * distance / len(traj) / self._normal_speed;
 
 
 	def _calc_memory_bias_vector(self):
@@ -311,19 +334,19 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		data_size = self._robot.radar.get_data_size();
 		radar_range = self._robot.radar.radius;
 		time_offset = 1;
-#		endpoint = traj[-1];
-		for endpoint in traj:
 
-			endpoint_dist = Vector.getDistanceBetweenPoints(self._robot.location, endpoint);
-			angle_to_endpoint = Vector.getAngleBetweenPoints(self._robot.location, endpoint);
+		for waypoint in traj:
 
-			index1 = int(np.ceil(angle_to_endpoint / degree_step)) % data_size;
-			index2 = int(np.floor(angle_to_endpoint / degree_step)) % data_size;
+			waypoint_dist = Vector.getDistanceBetweenPoints(self._robot.location, waypoint);
+			angle_to_waypoint = Vector.getAngleBetweenPoints(self._robot.location, waypoint);
 
-			if (radar_data[index1]-5) <= endpoint_dist or (radar_data[index2]-5) <= endpoint_dist:
+			index1 = int(np.ceil(angle_to_waypoint / degree_step)) % data_size;
+			index2 = int(np.floor(angle_to_waypoint / degree_step)) % data_size;
+
+			if (radar_data[index1]-5) <= waypoint_dist or (radar_data[index2]-5) <= waypoint_dist:
 				return 1.0;
 
-			safety *= 1.0 - self._obstacle_predictor.get_prediction(endpoint, time_offset);
+			safety *= 1.0 - self._obstacle_predictor.get_prediction(waypoint, time_offset);
 			time_offset += 1;
 		return 1.0 - safety;
 
