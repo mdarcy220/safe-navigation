@@ -4,7 +4,7 @@
 import numpy  as np
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
-from ObstaclePredictor import DummyObstaclePredictor
+from ObstaclePredictor import HMMObstaclePredictor
 import Distributions
 import Vector
 import matplotlib.pyplot as plt
@@ -58,7 +58,8 @@ class FuzzyNavigationAlgorithm(AbstractNavigationAlgorithm):
 			self._PDF = Distributions.Rectangular()
 
 		# Set up obstacle predictor
-		self._obstacle_predictor = DummyObstaclePredictor(360);
+		if with_predictor:
+			self._obstacle_predictor = HMMObstaclePredictor(360, self._robot.radar.radius);
 
 		# Number of steps taken in the navigation
 		self.stepNum = 0

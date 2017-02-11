@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-
 import numpy  as np
 import Vector
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
@@ -101,9 +100,6 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		# Add the current location to the memory
 		if self._stepNum % 1 == 0:
 			self.visited_points.append(self._robot.location);
-			self._mem_bias_vec = self._calc_memory_bias_vector();
-			if Vector.magnitudeOf(self._mem_bias_vec) > 0:
-				self._mem_bias_vec = self._mem_bias_vec / Vector.magnitudeOf(self._mem_bias_vec);
 
 		if np.array_equal(next_point, self._robot.location):
 			# Next point is equal to current point, so stop the
@@ -208,25 +204,25 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 
 	def _create_distribution_at(self, center, time_offset):
-		targetpoint_pdf = self._gaussian.get_distribution(Vector.degrees_between(center, self._robot.target.position))
+		targetpoint_pdf = self._gaussian.get_distribution(Vector.degrees_between(center, self._robot.target.position));
 
 		# The combined PDF will store the combination of all the
 		# PDFs, but for now that's just the targetpoint PDF
-		combined_pdf = targetpoint_pdf
+		combined_pdf = targetpoint_pdf;
 
-		raw_radar_data = self._radar_data_at(center, time_offset)
+		raw_radar_data = self._radar_data_at(center, time_offset);
 
 		normalized_radar_data = raw_radar_data / self._robot.radar.radius;
 
 		# Add the obstacle distribution into the combined PDF
-		combined_pdf = np.minimum(combined_pdf, normalized_radar_data)
+		combined_pdf = np.minimum(combined_pdf, normalized_radar_data);
 
 		# Process memory
 		if self._cmdargs.enable_memory:
 			mem_bias_pdf = self._create_memory_bias_pdf_at(center, time_offset);
 
 			# Add the memory distribution to the combined PDF
-			combined_pdf = np.minimum(combined_pdf, mem_bias_pdf)
+			combined_pdf = np.minimum(combined_pdf, mem_bias_pdf);
 
 		combined_pdf = np.maximum(combined_pdf, 0);
 
@@ -244,54 +240,51 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		radar_data = np.full([nPoints], radius, dtype=np.float64);
 		currentStep = 0;
 		for degree in np.arange(0, 360, degree_step):
-			ang_in_radians = degree * np.pi / 180
-			cos_cached = np.cos(ang_in_radians)
-			sin_cached = np.sin(ang_in_radians)
+			ang_in_radians = degree * np.pi / 180;
+			cos_cached = np.cos(ang_in_radians);
+			sin_cached = np.sin(ang_in_radians);
 			for i in np.arange(0, radius, resolution):
-				x = int(cos_cached * i + center[0])
-				y = int(sin_cached * i + center[1])
+				x = int(cos_cached * i + center[0]);
+				y = int(sin_cached * i + center[1]);
 				if 0.3 < self._obstacle_predictor.get_prediction([x, y], time_offset):
-					radar_data[currentStep] = i
-					break
-			currentStep = currentStep + 1
-		return radar_data
+					radar_data[currentStep] = i;
+					break;
+			currentStep = currentStep + 1;
+		return radar_data;
 
 
 	def _create_memory_bias_pdf_at(self, center, time_offset):
 		if np.array_equal(center, self._robot.location) and time_offset == 0 and self._current_mem_bias_pdf is not None:
 			return self._current_mem_bias_pdf;
 		# Get memory effect vector
-		mem_bias_vec = self._calc_memory_bias_vector()
-		self.debug_info["last_mbv"] = mem_bias_vec
+		mem_bias_vec = self._calc_memory_bias_vector_at(center, time_offset);
+		self.debug_info["last_mbv"] = mem_bias_vec;
 
-		mem_bias_ang = Vector.degrees_between([0, 0], mem_bias_vec)
-		mem_bias_mag = Vector.distance_between([0, 0], mem_bias_vec)
+		mem_bias_ang = Vector.degrees_between([0, 0], mem_bias_vec);
+		mem_bias_mag = Vector.distance_between([0, 0], mem_bias_vec);
 
 		# Create memory distribution based on dot product with memory vector
-		mem_bias_pdf = np.array([np.cos(np.abs(mem_bias_ang - ang) * np.pi/180) for ang in np.arange(0, 360, self._gaussian.degree_resolution)])
+		mem_bias_pdf = np.cos(np.abs(mem_bias_ang - np.arange(0, 360, self._gaussian.degree_resolution)) * np.pi/180);
 		mem_bias_pdf += 1 # Add 1 to get the cosine function above 0
 		if np.amax(mem_bias_pdf) > 0:
-			mem_bias_pdf = mem_bias_pdf / np.amax(mem_bias_pdf)
-
-		if (self._stepNum % 1) == 0:
-			self.visited_points.append(self._robot.location)
+			mem_bias_pdf = mem_bias_pdf / np.amax(mem_bias_pdf);
 
 		return mem_bias_pdf;
 
 
 	def _calc_memory_bias_vector_at(self, center, time_offset):
-		sigma = self.memory_sigma
-		decay = self.memory_decay
-		size = int(self.memory_size)
-		sigmaSquared = sigma * sigma
-		gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
-		vec = np.array([0, 0], dtype='float64')
-		i = size
+		sigma = self.memory_sigma;
+		decay = self.memory_decay;
+		size = int(self.memory_size);
+		sigmaSquared = sigma * sigma;
+		gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared);
+		vec = np.array([0, 0], dtype='float64');
+		i = size;
 		for point in self.visited_points[-size:]:
-			effect_magnitude = gaussian_derivative(Vector.distance_between(point, center))
-			effect_vector = (decay**i) * effect_magnitude * np.subtract(point, center)
-			vec += effect_vector
-			i -= 1
+			effect_vector = np.subtract(point, center);
+			effect_vector = effect_vector * (decay**i) * gaussian_derivative(Vector.magnitudeOf(effect_vector));
+			vec += effect_vector;
+			i -= 1;
 		return vec
 
 
@@ -307,22 +300,6 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		if angle >= 360.0:
 			angle = 0;
 		return 1.0 - (self.debug_info["cur_dist"][int(angle)] * 1.0) * distance / len(traj) / self._normal_speed;
-
-
-	def _calc_memory_bias_vector(self):
-		sigma = self.memory_sigma
-		decay = self.memory_decay
-		size = int(self.memory_size)
-		sigmaSquared = sigma * sigma
-		gaussian_derivative = lambda x: -x*(np.exp(-(x*x/(2*sigmaSquared))) / sigmaSquared)
-		vec = np.array([0, 0], dtype='float64')
-		i = size
-		for point in self.visited_points[-size:]:
-			effect_magnitude = gaussian_derivative(Vector.getDistanceBetweenPoints(point, self._robot.location))
-			effect_vector = (decay**i) * effect_magnitude * np.subtract(point, self._robot.location)
-			vec += effect_vector
-			i -= 1
-		return vec
 
 
 	def _safety_heuristic(self, traj):
