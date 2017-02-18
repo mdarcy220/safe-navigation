@@ -18,7 +18,7 @@ class Environment:
 		self.cmdargs = cmdargs
 		self.width = width
 		self.height = height
-		self.grid_data = np.zeros((self.width, self.height), dtype=int)
+		self.grid_data = np.zeros((self.width, self.height), dtype=np.uint8)
 		self.dynamic_obstacles = []
 
 		# Note: Order is important here:
