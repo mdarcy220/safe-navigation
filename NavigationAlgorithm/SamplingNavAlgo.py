@@ -50,6 +50,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		# Obstecle Predictor
 		self._obstacle_predictor = HMMObstaclePredictor(360, robot.radar.radius);
 
+
 	## Next action selector method.
 	#
 	# @see 
@@ -95,7 +96,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		# Set the robot to head towards the next point along the trajectory
 		next_point = self._cur_traj[self._cur_traj_index];
 		self._cur_traj_index += 1;
-		direction = Vector.getAngleBetweenPoints(self._robot.location, next_point);
+		direction = Vector.degrees_between(self._robot.location, next_point);
 
 		# Add the current location to the memory
 		if self._stepNum % 1 == 0:
@@ -178,7 +179,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		# Append a "straight to the goal" trajectory
 		angle_to_goal = self._robot.angleToTarget() * np.pi / 180.0
-		towards_goal = Vector.unitVectorFromAngle(angle_to_goal) * self._normal_speed;
+		towards_goal = Vector.unit_vec_from_radians(angle_to_goal) * self._normal_speed;
 		waypoint_towards_goal = np.add(seed_endpoint, towards_goal);
 		new_traj = list(seed_traj);
 		new_traj.append(waypoint_towards_goal);
@@ -314,8 +315,8 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		for waypoint in traj:
 
-			waypoint_dist = Vector.getDistanceBetweenPoints(self._robot.location, waypoint);
-			angle_to_waypoint = Vector.getAngleBetweenPoints(self._robot.location, waypoint);
+			waypoint_dist = Vector.distance_between(self._robot.location, waypoint);
+			angle_to_waypoint = Vector.degrees_between(self._robot.location, waypoint);
 
 			index1 = int(np.ceil(angle_to_waypoint / degree_step)) % data_size;
 			index2 = int(np.floor(angle_to_waypoint / degree_step)) % data_size;
