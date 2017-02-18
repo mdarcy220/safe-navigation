@@ -210,7 +210,7 @@ class MultiLevelNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._localplanner = SamplingNavigationAlgorithm(robot, cmdargs);
 
-		self._normal_speed = 10;
+		self._normal_speed = cmdargs.robot_speed;
 
 		self._POINT_RADIUS = 2;
 		self._CHECK_RADIUS = 90;
