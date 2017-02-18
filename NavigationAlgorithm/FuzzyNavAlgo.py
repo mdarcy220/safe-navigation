@@ -47,8 +47,6 @@ class FuzzyNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self.max_speed = 10
 		if (self._cmdargs.speedmode == 5):
 			self.normal_speed = 10
-		if (not self.using_safe_mode):
-			self.normal_speed = 10
 
 		self._speed_adjust_pdf = Distributions.Gaussian()
 		self._speed_adjust_pdf.degree_resolution = 2
