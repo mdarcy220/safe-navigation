@@ -72,7 +72,7 @@ class Robot:
 		self.name		= name
 		self.radar = radar
 
-		from NavigationAlgorithm import FuzzyNavigationAlgorithm, SamplingNavigationAlgorithm, MultiLevelNavigationAlgorithm
+		from NavigationAlgorithm import FuzzyNavigationAlgorithm, SamplingNavigationAlgorithm, MultiLevelNavigationAlgorithm, DWANavigationAlgorithm
 		if using_safe_mode:
 			self._nav_algo = SamplingNavigationAlgorithm(self, cmdargs);
 		else:

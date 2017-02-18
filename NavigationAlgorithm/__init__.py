@@ -8,3 +8,4 @@
 from .FuzzyNavAlgo import FuzzyNavigationAlgorithm
 from .SamplingNavAlgo import SamplingNavigationAlgorithm
 from .MultiLevelNavAlgo import MultiLevelNavigationAlgorithm
+from .DWANavAlgo import DWANavigationAlgorithm
