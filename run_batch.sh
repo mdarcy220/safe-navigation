@@ -28,15 +28,17 @@ run_arg_set() {
 
 # Generate argument sets
 printf "Generating argument sets...\n"
-for ((speed = 1; speed <= 6; speed++))
+for ((speed = 7; speed <= 10; speed++))
 do
-
-	arg_sets+=("$base_args --map-modifier-num 4  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod4.png")
-	arg_sets+=("$base_args --map-modifier-num 5  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod5.png")
-	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/parallel_walls.png")
-	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/rooms.png")
-	arg_sets+=("$base_args --map-modifier-num 7  --speed-mode $speed --map-name Maps/empty.png")
-	arg_sets+=("$base_args --map-modifier-num 9  --speed-mode $speed --map-name Maps/easy_maze.png")
+	for map_modifier in 11 12
+	do
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod4.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod5.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/parallel_walls.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/rooms.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/empty.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/easy_maze.png")
+	done
 
 done
 

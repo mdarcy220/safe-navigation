@@ -61,6 +61,8 @@ class Environment:
 		self.map_modifiers.append(Environment._map_mod_8);
 		self.map_modifiers.append(Environment._map_mod_9);
 		self.map_modifiers.append(Environment._map_mod_10);
+		self.map_modifiers.append(Environment._map_mod_11);
+		self.map_modifiers.append(Environment._map_mod_12);
 
 
 	def load_map(self, map_filename):
@@ -89,17 +91,25 @@ class Environment:
 			if speedmode == 0:
 				pass; # Leave obstacle speeds as default
 			elif speedmode == 1:
-				obstacle.speed = 4		 
+				obstacle.speed = 4;		 
 			elif (speedmode == 2):
-				obstacle.speed = 8
+				obstacle.speed = 8;
 			elif speedmode == 3:
-				obstacle.speed = self.cmdargs.robot_speed
+				obstacle.speed = self.cmdargs.robot_speed;
 			elif speedmode == 4:
-				obstacle.speed = np.array ([4, 8])[np.random.randint(2)]
+				obstacle.speed = np.array ([4, 8])[np.random.randint(2)];
 			elif speedmode == 5:
-				obstacle.speed = 6
+				obstacle.speed = 6;
 			elif speedmode == 6:
-				obstacle.speed = 12
+				obstacle.speed = 12;
+			elif speedmode == 7:
+				obstacle.speed = 5;
+			elif speedmode == 8:
+				obstacle.speed = self.cmdargs.robot_speed;
+			elif speedmode == 9:
+				obstacle.speed = 15;
+			elif speedmode == 10:
+				obstacle.speed = np.random.uniform(low=5.0, high=15.0);
 			else:
 				sys.stderr.write("Invalid speed mode. Assuming mode 0.\n");
 				sys.stderr.flush();
@@ -145,9 +155,10 @@ class Environment:
 		
 		dynobs.movement_mode = 3
 		dynobs.radius = int(np.random.uniform(radius_low, radius_high))
+		dynobs.size = [dynobs.radius, dynobs.radius];
 		dynobs.shape = shape
 		dynobs.speed = np.random.uniform(low=speed_low, high=speed_high)
-		for j in range(1, num_path_points):
+		for j in range(num_path_points):
 			x_coord = int(np.random.uniform(path_x_low, path_x_high))
 			y_coord = int(np.random.uniform(path_y_low, path_y_high))
 			dynobs.path_list.append(np.array([x_coord, y_coord]))
@@ -353,6 +364,20 @@ class Environment:
 		for i in range(1, 70):
 			dynobs = self._make_randompath_dynamic_obstacle(radius_low=10, radius_high=15, speed_high=11.0)
 			self.dynamic_obstacles.append(dynobs)
+
+
+	def _map_mod_11(self):
+		for i in range(20):
+			dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30);
+			dynobs.shape = 1 if i < 10 else 2;
+			self.dynamic_obstacles.append(dynobs);
+
+
+	def _map_mod_12(self):
+		for i in range(20):
+			dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30, num_path_points=2);
+			dynobs.shape = 1 if i < 10 else 2;
+			self.dynamic_obstacles.append(dynobs);
 
 
 	def _update_dynamic_obstacles(self):
