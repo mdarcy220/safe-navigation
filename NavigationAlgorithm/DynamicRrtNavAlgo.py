@@ -2,7 +2,7 @@
 
 
 import numpy  as np
-import Vector, random, time
+import Vector, time
 from math import *
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
@@ -137,9 +137,9 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
     return False
 
   def _chose_target(self):
-    randReal = random.uniform(0.0, 1.0);
+    randReal = np.random.uniform(0.0, 1.0);
     if self._numOfWayPoint > 0:
-        randInt = random.randint(0, self._numOfWayPoint - 1);
+        randInt = np.random.randint(0, self._numOfWayPoint - 1);
 
     if randReal < self._goalBias:
       return self._qgoal;
@@ -237,7 +237,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
   def _get_random_point(self):
     XDIM = 800
     YDIM = 600
-    return random.random() * XDIM, random.random() * YDIM
+    return np.random.random() * XDIM, np.random.random() * YDIM
 
 class Tree:
 
