@@ -204,10 +204,10 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
         self.obs_predictions = defaultdict(lambda: 0);
         self.max_vel = 30 #Maximum velocity of obstacle
         self.max_prob = 0.9 #Maximum possible pobability
-        self.neighbour_range = 20
+        self.neighbour_range = 15
         self.future_obs_points = {}
         self.current_timestep = 0
-        self.maxtimestep = 4
+        self.maxtimestep = 2
 
         self.last_location = None
         self.last_clustered_obs = None
