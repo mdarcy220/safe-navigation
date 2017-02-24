@@ -60,7 +60,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
     self._invalidateNodes();
 
     robot_location = self._robot.location
-    if self._grid_data[robot_location[0]][robot_location[1]] != 3:
+    if self._grid_data[int(robot_location[0])][int(robot_location[1])] != 3:
       if self._solution_contains_invalid_node():
         self._regrow_rrt();
         self._extract_solution();
@@ -193,7 +193,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
   def _collides(self, fromPoint, toPoint, dynamicOnly):
     dynamic_obstacle_points = self._convert_radar_to_grid();
 
-    if fromPoint != None:
+    if fromPoint is not None:
       ang_in_radians = Vector.degrees_between(fromPoint, toPoint) * np.pi / 180
       dist = Vector.getDistanceBetweenPoints(fromPoint, toPoint)
 
@@ -214,7 +214,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
         return True
       # Check for static obstacle
       if not dynamicOnly:
-        if self._grid_data[toPoint[0]][toPoint[1]] == 1:
+        if self._grid_data[int(toPoint[0])][int(toPoint[1])] == 1:
           return True;
 
     return False;
