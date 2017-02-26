@@ -76,8 +76,8 @@ class Environment:
 
 
 	def load_map(self, map_filename):
-		image = PG.image.load(map_filename)
-		self.static_base_image = image
+		image = PG.image.load(map_filename).convert_alpha();
+		self.static_base_image = image;
 
 
 	## Sets the speed mode of the obstacles
