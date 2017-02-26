@@ -35,6 +35,17 @@ class Environment:
 		# Load the static map and apply the modifier to produce
 		# dynamic obstacles
 		self.load_map(map_filename)
+
+		# Create static overlay (BEFORE applying map modifier)
+		pix_arr = PG.surfarray.pixels2d(self.static_base_image.copy())
+		pixel_mask = 0b11111100;
+		masked_pix_arr = np.bitwise_and(pix_arr, np.array([pixel_mask], dtype='uint8'));
+		grid_data_width = max(self.width, masked_pix_arr.shape[0]);
+		grid_data_height = max(self.height, masked_pix_arr.shape[1]);
+		self.static_overlay = np.zeros((grid_data_width, grid_data_height), dtype=int);
+		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
+		self.static_overlay[masked_pix_arr == obstacle_pixel_val] |= 0b101;
+
 		if (cmdargs):
 			self.apply_map_modifier_by_number(self.cmdargs.map_modifier_num)
 		# Set the speed mode
@@ -43,7 +54,6 @@ class Environment:
 		# Initialize the grid data
 		self._grid_data_display = PG.Surface((self.width, self.height))
 		self._update_grid_data();
-
 
 	def _update_grid_data(self):
 		self.update_display(self._grid_data_display);
@@ -430,18 +440,18 @@ class Environment:
 
 		grid_data_width = max(self.width, masked_pix_arr.shape[0])
 		grid_data_height = max(self.height, masked_pix_arr.shape[1] )
-		self.grid_data = np.zeros((grid_data_width, grid_data_height), dtype=int)
+		self.grid_data = np.array(self.static_overlay); #np.zeros((grid_data_width, grid_data_height), dtype=int)
 
-		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
-		self.grid_data[masked_pix_arr == obstacle_pixel_val] = 1
+#		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
+#		self.grid_data[masked_pix_arr == obstacle_pixel_val] = 1
 
 		dynamic_obstacle_pixel_val = 0x227722 & pixel_mask # (34, 119, 34) represented as integer
-		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] = 3
+		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] |= 3
 		
 		# Uncomment the following lines to see the grid_data directly
-		pix_arr[self.grid_data==0] = 0
-		pix_arr[self.grid_data==3] = 0x115599
-		pix_arr[self.grid_data==1] = 0xFFFFFF
+		pix_arr[self.grid_data == 0] = 0
+		pix_arr[self.grid_data & 2 != 0] = 0x115599
+		pix_arr[self.grid_data & 4 != 0] = 0xFFFFFF
 
 
 	## Step the environment, updating dynamic obstacles and grid data.
