@@ -107,7 +107,7 @@ class Robot:
 
 		control_input = self._nav_algo.select_next_action();
 
-		speed = control_input.speed;
+		speed = min(control_input.speed, self.speed);
 		movement_ang = control_input.angle;
 
 		# Update the robot's motion based on the chosen direction
