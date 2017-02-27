@@ -193,6 +193,11 @@ class Robot:
 				if self._nav_algo.debug_info["future_obstacles"]:
 					for x,y in self._nav_algo.debug_info["future_obstacles"][1].keys():
 						gfxdraw.pixel(screen, x, y, (255,0,0))
+			if "path" in self._nav_algo.debug_info.keys():
+				if self._nav_algo.debug_info["path"]:
+					points = [x.data for x in self._nav_algo.debug_info["path"]]
+					for x,y in points:
+						gfxdraw.pixel(screen, x, y, (255,0,0))
 
 
 	def _draw_pdf(self, screen, pdf):
