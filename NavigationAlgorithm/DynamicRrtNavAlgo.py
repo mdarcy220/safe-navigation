@@ -43,6 +43,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self.using_safe_mode = True;
 
 		self._last_solution_node = Node((int(self._robot.location[0]), int(self._robot.location[1])))
+		self._has_given_up = False
 
 	## Next action selector method.
 	#
@@ -64,26 +65,28 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			if self._solution_contains_invalid_node():
 				self._regrow_rrt();
 				self._extract_solution();
-				self.debug_info["path"] = self._solution
 
 			if len(self._solution) > 0:
 				direction = Vector.getAngleBetweenPoints(self._robot.location, self._solution[0].data)
 				dist = min(self._maxstepsize, Vector.getDistanceBetweenPoints(self._robot.location, self._solution[0].data))
+				self.debug_info["path"] = self._solution
+				self._last_solution_node = self._solution[0]
+				del self._solution[0];
 			else:
-				self._initRRT(self._robot.target.position, self._robot.location, False);
-				self._grow_rrt(False);
-				self._extract_solution();
-				direction = Vector.getAngleBetweenPoints(self._robot.location, self._solution[0].data)
-				dist = min(self._maxstepsize, Vector.getDistanceBetweenPoints(self._robot.location, self._solution[0].data))
-			self.debug_info["path"] = self._solution
-			self._last_solution_node = self._solution[0]
-			del self._solution[0];
+				#No valid path found
+				self._has_given_up = True
+				dist = 0
+				direction = np.random.uniform(low=0, high=360);
+
 		else:
 			#If robot is inside dynamic obstacle
 			dist = 0
 			direction = np.random.uniform(low=0, high=360);
 
 		return RobotControlInput(dist, direction);
+
+	def has_given_up(self):
+		return self._has_given_up
 
 	def _regrow_rrt(self):
 		nearest_valid_node = self._nearest_neighbour(self._robot.location, True)
@@ -135,8 +138,8 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				if node.parent:
 					if self._anyParentsCollide(node):
 						node.invalidate()
-					else:
-					 	node.validate()
+				#	else:
+				#	 	node.validate()
 
 	def _anyParentsCollide(self, node):
 		parent = node.parent
@@ -263,6 +266,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		XDIM = 800
 		YDIM = 600
 		return np.random.random() * XDIM, np.random.random() * YDIM
+
 
 class Tree:
 
