@@ -34,3 +34,6 @@ class AbstractNavigationAlgorithm:
 		return RobotControlInput(0, 0);
 
 
+	def has_given_up(self):
+		return False;
+

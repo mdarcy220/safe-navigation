@@ -131,19 +131,25 @@ class Game:
 			self._doing_step = False
 
 			allBotsAtTarget = True
+			anyRobotQuit = False
 
 			# Process robot actions
 			for robot in self._robot_list:
-				if not (robot.distanceToTarget() < 20):
+				if robot.has_given_up():
+					anyRobotQuit = True;
+					break;
+				if not (self.check_robot_at_target(robot)):
 					allBotsAtTarget = False
 					robot.NextStep(self._env.grid_data)
 
 			# Step the environment
 			self._env.next_step()
 
-			if (self._cmdargs.batch_mode) and (allBotsAtTarget):
+			shouldEndSimulation = (anyRobotQuit or allBotsAtTarget);
+
+			if (self._cmdargs.batch_mode) and (shouldEndSimulation):
 				return
-			if not allBotsAtTarget:
+			if not shouldEndSimulation:
 				self._step_num += 1
 			if self._cmdargs.max_steps <= self._step_num:
 				return

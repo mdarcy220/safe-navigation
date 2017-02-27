@@ -140,6 +140,9 @@ class Robot:
 		self._PathList.append(np.array(self.location, dtype=int))
 
 
+	def has_given_up(self):
+		return self._nav_algo.has_given_up();
+
 
 	## Draws this `Robot` to the given surface
 	#
