@@ -24,13 +24,13 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
 
 		#Algo
-		self._maxstepsize = cmdargs.robot_speed;
+		self._maxstepsize = cmdargs.robot_speed*2;
 		self._maxWayPoints = 500;
 		self._wayPointCache = []
 		self._goalThresold = self._maxstepsize * 0.75; #In pixel distance
 		self._goalBias = 0.1;
 		self._wayPointBias = 0.4;
-		self._maxRrtSize = 10000;
+		self._maxRrtSize = 5000;
 		self.debug_info = {"path": None, "point": None}
 
 		#Make initial RRT from start to goal
