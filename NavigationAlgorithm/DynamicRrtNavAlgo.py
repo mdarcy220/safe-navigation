@@ -30,7 +30,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._goalThresold = self._maxstepsize * 0.75; #In pixel distance
 		self._goalBias = 0.1;
 		self._wayPointBias = 0.4;
-		self._maxRrtSize = 20000;
+		self._maxRrtSize = 10000;
 		self.debug_info = {"path": None, "point": None}
 
 		#Make initial RRT from start to goal
@@ -67,11 +67,12 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				self._extract_solution();
 
 			if len(self._solution) > 0:
-				direction = Vector.getAngleBetweenPoints(self._robot.location, self._solution[0].data)
-				dist = min(self._maxstepsize, Vector.getDistanceBetweenPoints(self._robot.location, self._solution[0].data))
+				while 0 < len(self._solution) and Vector.distance_between(self._robot.location, self._solution[0].data) < 1.5:
+					del self._solution[0];
+				direction = Vector.degrees_between(self._robot.location, self._solution[0].data)
+				dist = min(self._maxstepsize, Vector.distance_between(self._robot.location, self._solution[0].data))
 				self.debug_info["path"] = self._solution
 				self._last_solution_node = self._solution[0]
-				del self._solution[0];
 			else:
 				#No valid path found
 				self._has_given_up = True
