@@ -25,11 +25,11 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		#Algo
 		self._maxstepsize = cmdargs.robot_speed;
-		self._numOfWayPoint = 0;
+		self._maxWayPoints = 500;
 		self._wayPointCache = []
 		self._goalThresold = self._maxstepsize * 0.75; #In pixel distance
 		self._goalBias = 0.1;
-		self._wayPointBias = 0.2;
+		self._wayPointBias = 0.4;
 		self._maxRrtSize = 20000;
 		self.debug_info = {"path": None, "point": None}
 
@@ -169,8 +169,8 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _chose_target(self):
 		randReal = np.random.uniform(0.0, 1.0);
-		if self._numOfWayPoint > 0:
-				randInt = np.random.randint(0, self._numOfWayPoint - 1);
+		if len(self._wayPointCache) > 0:
+				randInt = np.random.randint(0, len(self._wayPointCache) - 1);
 
 		if randReal < self._goalBias:
 			return self._qgoal;
@@ -186,13 +186,23 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			current_node = self._final_node; #Nearest node to the robot's current position
 			i = 0;
 			while current_node.data != self._robot.target.position:
-				#Store some of the nodes to way point cache
-				if i % 5 == 0:
-					self._wayPointCache.append(current_node.parent)
 				self._solution.append(current_node.parent);
 				current_node = current_node.parent;
 
-			self._numOfWayPoint = len(self._wayPointCache)
+			wayPointCacheSpaceLeft = self._maxWayPoints - len(self._wayPointCache);
+			numOfSolutionNodes = len(self._solution);
+			
+			if numOfSolutionNodes < self._maxWayPoints:
+				if numOfSolutionNodes < wayPointCacheSpaceLeft:
+					self._wayPointCache.extend(self._solution);
+				else:
+					randInt = np.random.randint(0, self._maxWayPoints - numOfSolutionNodes - 1); 
+					self._wayPointCache[randInt: (randInt + numOfSolutionNodes)] = self._solution
+			else:
+				self._wayPointCache = self._solution[: self._maxWayPointCache - 1]
+
+			assert len(self._wayPointCache) <= self._maxWayPoints	
+				
 		else:
 			#Algo ran out of max rrt size
 			pass
