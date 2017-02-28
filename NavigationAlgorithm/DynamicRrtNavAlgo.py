@@ -40,7 +40,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._extract_solution() #path does not contain robot's current position
 
 		# Set using_safe_mode to appease Robot.draw()
-		self.using_safe_mode = True;
+		self.using_safe_mode = False;
 
 		self._last_solution_node = Node((int(self._robot.location[0]), int(self._robot.location[1])))
 		self._has_given_up = False
@@ -135,8 +135,9 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		if len(dynamic_obstacle_points) > 0:
 			nearby_nodes = self._rrt.get_nearby_nodes(self._robot.location, self._radar_range)
 			for node in nearby_nodes:
-				if node.parent:
-					if self._anyParentsCollide(node):
+				if node.parent and (node.flag == 0):
+					if self._collides(node.data, node.parent.data, True):
+					#if self._anyParentsCollide(node):
 						node.invalidate()
 				#	else:
 				#	 	node.validate()
@@ -202,7 +203,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		else:
 			tree_nodes = self._rrt.toList();
 
-		nearest_node = min(tree_nodes, key=lambda t: Vector.getDistanceBetweenPoints(t.data, qTarget.data))
+		nearest_node = min(tree_nodes, key=lambda t: (t.data[0]-qTarget.data[0])**2 + (t.data[1]-qTarget.data[1])**2)
 
 		return nearest_node
 
@@ -328,7 +329,7 @@ class Node:
 			frontier.push(node)
 
 		while True:
-			if len(result) == self.size:
+			if frontier.isEmpty() or len(result) == self.size:
 				return result;
 			else:
 				currentNode = frontier.pop();
@@ -363,6 +364,8 @@ class Node:
 		self.flag = 1
 		for child in self._children:
 			child.invalidate()
+		self.parent.size -= self.size;
+		self._children = [];
 
 	def validate(self):
 		self.flag = 0
