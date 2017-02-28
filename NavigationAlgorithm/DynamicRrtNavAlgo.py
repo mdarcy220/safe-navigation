@@ -117,7 +117,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 						if Vector.getDistanceBetweenPoints(qNew.data, self._qgoal.data) < self._goalThresold:
 							foundGoal = True
 						count += 1
-					
+
 				else:
 					if qNew.data not in self._rrt.toDataList():
 						qNearest.addChild(qNew)
@@ -152,7 +152,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				return self._anyParentsCollide(parent)
 		else:
 			return False
-		
+
 
 	def _initRRT(self, qstart, qgoal, append):
 			self._qstart = Node(qstart);
@@ -192,7 +192,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 			wayPointCacheSpaceLeft = self._maxWayPoints - len(self._wayPointCache);
 			numOfSolutionNodes = len(self._solution);
-			
+
 			self._wayPointCache.extend(self._solution[0:wayPointCacheSpaceLeft]);
 			remaining_solution_nodes = self._solution[wayPointCacheSpaceLeft:];
 			solution_index = 0;
@@ -201,7 +201,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				solution_index += 1;
 
 			assert len(self._wayPointCache) <= self._maxWayPoints	
-				
+
 		else:
 			#Algo ran out of max rrt size
 			pass
@@ -231,7 +231,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _collides(self, fromPoint, toPoint, dynamicOnly):
 		grid_data = self._robot.radar._env.grid_data
-	
+
 		if fromPoint is not None:
 			ang_in_radians = Vector.degrees_between(fromPoint, toPoint) * np.pi / 180
 			dist = Vector.getDistanceBetweenPoints(fromPoint, toPoint)
@@ -294,10 +294,10 @@ class Tree:
 
 	def toValidDataList(self):
 		return [node.data for node in self.root.toList() if node.flag == 0]
-	
+
 	def toListInvalidNodes(self):
 		return [node for node in self.root.toList() if node.flag == 1]
-	
+
 	def toInvalidDataList(self):
 		return [node.data for node in self.root.toList() if node.flag == 1]
 
@@ -313,7 +313,7 @@ class Tree:
 
 	def getSize(self):
 		return self.root.size;
-	
+
 class Node:
 
 	def __init__(self, data):
