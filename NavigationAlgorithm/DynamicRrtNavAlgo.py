@@ -192,14 +192,12 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			wayPointCacheSpaceLeft = self._maxWayPoints - len(self._wayPointCache);
 			numOfSolutionNodes = len(self._solution);
 			
-			if numOfSolutionNodes < self._maxWayPoints:
-				if numOfSolutionNodes < wayPointCacheSpaceLeft:
-					self._wayPointCache.extend(self._solution);
-				else:
-					randInt = np.random.randint(0, self._maxWayPoints - numOfSolutionNodes - 1); 
-					self._wayPointCache[randInt: (randInt + numOfSolutionNodes)] = self._solution
-			else:
-				self._wayPointCache = self._solution[: self._maxWayPointCache - 1]
+			self._wayPointCache.extend(self._solution[0:wayPointCacheSpaceLeft]);
+			remaining_solution_nodes = self._solution[wayPointCacheSpaceLeft:];
+			solution_index = 0;
+			for randIndex in np.random.randint(low=0, high=len(self._wayPointCache), size=len(remaining_solution_nodes)):
+				self._wayPointCache[randIndex] = remaining_solution_nodes[solution_index];
+				solution_index += 1;
 
 			assert len(self._wayPointCache) <= self._maxWayPoints	
 				
