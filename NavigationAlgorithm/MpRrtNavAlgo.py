@@ -147,7 +147,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
                 #Prepend
                 robot_location = (int(self._robot.location[0]), int(self._robot.location[1]))
-                if self._rrt.root.data != robot_location:
+                if self._rrt.root.data != robot_location and len(self._solution) > 0:
                         if self._solution[0].data != robot_location:
                                 #Set root of the tree to robot's current position
                                 self._rrt = Tree(Node(self._robot.location))
