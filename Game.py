@@ -53,7 +53,7 @@ class Game:
 		initial_position = np.array([50, 550]);
 		self._normal_robot  = Robot (self._target, initial_position, radar, cmdargs, using_safe_mode =False, name="NormalRobot")
 		self._safe_robot    = Robot (self._target, initial_position, radar, cmdargs, using_safe_mode = True, name="SafeRobot")
-		self._robot_list    = [self._normal_robot, self._safe_robot]
+		self._robot_list    = [self._normal_robot]
 
 		# Set window title
 		PG.display.set_caption(cmdargs.window_title)

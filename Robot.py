@@ -200,7 +200,8 @@ class Robot:
 				if self._nav_algo.debug_info["path"]:
 					points = [x.data for x in self._nav_algo.debug_info["path"]]
 					for x,y in points:
-						gfxdraw.pixel(screen, x, y, (255,0,0))
+						PG.draw.circle(screen, (0,0,0), (x,y), 2)
+					#	gfxdraw.pixel(screen, x, y, (0,0,0))
 
 
 	def _draw_pdf(self, screen, pdf):
