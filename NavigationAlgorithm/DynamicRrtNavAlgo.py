@@ -24,7 +24,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
 
 		#Algo
-		self._maxstepsize = cmdargs.robot_speed*2;
+		self._maxstepsize = cmdargs.robot_speed*3;
 		self._maxWayPoints = 500;
 		self._wayPointCache = []
 		self._goalThresold = cmdargs.robot_speed * 0.75; #In pixel distance
@@ -142,6 +142,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 						node.invalidate()
 				#	else:
 				#	 	node.validate()
+		self._qstart.flag = 0;
 
 	def _anyParentsCollide(self, node):
 		parent = node.parent

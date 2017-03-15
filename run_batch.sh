@@ -37,7 +37,7 @@ do
 		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/parallel_walls.png")
 		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/rooms.png")
 		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/empty.png")
-		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/easy_maze.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/block_columns.png")
 	done
 
 done

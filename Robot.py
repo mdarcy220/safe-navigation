@@ -152,7 +152,7 @@ class Robot:
 	def draw(self, screen):
 		#PG.draw.circle(screen, (0, 0, 255), np.array(self.location, dtype=int), 4, 0)
 		BlueColor  = (0, 0, 255)
-		GreenColor = (100, 255, 100)
+		GreenColor = (30, 200, 30)
 		if (self._nav_algo.using_safe_mode):
 			PathColor = GreenColor
 		else:
