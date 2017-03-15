@@ -93,8 +93,10 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
         def _grow_rrt(self, tree, qgoal, goalThreshold, useForest):
 
+                grid_data = self._robot.radar._env.grid_data;
+                if grid_data[tree.root.data[0]][tree.root.data[1]] == 3:
+                        return False
                 if Vector.distance_between(qgoal.data, self._robot.location) < self._radar_range:
-                        grid_data = self._robot.radar._env.grid_data;
                         if grid_data[qgoal.data[0]][qgoal.data[1]] == 3:
                                 return False;
 
@@ -103,7 +105,6 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
                 while not foundGoal and count < self._maxRrtSize:
                         qTarget = self._chose_target(qgoal);
-
                         qNearest = self._nearest_neighbour(tree, qTarget);
                         
                         if useForest and qTarget in self._forest.nodeList:
