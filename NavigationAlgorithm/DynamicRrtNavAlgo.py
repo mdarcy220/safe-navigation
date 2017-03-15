@@ -27,7 +27,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._maxstepsize = cmdargs.robot_speed*2;
 		self._maxWayPoints = 500;
 		self._wayPointCache = []
-		self._goalThresold = self._maxstepsize * 0.75; #In pixel distance
+		self._goalThresold = cmdargs.robot_speed * 0.75; #In pixel distance
 		self._goalBias = 0.1;
 		self._wayPointBias = 0.4;
 		self._maxRrtSize = 5000;
@@ -36,8 +36,8 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		#Make initial RRT from start to goal
 		self._solution = []
 		self._initRRT(self._robot.target.position, self._robot.location, False);
-		self._grow_rrt(False) #final_node = nearest node to robot's current position
-		self._extract_solution() #path does not contain robot's current position
+		self._grow_rrt(False); 
+		self._extract_solution(); 
 
 		# Set using_safe_mode to appease Robot.draw()
 		self.using_safe_mode = False;

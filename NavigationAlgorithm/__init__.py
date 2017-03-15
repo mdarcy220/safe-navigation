@@ -9,3 +9,4 @@ from .FuzzyNavAlgo import FuzzyNavigationAlgorithm
 from .SamplingNavAlgo import SamplingNavigationAlgorithm
 from .MultiLevelNavAlgo import MultiLevelNavigationAlgorithm
 from .DynamicRrtNavAlgo import DynamicRrtNavigationAlgorithm
+from .MpRrtNavAlgo import MpRrtNavigationAlgorithm
