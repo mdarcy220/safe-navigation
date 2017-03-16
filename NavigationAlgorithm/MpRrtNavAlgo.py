@@ -37,7 +37,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                 self._solution = []
                 self._rrt = Tree(Node(self._robot.location));
 
-                self._grow_rrt(self._rrt, Node(self._robot.target.position), self._goalThreshold, False);
+                self._status = self._grow_rrt(self._rrt, Node(self._robot.target.position), self._goalThreshold, False);
                 self._extract_solution();
 
                 # Set using_safe_mode to appease Robot.draw()
@@ -59,13 +59,13 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                         self._solution.insert(0, self._last_solution_node)
 
                 self._pruneAndPrepend();
-                status = 0;
+              
                 if not self._rrt.hasGoal(Node(self._robot.target.position), self._goalThreshold):
                         self._rrt = Tree(Node(self._robot.location));
-                        status = self._grow_rrt(self._rrt, Node(self._robot.target.position), self._goalThreshold, True);
+                        self._status = self._grow_rrt(self._rrt, Node(self._robot.target.position), self._goalThreshold, True);
                         self._extract_solution();
 
-                if status == 0:
+                if self._status == 0:
                         #There is a valid path from robot to goal
                         while 0 < len(self._solution) and Vector.distance_between(self._robot.location, self._solution[0].data) < 1.5:
                                 del self._solution[0];
@@ -73,13 +73,13 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                         dist = min(self._maxstepsize, Vector.distance_between(self._robot.location, self._solution[0].data))
                         self.debug_info["path"] = self._solution
                         self._last_solution_node = self._solution[0]
-                if status == 1:
+                if self._status == 1:
                         #No valid path found
                         print("Given Up");
                         self._has_given_up = True
                         dist = 0
                         direction = np.random.uniform(low=0, high=360);
-                if status == 2:
+                if self._status == 2:
                         #Robot or goal is inside dynamic obstacle
                         dist = 0
                         direction = np.random.uniform(low=0, high=360);
