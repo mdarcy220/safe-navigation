@@ -153,27 +153,26 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
         def _pruneAndPrepend(self):
                 # Check if there is any dynamic obstacle within radar range
                 # Prune
+                tree_nearby_nodes = self._rrt.get_nearby_nodes(self._robot.location, self._radar_range);
+                forest_nearby_nodes = self._forest.get_nearby_nodes(self._robot.location, self._radar_range);
+                for node in tree_nearby_nodes:               
+                        if not self._isNodeReachable(node):
+                                node.disconnect(); #Don't add to forest
+                for node in forest_nearby_nodes:              
+                        if not self._isNodeReachable(node):
+                                self._forest.delete(node);
+                                       
                 dynamic_obstacle_points = self._convert_radar_to_grid()
                 invalidTreeNodes = []
                 if len(dynamic_obstacle_points) > 0:
-                        nearby_nodes = self._rrt.get_nearby_nodes(self._robot.location, self._radar_range)
-                        for node in nearby_nodes:
-                                if not self._isNodeReachable(node):
-                                        node.disconnect(); #Don't add to forest
-                                        continue;
-        
+                        for node in tree_nearby_nodes:
                                 if node.parent and self._collides(node.parent.data, node.data, True):
                                         node.disconnect();
                                         invalidTreeNodes.append(node);
 
-                        nearby_nodes = self._forest.get_nearby_nodes(self._robot.location, self._radar_range);
-                        for node in nearby_nodes:
-                                if not self._isNodeReachable(node):
-                                        self._forest.delete(node);
-                                        continue;
-                                if node.parent:
-                                        if self._collides(node.parent.data, node.data, True):
-                                                self._forest.disconnect(node);
+                        for node in forest_nearby_nodes:
+                                if node.parent and self._collides(node.parent.data, node.data, True):
+                                        self._forest.disconnect(node);
 
                         for node in invalidTreeNodes:
                                 self._forest.addSubTree(node);
