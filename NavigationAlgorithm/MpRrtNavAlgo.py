@@ -2,6 +2,7 @@
 
 
 import numpy    as np
+from numpy import linalg as la
 import Vector, time
 from math import *
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
@@ -27,7 +28,8 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                 self._target = self._robot.target.position;
 
                 #Algo
-                self._maxstepsize = self._robot_speed * 2;
+                self._maxstepsize = self._robot_speed * 2 ;
+                self._max3dstepsize = sqrt( (self._maxstepsize ** 2) + (1 ** 2));
                 self._goalThreshold = self._robot_speed * 0.75; #In pixel distance
                 self._goalBias = 0.05; #As mentioned in the paper
                 self._forestBias = 0.1; #As mentioned in the paper
@@ -74,7 +76,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                         self._obstacle_predictor_dynobs_getter_func
                 );
 
-                if self._last_solution_node.data != (int(self._robot.location[0]), int(self._robot.location[1]), self._time):
+                if self._last_solution_node.data[:2] != (int(self._robot.location[0]), int(self._robot.location[1])):
                         self._solution.insert(0, self._last_solution_node)
 
                 self._pruneAndPrepend();
@@ -255,14 +257,12 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
         def _extend(self, n1, n2):
                 p1 = n1.data[:2];
                 p2 = n2.data[:2];
-                if Vector.getDistanceBetweenPoints(p1, p2) < self._maxstepsize:
+                if Vector.distance_between(n1.data, n2.data) < self._max3dstepsize:
                         return n2;
                 else:
-                        theta = atan2(p2[1] - p1[1], p2[0] - p1[0]);
-                        x = p1[0] + self._maxstepsize * cos(theta);
-                        y = p1[1] + self._maxstepsize * sin(theta);
-                        t = int(np.random.uniform(n1.data[2], n1.data[2] + self._minTimeMultiplier * self._minTime(n1.data[:2], (x,y) )));
-                        return Node((x, y, t));
+                        unitVec = np.subtract(n2.data, n1.data) / Vector.distance_between(n2.data, n1.data);
+                        nodeData = n1.data + (unitVec * self._max3dstepsize);
+                        return Node(nodeData);
 
         def _connect(self, n1, n2):
                 if self._collides(n1.data, n2.data, False):
@@ -385,7 +385,7 @@ class Tree:
 class Node:
 
         def __init__(self, data):
-                self.data = tuple((int(data[0]), int(data[1]), int(data[2])));
+                self.data = tuple((int(data[0]), int(data[1]), abs(int(data[2]))));
                 self.children = [];
                 self.parent = None;
 
