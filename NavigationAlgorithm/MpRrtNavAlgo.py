@@ -5,6 +5,7 @@ import numpy    as np
 import Vector, time
 from math import *
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
+from ObstaclePredictor import HMMObstaclePredictor
 from Robot import RobotControlInput
 
 ## Implementation of the Dynamic Window algorithm for robotic navigation.
@@ -22,29 +23,38 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                 self._radar_range = robot.radar.radius;
                 self._radar_resolution = robot.radar.resolution;
                 self._dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
+                self._robot_speed = cmdargs.robot_speed;
+                self._target = self._robot.target.position;
 
                 #Algo
-                self._maxstepsize = cmdargs.robot_speed*2;
-                self._goalThreshold = cmdargs.robot_speed * 0.75; #In pixel distance
+                self._maxstepsize = self._robot_speed * 2;
+                self._goalThreshold = self._robot_speed * 0.75; #In pixel distance
                 self._goalBias = 0.05; #As mentioned in the paper
                 self._forestBias = 0.1; #As mentioned in the paper
                 self._maxRrtSize = 5000;
                 self._forest = Forest();
 
+                #Time Dimention
+                self._time = 0;
+                self._minTimeMultiplier = 3;
+                self._maxPredictTime = 5;
+                self._obstacle_predictor = HMMObstaclePredictor(360, robot.radar.radius, self._maxPredictTime);
+
+
                 self.debug_info = {"path": [], "path2": []}
 
                 #Make initial RRT from start to goal
-                self._solution = []
-                self._rrt = Tree(Node(self._robot.location));
-
-                self._status = self._grow_rrt(self._rrt, Node(self._robot.target.position), self._goalThreshold, False);
+                self._solution = [];
+                self._rrt = Tree(Node((self._robot.location[0], self._robot.location[1], self._time)));
+                qgoal = Node((self._target[0], self._target[1], self._minTimeMultiplier * self._minTime(self._robot.location, self._target)));
+                self._status = self._grow_rrt(self._rrt, qgoal, self._goalThreshold, False);
                 self._extract_solution();
 
                 # Set using_safe_mode to appease Robot.draw()
                 self.using_safe_mode = False;
 
-                self._last_solution_node = Node((int(self._robot.location[0]), int(self._robot.location[1])))
-                self._has_given_up = False
+                self._last_solution_node = Node((int(self._robot.location[0]), int(self._robot.location[1]), self._time));
+                self._has_given_up = False;
 
         ## Next action selector method.
         #
@@ -53,29 +63,41 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
         #               "AbstractNavigationAlgorithm.select_next_action()"
         #
         def select_next_action(self):
+                #Scan the radar
                 self._dynamic_radar_data = self._robot.radar.scan_dynamic_obstacles(self._robot.location);
+                self._radar_data = self._robot.radar.scan(self._robot.location);
 
-                if self._last_solution_node.data != (int(self._robot.location[0]), int(self._robot.location[1])):
+                # Give the current observation to the obstacle motion predictor
+                self._obstacle_predictor.add_observation(self._robot.location,
+                        self._radar_data,
+                        self._dynamic_radar_data,
+                        self._obstacle_predictor_dynobs_getter_func
+                );
+
+                if self._last_solution_node.data != (int(self._robot.location[0]), int(self._robot.location[1]), self._time):
                         self._solution.insert(0, self._last_solution_node)
 
                 self._pruneAndPrepend();
               
-                if not self._rrt.hasGoal(Node(self._robot.target.position), self._goalThreshold):
-                        self._rrt = Tree(Node(self._robot.location));
-                        self._status = self._grow_rrt(self._rrt, Node(self._robot.target.position), self._goalThreshold, True);
+                if not self._rrt.hasGoal(self._target, self._goalThreshold):
+                        self._rrt = Tree(Node((self._robot.location[0], self._robot.location[1], self._time)));
+                        qgoal = Node((self._target[0], self._target[1], self._minTimeMultiplier * self._minTime(self._robot.location, self._target)));
+                        self._status = self._grow_rrt(self._rrt, qgoal, self._goalThreshold, True);
                         self._extract_solution();
 
                 if self._status == 0:
                         #There is a valid path from robot to goal
-                        while 0 < len(self._solution) and Vector.distance_between(self._robot.location, self._solution[0].data) < 1.5:
+                        while 0 < len(self._solution) and (Vector.distance_between(self._robot.location, self._solution[0].data[:2]) < 1.5 or self._solution[0].data[2] <= self._time):
                                 del self._solution[0];
-                        direction = Vector.degrees_between(self._robot.location, self._solution[0].data)
-                        dist = min(self._maxstepsize, Vector.distance_between(self._robot.location, self._solution[0].data))
-                        self.debug_info["path"] = self._solution
-                        self._last_solution_node = self._solution[0]
+
+                        timeDiff = self._solution[0].data[2] - self._time; #Should always be > 0
+                        direction = Vector.degrees_between(self._robot.location, self._solution[0].data[:2]);
+                        dist = min(self._maxstepsize, Vector.distance_between(self._robot.location, self._solution[0].data[:2]) / timeDiff);
+                        self.debug_info["path"] = self._solution;
+                        self._last_solution_node = self._solution[0];
+                        self._time += 1;
                 if self._status == 1:
                         #No valid path found
-                        print("Given Up");
                         self._has_given_up = True
                         dist = 0
                         direction = np.random.uniform(low=0, high=360);
@@ -86,8 +108,12 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
                 return RobotControlInput(dist, direction);
 
+
         def has_given_up(self):
                 return self._has_given_up
+
+        def _minTime(self, sPoint, gPoint):
+                return  np.ceil(Vector.distance_between(sPoint, gPoint) / self._robot_speed);
 
         def _grow_rrt(self, tree, qgoal, goalThreshold, useForest):
 
@@ -104,10 +130,10 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                         qTarget = self._chose_target(qgoal);
                         qNearest = self._nearest_neighbour(tree, qTarget);
                         
-                        if useForest and qTarget in self._forest.nodeList:
+                        if useForest and qTarget in self._forest.toList():
                                 if self._connect(qNearest, qTarget):
                                         self._forest.removeSubTree(qTarget);
-                                        if tree.hasGoal(qgoal, goalThreshold):
+                                        if tree.hasGoal(qgoal.data[:2], goalThreshold):
                                                 foundGoal = True;
                         else:
                                 qNew = self._extend(qNearest, qTarget)
@@ -115,7 +141,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                                 if not self._collides(qNearest.data, qNew.data, False):
                                         if qNew.data not in tree.toDataList():
                                                 if qNearest.addChild(qNew): #addChild prohibits cycles in tree
-                                                        if tree.hasGoal(qgoal, goalThreshold):
+                                                        if tree.hasGoal(qgoal.data[:2], goalThreshold):
                                                                 foundGoal = True
                                                         count += 1
 
@@ -132,14 +158,21 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                 if len(dynamic_obstacle_points) > 0:
                         nearby_nodes = self._rrt.get_nearby_nodes(self._robot.location, self._radar_range)
                         for node in nearby_nodes:
-                                if node.parent and self._collides(node.data, node.parent.data, True):
+                                if not self._isNodeReachable(node):
+                                        node.disconnect(); #Don't add to forest
+                                        continue;
+        
+                                if node.parent and self._collides(node.parent.data, node.data, True):
                                         node.disconnect();
                                         invalidTreeNodes.append(node);
 
                         nearby_nodes = self._forest.get_nearby_nodes(self._robot.location, self._radar_range);
                         for node in nearby_nodes:
+                                if not self._isNodeReachable(node):
+                                        self._forest.delete(node);
+                                        continue;
                                 if node.parent:
-                                        if self._collides(node.data, node.parent.data, True):
+                                        if self._collides(node.parent.data, node.data, True):
                                                 self._forest.disconnect(node);
 
                         for node in invalidTreeNodes:
@@ -147,19 +180,29 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
                 #Prepend
                 robot_location = (int(self._robot.location[0]), int(self._robot.location[1]))
-                if self._rrt.root.data != robot_location and len(self._solution) > 0:
-                        if self._solution[0].data != robot_location:
+                if self._rrt.root.data[:2] != robot_location and len(self._solution) > 0:
+                        if self._solution[0].data[:2] != robot_location:
                                 #Set root of the tree to robot's current position
-                                self._rrt = Tree(Node(self._robot.location))
+                                self._rrt = Tree(Node((self._robot.location[0], self._robot.location[1], self._time)));
 
                                 if not self._connect(self._rrt.root, self._solution[0]):
                                         #If can't connect to the previous tree, put the whole tree to forest
                                         self._forest.addSubTree(self._solution[0])
-                                        self._rrt = Tree(Node(self._robot.location))
-                                        self._grow_rrt(self._rrt, Node(self._robot.target.position), self._goalThreshold, True);
+                                        self._rrt = Tree(Node((self._robot.location[0], self._robot.location[1], self._time)));
+                                        qgoal = Node((self._target[0], self._target[1], self._minTimeMultiplier * self._minTime(self._robot.location, self._target)));
+                                        self._grow_rrt(self._rrt, qgoal, self._goalThreshold, True);
                         else:
                                 self._rrt = Tree(self._solution[0])
 
+        def _isNodeReachable(self, node):
+                timeOffset = node.data[2] - self._time;
+                if timeOffset <= 0:
+                        return False;
+
+                if self._minTime(self._robot.location, node.data[:2]) > timeOffset:
+                        return False;
+
+                return True;
 
         def _chose_target(self, qgoal):
                 randReal = np.random.uniform(0.0, 1.0);
@@ -192,7 +235,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                         if currentNode.data not in visited:
                                 visited.append(currentNode.data)
 
-                                if Vector.distance_between(currentNode.data, self._robot.target.position) < self._goalThreshold:
+                                if Vector.distance_between(currentNode.data[:2], self._robot.target.position) < self._goalThreshold:
                                         self._solution = currentpath;
                                         break;
                                 childrenNodes = currentNode.children;
@@ -211,13 +254,16 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                 return nearest_node
 
         def _extend(self, n1, n2):
-                p1 = n1.data;
-                p2 = n2.data;
+                p1 = n1.data[:2];
+                p2 = n2.data[:2];
                 if Vector.getDistanceBetweenPoints(p1, p2) < self._maxstepsize:
                         return n2;
                 else:
                         theta = atan2(p2[1] - p1[1], p2[0] - p1[0]);
-                        return Node((p1[0] + self._maxstepsize * cos(theta), p1[1] + self._maxstepsize * sin(theta)));
+                        x = p1[0] + self._maxstepsize * cos(theta);
+                        y = p1[1] + self._maxstepsize * sin(theta);
+                        t = int(np.random.uniform(n1.data[2], n1.data[2] + self._minTimeMultiplier * self._minTime(n1.data[:2], (x,y) )));
+                        return Node((x, y, t));
 
         def _connect(self, n1, n2):
                 if self._collides(n1.data, n2.data, False):
@@ -233,14 +279,18 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
         def _get_safe_random_node(self):
                 while True:
-                        rand_point = self._get_random_point()
+                        rand_point = self._get_random_point(); #3D point
                         if not self._collides(None, rand_point, False):
                                 return Node(rand_point)
 
-        def _collides(self, fromPoint, toPoint, dynamicOnly):
-                grid_data = self._robot.radar._env.grid_data
+        def _collides(self, fromData, toData, dynamicOnly):
+                toPoint = toData[:2];
+                grid_data = self._robot.radar._env.grid_data;
 
-                if fromPoint is not None:
+                if fromData is not None:
+                        fromPoint = fromData[:2];
+                        timeOffset = toData[2] - fromData[2]; 
+                        
                         ang_in_radians = Vector.degrees_between(fromPoint, toPoint) * np.pi / 180
                         dist = Vector.getDistanceBetweenPoints(fromPoint, toPoint)
 
@@ -251,11 +301,22 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                                 y = int(sin_cached * i + fromPoint[1])
                                 if grid_data[x][y] & 1 and Vector.distance_between((x,y), self._robot.location) < self._robot.radar.radius:
                                         return True
+                                if timeOffset > 0 and timeOffset <= self._maxPredictTime:
+                                        for i in np.arange(1, timeOffset, 1):
+                                                if self._obstacle_predictor.get_prediction((x,y), i) > 0.5:
+                                                        return True;
                                 if not dynamicOnly:
                                         if grid_data[x][y] & 4:
                                                 return True
                 else:
                                 # Check for dynamic obstacle
+                        timeOffset = toData[2] - self._time;
+                        if timeOffset > 0 and timeOffset <= self._maxPredictTime:
+                                for i in np.arange(1, timeOffset, 1):
+                                        if self._obstacle_predictor.get_prediction(toPoint, i) > 0.5:
+                                                return True;
+
+
                         if grid_data[int(toPoint[0])][int(toPoint[1])] & 1 and Vector.distance_between(toPoint, self._robot.location) < self._robot.radar.radius:
                                 return True
                         # Check for static obstacle
@@ -281,10 +342,15 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
                 return obstacle_points
 
         def _get_random_point(self):
-                XDIM = 800
-                YDIM = 600
-                return np.random.random() * XDIM, np.random.random() * YDIM
+                XDIM = 800;
+                YDIM = 600;
+                x = np.random.random() * XDIM;
+                y = np.random.random() * YDIM; 
+                t = int(np.random.uniform(self._time, self._time + self._minTimeMultiplier * self._minTime(self._robot.location, (x,y) )));
+                return x, y, t;
 
+        def _obstacle_predictor_dynobs_getter_func(self, angle):
+                return self._robot.radar.get_dynobs_at_angle(self._robot.location, angle);
 
 class Tree:
 
@@ -295,21 +361,24 @@ class Tree:
         def toList(self):
                 return self.root.toList();
 
+        def toPointList(self):
+                return [node.data[:2] for node in self.root.toList()]
+        
         def toDataList(self):
                 return [node.data for node in self.root.toList()]
 
         def get_nearby_nodes(self, center, distance):
-                all_nodes = self.toList()
+                all_nodes = self.toList();
                 nearby_nodes = []
 
                 for node in all_nodes:
-                        if Vector.getDistanceBetweenPoints(center, node.data) <= distance:
+                        if Vector.getDistanceBetweenPoints(center, node.data[:2]) <= distance:
                                 nearby_nodes.append(node)
 
                 return nearby_nodes
 
-        def hasGoal(self, goal, goalThreshold):
-                if len(self.get_nearby_nodes(goal.data, goalThreshold)) > 0:
+        def hasGoal(self, goalPoint, goalThreshold):
+                if len(self.get_nearby_nodes(goalPoint, goalThreshold)) > 0:
                         return True;
                 else:
                         return False; 
@@ -317,7 +386,7 @@ class Tree:
 class Node:
 
         def __init__(self, data):
-                self.data = tuple((int(data[0]), int(data[1])));
+                self.data = tuple((int(data[0]), int(data[1]), int(data[2])));
                 self.children = [];
                 self.parent = None;
 
@@ -350,12 +419,17 @@ class Node:
                                 for node in currentNode.children:
                                         frontier.push(node);
 
+        def toPointList(self):
+                pointList = []
+                for node in self.toList():
+                        pointList.append(node.data[:2])
+                return pointList;
+        
         def toDataList(self):
                 dataList = []
                 for node in self.toList():
                         dataList.append(node.data)
-                return dataList
-
+                return dataList;
 
         def disconnect(self):
                 if self.parent:
@@ -365,7 +439,7 @@ class Node:
 class Forest:
         def __init__(self):
                 self._subTreeRoots = [];
-                self.nodeList = [];
+                self._nodeList = [];
                 self._isListUpToDate = True;
 
         def isEmpty(self):
@@ -387,6 +461,7 @@ class Forest:
         def removeSubTree(self, root):
                 if root in self._subTreeRoots:
                         self._subTreeRoots.remove(root);
+                        self._isListUpToDate = False;
 
         def disconnect(self, node):
                 if node.parent:
@@ -397,26 +472,34 @@ class Forest:
                         #Node is a root and already exist in the forest
                         pass;
 
+        def delete(self, node):
+                if node.parent:
+                        node.parent.children.remove(node);
+                        node.parent = None;
+                        self._isListUpToDate = False;
+                else:
+                        self.removeSubTree(node);
+
         def get_nearby_nodes(self, center, distance):
-                all_nodes = self._toList();
+                all_nodes = self.toList();
                 nearby_nodes = [];
 
                 for node in all_nodes:
-                        if Vector.distance_between(center, node.data) <= distance:
+                        if Vector.distance_between(center, node.data[:2]) <= distance:
                                 nearby_nodes.append(node)
 
                 return all_nodes;
 
-        def _toList(self):
+        def toList(self):
                 if not self._isListUpToDate:
                         all_nodes = set();
                         for root in self._subTreeRoots:
                                 all_nodes.update(root.toList());
                 
-                        self.nodeList = list(all_nodes); 
+                        self._nodeList = list(all_nodes); 
                         self._isListUpToDate = True;
                 
-                return self.nodeList;
+                return self._nodeList;
 
         def getSubTreeRoots(self):
                 return self._subTreeRoots;

@@ -198,7 +198,7 @@ class Robot:
 						gfxdraw.pixel(screen, x, y, (255,0,0))
 			if "path" in self._nav_algo.debug_info.keys():
 				if self._nav_algo.debug_info["path"]:
-					points = [x.data for x in self._nav_algo.debug_info["path"]]
+					points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
 					for x,y in points:
 						PG.draw.circle(screen, (0,0,0), (x,y), 2)
 					#	gfxdraw.pixel(screen, x, y, (0,0,0))

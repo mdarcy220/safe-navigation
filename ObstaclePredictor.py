@@ -198,7 +198,7 @@ class DummyObstaclePredictor(AbstractObstaclePredictor):
 class HMMObstaclePredictor(AbstractObstaclePredictor):
     ## See the corresponding superclass method for details
     #
-    def __init__(self, data_size, radar_range):
+    def __init__(self, data_size, radar_range, maxtimestep):
         self.data_size = data_size;
         self.radar_range = radar_range;
         self.obs_predictions = defaultdict(lambda: 0);
@@ -207,7 +207,7 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
         self.neighbour_range = 15
         self.future_obs_points = {}
         self.current_timestep = 0
-        self.maxtimestep = 2
+        self.maxtimestep = maxtimestep;
 
         self.last_location = None
         self.last_clustered_obs = None
