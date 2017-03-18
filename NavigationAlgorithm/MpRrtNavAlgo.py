@@ -29,19 +29,18 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		#Algo
 		self._maxstepsize = self._robot_speed * 2 ;
-		self._max3dstepsize = sqrt( (self._maxstepsize ** 2) + (1 ** 2));
+		self._max3dstepsize = sqrt( (self._maxstepsize ** 2) + (self._maxstepsize ** 2));
 		self._goalThreshold = self._robot_speed * 0.75; #In pixel distance
-		self._goalBias = 0.05; #As mentioned in the paper
-		self._forestBias = 0.1; #As mentioned in the paper
+		self._goalBias = 0.1; # Value in paper: 0.05
+		self._forestBias = 0.05; # Value in paper: 0.1
 		self._maxRrtSize = 5000;
 		self._forest = Forest();
 
 		#Time Dimention
 		self._time = 0;
 		self._minTimeMultiplier = 3;
-		self._maxPredictTime = 15;
-		self._obstacle_predictor_horizon = 5;
-		self._obstacle_predictor = CollisionConeObstaclePredictor(360, robot.radar.radius, self._obstacle_predictor_horizon);
+		self._maxPredictTime = 7;
+		self._obstacle_predictor = CollisionConeObstaclePredictor(360, robot.radar.radius, self._maxPredictTime);
 
 
 		self.debug_info = {"path": [], "path2": []}
@@ -295,7 +294,8 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		if fromData is not None:
 			fromPoint = fromData[:2];
-			timeOffset = toData[2] - fromData[2]; 
+			toDataTimeOffset = toData[2] - self._time;
+			fromDataTimeOffset = fromData[2] - self._time;
 			
 			ang_in_radians = Vector.degrees_between(fromPoint, toPoint) * np.pi / 180
 			dist = Vector.getDistanceBetweenPoints(fromPoint, toPoint)
@@ -307,8 +307,8 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				y = int(sin_cached * i + fromPoint[1])
 				if grid_data[x][y] & 1 and Vector.distance_between((x,y), self._robot.location) < self._robot.radar.radius:
 					return True
-				if timeOffset > 2 and timeOffset <= self._maxPredictTime:
-					for i in np.arange(1, self._obstacle_predictor_horizon, 1):
+				if fromDataTimeOffset <= self._maxPredictTime:
+					for i in np.arange(fromDataTimeOffset, min(self._maxPredictTime, toDataTimeOffset), 1):
 						if self._obstacle_predictor.get_prediction((x,y), i) > 0.15:
 							return True;
 				if not dynamicOnly:
@@ -317,10 +317,9 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		else:
 				# Check for dynamic obstacle
 			timeOffset = toData[2] - self._time;
-			if timeOffset > 2 and timeOffset <= self._maxPredictTime:
-				for i in np.arange(1, self._obstacle_predictor_horizon, 1):
-					if self._obstacle_predictor.get_prediction(toPoint, i) > 0.15:
-						return True;
+			if timeOffset <= self._maxPredictTime:
+				if self._obstacle_predictor.get_prediction(toPoint, timeOffset) > 0.15:
+					return True;
 
 
 			if grid_data[int(toPoint[0])][int(toPoint[1])] & 1 and Vector.distance_between(toPoint, self._robot.location) < self._robot.radar.radius:

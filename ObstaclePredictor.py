@@ -482,8 +482,6 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 
 		# Init obstacle point storage
 		self._obs_points = [];
-		for i in range(max_timestep):
-			self._obs_points.append([]);
 
 
 	## @copydoc AbstractObstaclePredictor#add_observation()
@@ -494,28 +492,29 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 		self.last_dynamic_obstacle_distribution = radar_dynamic;
 		self.last_obstacle_getter_func = get_obs_at_angle;
 
-		self._obs_points = [self._obs_points_from_radar(radar_dynamic)] + self._obs_points[:-1];
+		self._obs_points = self._obs_points_from_radar(radar_dynamic, location);
 
 
 	## @copydoc AbstractObstaclePredictor#get_prediction()
 	#
 	def get_prediction(self, location, time):
+		if self.max_timestep < time:
+			return 0.0;
+
 		# Map parameters into a valid range
-		time = int(np.round(time));
+		time = max(int(np.round(time)), 0);
 
 		# Cone expansion parameters
-		cone_initial_size = 15;
-		cone_expansion_rate = 5;
+		cone_initial_size = 2;
+		cone_expansion_rate = 6;
 
 		# Init cone size to 10 to leave a little extra space
 		# (account for any numerical precision errors)
-		cur_conesize = cone_initial_size + (time*cone_expansion_rate);
+		conesize = cone_initial_size + (time*cone_expansion_rate);
 
-		for timestep in np.arange(time, self.max_timestep, 1):
-			for obs_point in self._obs_points[timestep]:
-				if Vector.distance_between(location, obs_point) <= cur_conesize:
-					return 1.0;
-			cur_conesize += cone_expansion_rate;
+		for obs_point in self._obs_points:
+			if Vector.distance_between(location, obs_point) <= conesize:
+				return 1.0;
 		return 0.0;
 
 
