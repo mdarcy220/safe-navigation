@@ -451,7 +451,7 @@ class Environment:
 		# Uncomment the following lines to see the grid_data directly
 		pix_arr[self.grid_data == 0] = 0xFFFFFF
 		pix_arr[self.grid_data & 4 != 0] = 0x000000
-		pix_arr[self.grid_data & 2 != 0] = 0x77aadd
+		pix_arr[self.grid_data & 2 != 0] = 0x66ff88
 
 
 	## Step the environment, updating dynamic obstacles and grid data.
