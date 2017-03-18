@@ -193,8 +193,8 @@ class Robot:
 			#self._draw_pdf(screen, self._nav_algo.debug_info["drawing_pdf"])
 
 			if "future_obstacles" in self._nav_algo.debug_info.keys():
-				if self._nav_algo.debug_info["future_obstacles"]:
-					for x,y in self._nav_algo.debug_info["future_obstacles"][1].keys():
+				for fff in self._nav_algo.debug_info["future_obstacles"]:
+					for x,y in fff.keys():
 						gfxdraw.pixel(screen, x, y, (255,0,0))
 			if "path" in self._nav_algo.debug_info.keys():
 				if self._nav_algo.debug_info["path"]:
