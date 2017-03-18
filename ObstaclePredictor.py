@@ -451,3 +451,99 @@ class HMMObstaclePredictor(AbstractObstaclePredictor):
 				j += 1
 			i += 1
 		return result
+
+
+## This is a basic implentation of collision cones.
+#
+class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
+
+
+	## @var _obs_points
+	#  Storage for the previously observed obstacle points.
+	#
+	# @var max_timestep
+	# (int)
+	# <br>	The maximum number of timesteps for which to track
+	# 	obstacles. Beyond this number of timesteps in the future,
+	# 	the prediction will always be 0.
+	#
+
+	def __init__(self, data_size, radar_range = 100, max_timestep = 0):
+		# Might be good to cache values from observations to use
+		# later. Let's initialize them now.
+		self.data_size = data_size;
+		self.radar_range = radar_range;
+		self.max_timestep = max_timestep;
+
+		self.last_location = None;
+		self.last_radar_distribution = None;
+		self.last_dynamic_obstacle_distribution = None;
+		self.last_obstacle_getter_func = None;
+
+		# Init obstacle point storage
+		self._obs_points = [];
+		for i in range(max_timestep):
+			self._obs_points.append([]);
+
+
+	## @copydoc AbstractObstaclePredictor#add_observation()
+	#
+	def add_observation(self, location, radar_all, radar_dynamic, get_obs_at_angle):
+		self.last_location = location;
+		self.last_radar_distribution = radar_all;
+		self.last_dynamic_obstacle_distribution = radar_dynamic;
+		self.last_obstacle_getter_func = get_obs_at_angle;
+
+		self._obs_points = [self._obs_points_from_radar(radar_dynamic)] + self._obs_points[:-1];
+
+
+	## @copydoc AbstractObstaclePredictor#get_prediction()
+	#
+	def get_prediction(self, location, time):
+		# Map parameters into a valid range
+		time = int(np.round(time));
+
+		# Cone expansion parameters
+		cone_initial_size = 15;
+		cone_expansion_rate = 5;
+
+		# Init cone size to 10 to leave a little extra space
+		# (account for any numerical precision errors)
+		cur_conesize = cone_initial_size + (time*cone_expansion_rate);
+
+		for timestep in np.arange(time, self.max_timestep, 1):
+			for obs_point in self._obs_points[timestep]:
+				if Vector.distance_between(location, obs_point) <= cur_conesize:
+					return 1.0;
+			cur_conesize += cone_expansion_rate;
+		return 0.0;
+
+
+	## Convert radar data to a list of observed obstacle locations
+	#
+	# @param radar_data
+	# (numpy array)
+	# <br>	Format: `[ang1_dist, ang2_dist, ...]`
+	# <br>	The radar data to convert. It has the same format as 
+	# 	described in the `Radar.Radar` class.
+	# <br>	See also: `Radar.Radar.scan`
+	#
+	# @param location
+	# (numpy array)
+	# <br>	Format: `[x, y]`
+	# <br>	Point of reference for the conversion. All obstacle points 
+	# 	are translated by this value
+	#
+	def _obs_points_from_radar(self, radar_data, location=np.array([0, 0])):
+		points = [];
+
+		for angle_deg in np.arange(0, len(radar_data), 1):
+			dist = radar_data[angle_deg];
+			if dist < self.radar_range-1:
+				new_point = location + (dist * Vector.unit_vec_from_radians(angle_deg * np.pi / 180));
+				if not (0 < len(points) and Vector.distance_between(points[-1], new_point) < 3):
+					points.append(new_point);
+		return points;
+
+
+

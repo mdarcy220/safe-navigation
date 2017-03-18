@@ -5,7 +5,7 @@ import numpy	as np
 import Vector, time
 from math import *
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
-from ObstaclePredictor import HMMObstaclePredictor
+from ObstaclePredictor import CollisionConeObstaclePredictor
 from Robot import RobotControlInput
 
 
@@ -41,7 +41,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._minTimeMultiplier = 3;
 		self._maxPredictTime = 15;
 		self._obstacle_predictor_horizon = 5;
-		self._obstacle_predictor = HMMObstaclePredictor(360, robot.radar.radius, self._obstacle_predictor_horizon);
+		self._obstacle_predictor = CollisionConeObstaclePredictor(360, robot.radar.radius, self._obstacle_predictor_horizon);
 
 
 		self.debug_info = {"path": [], "path2": []}
@@ -302,7 +302,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 			cos_cached = np.cos(ang_in_radians)
 			sin_cached = np.sin(ang_in_radians)
-			for i in np.arange(0, dist, 0.5):
+			for i in np.arange(0, dist, 2):
 				x = int(cos_cached * i + fromPoint[0])
 				y = int(sin_cached * i + fromPoint[1])
 				if grid_data[x][y] & 1 and Vector.distance_between((x,y), self._robot.location) < self._robot.radar.radius:
