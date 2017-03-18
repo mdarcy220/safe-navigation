@@ -4,7 +4,7 @@ import numpy  as np
 import Vector
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
-from ObstaclePredictor import DummyObstaclePredictor, HMMObstaclePredictor
+from ObstaclePredictor import CollisionConeObstaclePredictor, HMMObstaclePredictor
 from queue import Queue, PriorityQueue
 import Distributions
 
@@ -48,7 +48,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._gaussian = Distributions.Gaussian()
 
 		# Obstecle Predictor
-		self._obstacle_predictor = HMMObstaclePredictor(360, robot.radar.radius, 2);
+		self._obstacle_predictor = CollisionConeObstaclePredictor(360, robot.radar.radius, 2);
 
 
 	## Next action selector method.

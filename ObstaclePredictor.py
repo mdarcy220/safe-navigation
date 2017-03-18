@@ -505,8 +505,8 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 		time = max(int(np.round(time)), 0);
 
 		# Cone expansion parameters
-		cone_initial_size = 2;
-		cone_expansion_rate = 6;
+		cone_initial_size = 4;
+		cone_expansion_rate = 8;
 
 		# Init cone size to 10 to leave a little extra space
 		# (account for any numerical precision errors)

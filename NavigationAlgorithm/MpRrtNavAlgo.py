@@ -39,7 +39,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		#Time Dimention
 		self._time = 0;
 		self._minTimeMultiplier = 3;
-		self._maxPredictTime = 7;
+		self._maxPredictTime = 4;
 		self._obstacle_predictor = CollisionConeObstaclePredictor(360, robot.radar.radius, self._maxPredictTime);
 
 
@@ -127,6 +127,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		foundGoal = False;
 		count = 0;
+		attempts = 0;
 
 		while not foundGoal and count < self._maxRrtSize:
 			qTarget = self._chose_target(qgoal);
@@ -145,8 +146,11 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 						if qNearest.addChild(qNew): #addChild prohibits cycles in tree
 							if tree.hasGoal(qgoal.data[:2], goalThreshold):
 								foundGoal = True
-							count += 1
-
+							count += 1;
+							attempts = 0;
+			attempts += 1;
+			if attempts > 1000000:
+				return 1;
 		if foundGoal:
 			return 0;
 		else:
