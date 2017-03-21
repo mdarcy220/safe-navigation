@@ -31,15 +31,15 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._maxstepsize = self._robot_speed * 2 ;
 		self._max3dstepsize = sqrt( (self._maxstepsize ** 2) + (self._maxstepsize ** 2));
 		self._goalThreshold = self._robot_speed * 0.75; #In pixel distance
-		self._goalBias = 0.1; # Value in paper: 0.05
-		self._forestBias = 0.05; # Value in paper: 0.1
+		self._goalBias = 0.05; # Value in paper: 0.05
+		self._forestBias = 0.1; # Value in paper: 0.1
 		self._maxRrtSize = 5000;
 		self._forest = Forest();
 
 		#Time Dimention
 		self._time = 0;
 		self._minTimeMultiplier = 3;
-		self._maxPredictTime = 4;
+		self._maxPredictTime = 3;
 		self._obstacle_predictor = CollisionConeObstaclePredictor(360, robot.radar.radius, self._maxPredictTime);
 
 
@@ -149,7 +149,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 							count += 1;
 							attempts = 0;
 			attempts += 1;
-			if attempts > 1000000:
+			if attempts > 500000:
 				return 1;
 		if foundGoal:
 			return 0;
