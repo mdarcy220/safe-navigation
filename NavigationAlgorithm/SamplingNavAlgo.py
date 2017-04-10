@@ -3,7 +3,7 @@
 import numpy  as np
 import Vector
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
-from Robot import RobotControlInput
+from RobotControlInput import RobotControlInput
 from ObstaclePredictor import CollisionConeObstaclePredictor, HMMObstaclePredictor
 from queue import Queue, PriorityQueue
 import Distributions

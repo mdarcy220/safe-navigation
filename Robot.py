@@ -14,15 +14,13 @@ import matplotlib.pyplot as plt
 import time
 import scipy.signal
 from pygame import gfxdraw
+from RobotControlInput import RobotControlInput
 
-## Represents a control input for a robot. The control consists of a speed
-# and a direction, which together define a single action for the robot to
-# take.
-#
-class RobotControlInput:
-	def __init__(self, speed=0, angle=0):
-		self.speed = speed;
-		self.angle = angle;
+from NavigationAlgorithm import FuzzyNavigationAlgorithm
+from NavigationAlgorithm import SamplingNavigationAlgorithm
+from NavigationAlgorithm import MultiLevelNavigationAlgorithm
+from NavigationAlgorithm import MpRrtNavigationAlgorithm
+from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
 
 
 ## Holds statistics about the robot's progress, used for reporting the
@@ -72,7 +70,6 @@ class Robot:
 		self.name		= name
 		self.radar = radar
 
-		from NavigationAlgorithm import FuzzyNavigationAlgorithm, SamplingNavigationAlgorithm, MultiLevelNavigationAlgorithm, DynamicRrtNavigationAlgorithm, MpRrtNavigationAlgorithm
 		if using_safe_mode:
 			self._nav_algo = SamplingNavigationAlgorithm(self, cmdargs);
 		else:
@@ -172,7 +169,7 @@ class Robot:
 			#PG.draw.line(screen, (255,0,0), np.array(self.location, dtype=int), np.array(self.location+self._last_mmv*100, dtype=int), 1)
 
 			# Draw circle representing radar range
-			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), self.radar.radius, 2)
+			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), int(self.radar.radius), 2)
 #			if "node_list" in self._nav_algo.debug_info.keys():
 #				for node in self._nav_algo.debug_info["node_list"]:
 #					for edge in node.edges:
