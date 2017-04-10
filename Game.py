@@ -49,7 +49,7 @@ class Game:
 		self._target = Target((740,50))
 
 		# Init robots
-		radar = Radar(self._env, resolution = cmdargs.radar_resolution);
+		radar = Radar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);
 		initial_position = np.array([50, 550]);
 		self._normal_robot  = Robot (self._target, initial_position, radar, cmdargs, using_safe_mode =False, name="NormalRobot")
 		self._safe_robot    = Robot (self._target, initial_position, radar, cmdargs, using_safe_mode = True, name="SafeRobot")

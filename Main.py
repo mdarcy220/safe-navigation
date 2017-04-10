@@ -122,6 +122,13 @@ def get_cmdline_args():
 			default=1,
 			action='store'
 	);
+	parser.add_argument('--radar-range',
+			help='Range of the rader, in pixels',
+			dest='radar_range',
+			type=float,
+			default=100,
+			action='store'
+	);
 	parser.add_argument('--radar-resolution',
 			help='Resolution of the rader, in pixels',
 			dest='radar_resolution',
