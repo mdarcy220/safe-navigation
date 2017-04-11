@@ -7,20 +7,21 @@ setup(
 	name = "SafeNav Simulator",
 	ext_modules = cythonize(
 		module_list = [
-			"Distributions.py",
-			"Shape.py",
 			"Circle.py",
+			"Distributions.py",
 			"DynamicObstacles.py",
 			"Environment.py",
 			"Game.py",
-			"Main.py",
-			"Radar.py",
 			"Geometry.py",
-			"Robot.py",
-			"Target.py",
-			"Vector.py",
+			"Main.py",
 			"NavigationAlgorithm/*.py",
-			"ObstaclePredictor.py"
+			"ObstaclePredictor.py",
+			"Radar.py",
+			"Robot.py",
+			"RobotControlInput.py",
+			"Shape.py",
+			"Target.py",
+			"Vector.py"
 		],
 		language_level=3
 	)
