@@ -16,11 +16,7 @@ import scipy.signal
 from pygame import gfxdraw
 from RobotControlInput import RobotControlInput
 
-from NavigationAlgorithm import FuzzyNavigationAlgorithm
-from NavigationAlgorithm import SamplingNavigationAlgorithm
-from NavigationAlgorithm import MultiLevelNavigationAlgorithm
-from NavigationAlgorithm import MpRrtNavigationAlgorithm
-from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
+from NavigationAlgorithm import LinearNavigationAlgorithm
 
 
 ## Holds statistics about the robot's progress, used for reporting the
@@ -30,6 +26,23 @@ class RobotStats:
 	def __init__(self):
 		self.num_collisions = 0
 		self.num_steps = 0
+
+
+## A GPS sensor for robots, that can give the robot's current location.
+#
+#
+class GpsSensor:
+	def __init__(self, robot):
+		self._robot = robot;
+
+	def location(self):
+		return self._robot.location;
+
+	def angle_to(self, pos):
+		return Vector.degrees_between(self._robot.location, pos);
+
+	def distance_to(self, pos):
+		return Vector.distance_between(self._robot.location, pos);
 
 
 ## Represents a robot attempting to navigate safely through the
@@ -61,19 +74,18 @@ class Robot:
 	# <br>	-- A name for the robot, only used for the purpose of
 	# 	printing debugging messages.
 	#
-	def __init__(self, target, initial_position, radar, cmdargs, using_safe_mode = False, name=""):
-		self._cmdargs		= cmdargs
-		self.target		= target
-		self.location		= initial_position
-		self.speed		= cmdargs.robot_speed
-		self.stats		= RobotStats()
-		self.name		= name
-		self.radar = radar
+	def __init__(self, initial_position, cmdargs, path_color = (0, 0, 255), name=""):
+		self.location           = initial_position;
+		self._cmdargs           = cmdargs;
+		self._path_color        = path_color
+		self.name               = name;
 
-		if using_safe_mode:
-			self._nav_algo = SamplingNavigationAlgorithm(self, cmdargs);
-		else:
-			self._nav_algo = MpRrtNavigationAlgorithm(self, cmdargs);
+		self.speed              = cmdargs.robot_speed;
+		self.stats              = RobotStats();
+
+		self._sensors           = {};
+
+		self._nav_algo = None;
 
 		self.movement_momentum = cmdargs.robot_movement_momentum
 
@@ -101,6 +113,9 @@ class Robot:
 	def NextStep(self, grid_data):
 		self.stepNum += 1
 		self.stats.num_steps += 1
+
+		if not self._nav_algo:
+			return;
 
 		control_input = self._nav_algo.select_next_action();
 
@@ -137,6 +152,17 @@ class Robot:
 		self._PathList.append(np.array(self.location, dtype=int))
 
 
+	def set_nav_algo(self, nav_algo):
+		self._nav_algo = nav_algo;
+
+
+	def get_sensors(self):
+		return self._sensors;
+
+
+	def put_sensor(self, sensor_name, sensor):
+		self._sensors[sensor_name] = sensor;
+
 	def has_given_up(self):
 		return self._nav_algo.has_given_up();
 
@@ -147,17 +173,10 @@ class Robot:
 	# <br>	-- The surface on which to draw the robot
 	#
 	def draw(self, screen):
-		#PG.draw.circle(screen, (0, 0, 255), np.array(self.location, dtype=int), 4, 0)
-		BlueColor  = (0, 0, 255)
-		GreenColor = (30, 200, 30)
-		if (self._nav_algo.using_safe_mode):
-			PathColor = GreenColor
-		else:
-			PathColor = BlueColor
 		for ind, o in enumerate(self._PathList):
 			if ind == len(self._PathList) - 1:
 				continue
-			PG.draw.line(screen,PathColor,self._PathList[ind], self._PathList[ind +1], 2)
+			PG.draw.line(screen,self._path_color,self._PathList[ind], self._PathList[ind +1], 2)
 		if (0 < self._cmdargs.debug_level):
 			if self._drawcoll > 0:
 				PG.draw.circle(screen, (255, 127, 127), np.array(self.location, dtype=int), 15, 1)
@@ -169,7 +188,7 @@ class Robot:
 			#PG.draw.line(screen, (255,0,0), np.array(self.location, dtype=int), np.array(self.location+self._last_mmv*100, dtype=int), 1)
 
 			# Draw circle representing radar range
-			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), int(self.radar.radius), 2)
+			PG.draw.circle(screen, self._path_color, np.array(self.location, dtype=int), int(self._sensors['radar'].radius), 2)
 #			if "node_list" in self._nav_algo.debug_info.keys():
 #				for node in self._nav_algo.debug_info["node_list"]:
 #					for edge in node.edges:
@@ -206,7 +225,7 @@ class Robot:
 		if pdf is None:
 			return;
 		deg_res = 360 / float(len(pdf))
-		scale = 1.0#self.radar.radius
+		scale = 1.0#self._sensors['radar'].radius
 		last_point = [self.location[0] + (pdf[0] * scale), self.location[1]]
 		for index in np.arange(0, len(pdf), 1):
 			ang = index * deg_res * np.pi / 180

@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
 from Robot import RobotControlInput
+from .AbstractNavAlgo import AbstractNavigationAlgorithm
 
-
-## The abstract superclass for robotic navigation algorithms
+## A very basic navigation algorithm that just goes in a straight line to 
+# the goal.
 #
-class AbstractNavigationAlgorithm:
+class LinearNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	## Initializes the navigation algorithm.
 	# 
@@ -23,6 +24,8 @@ class AbstractNavigationAlgorithm:
 		self._target  = target;
 		self._cmdargs = cmdargs;
 
+		self._gps = self._sensors['gps'];
+
 
 	## Select the next action for the robot
 	#
@@ -35,7 +38,7 @@ class AbstractNavigationAlgorithm:
 	# 	should take.
 	#
 	def select_next_action(self):
-		return RobotControlInput(0, 0);
+		return RobotControlInput(float('inf'), self._gps.angle_to(self._target.position));
 
 
 	def has_given_up(self):
