@@ -7,6 +7,7 @@
 
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from .FuzzyNavAlgo import FuzzyNavigationAlgorithm
+from .GlobalLocalNavAlgo import GlobalLocalNavigationAlgorithm
 from .SamplingNavAlgo import SamplingNavigationAlgorithm
 from .MultiLevelNavAlgo import MultiLevelNavigationAlgorithm
 from .DynamicRrtNavAlgo import DynamicRrtNavigationAlgorithm
