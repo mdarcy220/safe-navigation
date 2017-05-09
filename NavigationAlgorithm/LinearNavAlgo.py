@@ -26,6 +26,8 @@ class LinearNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._gps = self._sensors['gps'];
 
+		self.debug_info = {};
+
 
 	## Select the next action for the robot
 	#
