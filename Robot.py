@@ -173,6 +173,9 @@ class Robot:
 	# <br>	-- The surface on which to draw the robot
 	#
 	def draw(self, screen):
+		if 'mapdata' in self._nav_algo.debug_info.keys():
+			pix_arr = PG.surfarray.pixels2d(screen);
+			pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
 		for ind, o in enumerate(self._PathList):
 			if ind == len(self._PathList) - 1:
 				continue
@@ -208,6 +211,10 @@ class Robot:
 			# Draw distribution values around robot
 			#self._draw_pdf(screen, self._nav_algo.debug_info["drawing_pdf"])
 
+#			if "intervals" in self._nav_algo.debug_info.keys():
+#				x,y = self.location[0], self.location[1];
+#				for fff in self._nav_algo.debug_info["intervals"]:
+#					PG.draw.arc(screen, (20,200,90), (x-50.0, y-50.0, 100.0, 100.0), float(fff[0]*np.pi/180), float(fff[1]*np.pi/180), 2)
 			if "future_obstacles" in self._nav_algo.debug_info.keys():
 				if self._nav_algo.debug_info["future_obstacles"]:
 					for fff in self._nav_algo.debug_info["future_obstacles"]:
