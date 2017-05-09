@@ -20,6 +20,7 @@ setup(
 			"Robot.py",
 			"RobotControlInput.py",
 			"Shape.py",
+			"StaticMapper.py",
 			"Target.py",
 			"Vector.py"
 		],

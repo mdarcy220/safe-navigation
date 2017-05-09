@@ -6,6 +6,8 @@ import Vector, time
 from math import *
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
+from StaticMapper import StaticMapper
+
 
 ## Implementation of the Dynamic Window algorithm for robotic navigation.
 #
@@ -35,18 +37,20 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._radar = sensors['radar'];
 		self._gps = sensors['gps'];
 
+		self._mapper = sensors['mapper'] if 'mapper' in sensors.keys() else StaticMapper(sensors);
+
 		self._data_size = self._radar.get_data_size();
 		self._radar_range = self._radar.radius;
 		self._radar_resolution = self._radar.resolution;
 		self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
 
 		#Algo
-		self._maxstepsize = cmdargs.robot_speed*3;
+		self._maxstepsize = cmdargs.robot_speed*10;
 		self._maxWayPoints = 500;
 		self._wayPointCache = []
 		self._goalThresold = cmdargs.robot_speed * 0.75; #In pixel distance
 		self._goalBias = 0.1;
-		self._wayPointBias = 0.4;
+		self._wayPointBias = 0.3;
 		self._maxRrtSize = 5000;
 		self.debug_info = {"path": None, "point": None}
 
@@ -56,11 +60,9 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._grow_rrt(False); 
 		self._extract_solution(); 
 
-		# Set using_safe_mode to appease Robot.draw()
-		self.using_safe_mode = False;
-
 		self._last_solution_node = Node((int(self._gps.location()[0]), int(self._gps.location()[1])))
 		self._has_given_up = False
+
 
 	## Next action selector method.
 	#
@@ -71,6 +73,8 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def select_next_action(self):
 		self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
 
+		self.debug_info['mapdata'] = self._mapper.get_grid_data();
+
 		if self._last_solution_node.data != (int(self._gps.location()[0]), int(self._gps.location()[1])):
 			self._solution.insert(0, self._last_solution_node)
 
@@ -79,17 +83,21 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		robot_location = self._gps.location()
 		grid_data = self._radar._env.grid_data
 		if grid_data[int(robot_location[0])][int(robot_location[1])] != 3:
-			if self._solution_contains_invalid_node():
+			if self._solution_contains_invalid_node() or (len(self._solution) > 0 and self._collides(self._gps.location(), self._solution[0].data, False)):
 				self._regrow_rrt();
 				self._extract_solution();
 
 			if len(self._solution) > 0:
-				while 0 < len(self._solution) and Vector.distance_between(self._gps.location(), self._solution[0].data) < 1.5:
+				while 0 < len(self._solution) and Vector.distance_between(self._gps.location(), self._solution[0].data) < 25:
 					del self._solution[0];
-				direction = Vector.degrees_between(self._gps.location(), self._solution[0].data)
-				dist = min(self._maxstepsize, Vector.distance_between(self._gps.location(), self._solution[0].data))
-				self.debug_info["path"] = self._solution
-				self._last_solution_node = self._solution[0]
+				if len(self._solution) > 0:
+					direction = Vector.degrees_between(self._gps.location(), self._solution[0].data)
+					dist = min(self._maxstepsize, Vector.distance_between(self._gps.location(), self._solution[0].data))
+					self.debug_info["path"] = self._solution
+					self._last_solution_node = self._solution[0]
+				else:
+					dist = 0;
+					direction = 0;
 			else:
 				#No valid path found
 				self._has_given_up = True
@@ -103,8 +111,10 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		return RobotControlInput(dist, direction);
 
+
 	def has_given_up(self):
 		return self._has_given_up
+
 
 	def _regrow_rrt(self):
 		nearest_valid_node = self._nearest_neighbour(self._gps.location(), True)
@@ -164,7 +174,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _anyParentsCollide(self, node):
 		parent = node.parent
 		if parent is not None:
-			if self._collides(node.data, parent.data, True):
+			if self._collides(node.data, parent.data, False):
 				return True
 			else:
 				return self._anyParentsCollide(parent)
@@ -248,7 +258,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				return Node(rand_point)
 
 	def _collides(self, fromPoint, toPoint, dynamicOnly):
-		grid_data = self._radar._env.grid_data
+		grid_data = self._mapper.get_grid_data();#self._radar._env.grid_data
 
 		if fromPoint is not None:
 			ang_in_radians = Vector.degrees_between(fromPoint, toPoint) * np.pi / 180
@@ -256,7 +266,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 			cos_cached = np.cos(ang_in_radians)
 			sin_cached = np.sin(ang_in_radians)
-			for i in np.arange(0, dist, 0.5):
+			for i in np.arange(0, dist, 2):
 				x = int(cos_cached * i + fromPoint[0])
 				y = int(sin_cached * i + fromPoint[1])
 				if grid_data[x][y] & 1 and Vector.distance_between((x,y), self._gps.location()) < self._radar.radius:
@@ -265,7 +275,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 					if grid_data[x][y] & 4:
 						return True
 		else:
-				# Check for dynamic obstacle
+			# Check for dynamic obstacle
 			if grid_data[int(toPoint[0])][int(toPoint[1])] & 1 and Vector.distance_between(toPoint, self._gps.location()) < self._radar.radius:
 				return True
 			# Check for static obstacle
