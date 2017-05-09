@@ -237,7 +237,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		combined_pdf = np.minimum(combined_pdf, normalized_radar_data);
 
 		# Process memory
-		if self._cmdargs.enable_memory:
+		if self._cmdargs.enable_memory and self._sensors['usemem']:
 			mem_bias_pdf = self._create_memory_bias_pdf_at(center, time_offset);
 
 			# Add the memory distribution to the combined PDF
