@@ -69,9 +69,6 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._status = self._grow_rrt(self._rrt, qgoal, self._goalThreshold, False);
 		self._extract_solution();
 
-		# Set using_safe_mode to appease Robot.draw()
-		self.using_safe_mode = False;
-
 		self._last_solution_node = Node((int(self._gps.location()[0]), int(self._gps.location()[1]), self._time));
 		self._has_given_up = False;
 
