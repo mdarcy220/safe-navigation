@@ -9,6 +9,15 @@ from  DynamicObstacles import DynamicObstacle
 import sys
 
 
+## Types of grid cells. Used in Environment grid_data
+#
+#
+class CellFlag:
+	ANY_OBSTACLE     = 0b0001;
+	DYNAMIC_OBSTACLE = 0b0010;
+	STATIC_OBSTACLE  = 0b0100;
+
+
 ## Holds information related to the simulation environment, such as the
 # position and motion of dynamic obstacles, and the static map.
 #
@@ -44,7 +53,7 @@ class Environment:
 		grid_data_height = max(self.height, masked_pix_arr.shape[1]);
 		self.static_overlay = np.zeros((grid_data_width, grid_data_height), dtype=int);
 		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
-		self.static_overlay[masked_pix_arr == obstacle_pixel_val] |= 0b101;
+		self.static_overlay[masked_pix_arr == obstacle_pixel_val] |= (CellFlag.STATIC_OBSTACLE | CellFlag.ANY_OBSTACLE);
 
 		if (cmdargs):
 			self.apply_map_modifier_by_number(self.cmdargs.map_modifier_num)
@@ -446,12 +455,12 @@ class Environment:
 #		self.grid_data[masked_pix_arr == obstacle_pixel_val] = 1
 
 		dynamic_obstacle_pixel_val = 0x227722 & pixel_mask # (34, 119, 34) represented as integer
-		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] |= 3
+		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] |= (CellFlag.DYNAMIC_OBSTACLE | CellFlag.ANY_OBSTACLE)
 		
 		# Uncomment the following lines to see the grid_data directly
 		pix_arr[self.grid_data == 0] = 0xFFFFFF
-		pix_arr[self.grid_data & 4 != 0] = 0x000000
-		pix_arr[self.grid_data & 2 != 0] = 0x66ff88
+		pix_arr[self.grid_data & CellFlag.STATIC_OBSTACLE != 0] = 0x000000
+		pix_arr[self.grid_data & CellFlag.DYNAMIC_OBSTACLE != 0] = 0x66ff88
 
 
 	## Step the environment, updating dynamic obstacles and grid data.
