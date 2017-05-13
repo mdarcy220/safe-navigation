@@ -1,9 +1,5 @@
-import numpy as np;
-
-## @package Vector
-#
-# Provides basic vector math routines
-#
+import numpy as np
+import cython
 
 ## @deprecated
 # Gets the angle between points A and B
@@ -67,6 +63,8 @@ def distance_between(point_a, point_b):
 	vectorAB = np.subtract(point_a, point_b);
 	return magnitudeOf(vectorAB);
 
+if cython.compiled:
+	distance_between = _cython_wrap_distance_between;
 
 ## @deprecated
 # Gets the distance from PointA to PointB

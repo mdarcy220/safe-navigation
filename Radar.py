@@ -5,9 +5,11 @@
 
 import numpy as np
 import sys
-import Vector, Geometry
+import Vector
+import Geometry
 import math
-
+import cython
+from Environment import CellFlag
 
 ## Produces simulated radar output for the robot
 #
@@ -43,6 +45,7 @@ import math
 #
 class Radar:
 
+
 	## Constructor
 	#
 	# @param env (Environment object)
@@ -62,7 +65,7 @@ class Radar:
 	#
 	def __init__(self, env, radius = 100, resolution = 4, degree_step = 1):
 
-		self._env         = env
+		self._env        = env
 		self.radius	 = radius
 		self.resolution  = resolution
 		self.set_degree_step(degree_step);
@@ -85,7 +88,21 @@ class Radar:
 	# 	size of the output is then equal to
 	# 	`floor(360/degree_step)`.
 	#
-	def scan(self, center):
+	def scan(self, center, cell_type = CellFlag.ANY_OBSTACLE):
+
+		if cython.compiled:
+			grid_data = self._env.grid_data;
+			radar_data = np.full([self._nPoints], self.radius, dtype=np.float64);
+			scan_generic(center[0],
+				center[1],
+				self.radius,
+				grid_data,
+				cell_type,
+				self.resolution,
+				self._degree_step,
+				radar_data);
+			return radar_data;
+
 		grid_data = self._env.grid_data;
 
 		radar_data = np.full([self._nPoints], self.radius, dtype=np.float64)
@@ -102,7 +119,7 @@ class Radar:
 				if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):
 					radar_data[currentStep] = i
 					break
-				if (grid_data[x,y] & 1):
+				if (grid_data[x,y] & cell_type):
 					radar_data[currentStep] = i
 					break
 			currentStep = currentStep + 1
@@ -174,27 +191,7 @@ class Radar:
 	# 	`floor(360/degree_step)`.
 	#
 	def scan_dynamic_obstacles(self, center):
-		grid_data = self._env.grid_data;
-
-		radar_data = np.full([self._nPoints], self.radius, dtype=np.float64)
-		currentStep = 0
-		x_upper_bound = min(799, grid_data.shape[0])
-		y_upper_bound = min(599, grid_data.shape[1])
-		for degree in np.arange(0, 360, self._degree_step):
-			ang_in_radians = degree * np.pi / 180
-			cos_cached = np.cos(ang_in_radians)
-			sin_cached = np.sin(ang_in_radians)
-			for i in np.arange(0, self.radius, self.resolution):
-				x = int(cos_cached * i + center[0])
-				y = int(sin_cached * i + center[1])
-				if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):
-					radar_data[currentStep] = i
-					break
-				if (grid_data[x,y] & 2):
-					radar_data[currentStep] = i
-					break
-			currentStep = currentStep + 1
-		return radar_data
+		return self.scan(center, cell_type = CellFlag.DYNAMIC_OBSTACLE);
 		#nPoints = self._nPoints
 		#beams = self._beams
 		#radar_data = np.full([nPoints], self.radius, dtype=np.float64);
