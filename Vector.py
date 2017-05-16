@@ -1,3 +1,5 @@
+# cython: profile = True
+
 import numpy as np
 import cython
 
@@ -116,8 +118,12 @@ def unitVectorFromAngle(angle):
 # <br>	Format: `[x, y]`
 # <br>	-- A unit vector pointing at the specified angle.
 #
-def unit_vec_from_radians(angle):
-	return np.array([np.cos(angle), np.sin(angle)], dtype='float64')
+def unit_vec_from_radians(angle, buf=None):
+	if buf is None or len(buf) < 2:
+		buf = np.zeros(2, dtype=np.float64);
+	buf[0] = np.cos(angle);
+	buf[1] = np.sin(angle);
+	return buf;
 
 
 ## Creates a unit vector pointing at the specified angle.
