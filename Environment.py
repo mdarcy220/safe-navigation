@@ -449,10 +449,7 @@ class Environment:
 
 		grid_data_width = max(self.width, masked_pix_arr.shape[0])
 		grid_data_height = max(self.height, masked_pix_arr.shape[1] )
-		self.grid_data = np.array(self.static_overlay); #np.zeros((grid_data_width, grid_data_height), dtype=int)
-
-#		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
-#		self.grid_data[masked_pix_arr == obstacle_pixel_val] = 1
+		self.grid_data = np.array(self.static_overlay);
 
 		dynamic_obstacle_pixel_val = 0x227722 & pixel_mask # (34, 119, 34) represented as integer
 		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] |= (CellFlag.DYNAMIC_OBSTACLE | CellFlag.ANY_OBSTACLE)
