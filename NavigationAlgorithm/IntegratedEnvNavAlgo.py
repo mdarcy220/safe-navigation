@@ -29,7 +29,7 @@ class IntegratedEnvNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self.debug_info = {};
 
-		self._range_limit = self._radar.radius/1.2;
+		self._range_limit = 60;
 		self._heading = self._gps.angle_to(self._target.position);
 
 
@@ -42,7 +42,6 @@ class IntegratedEnvNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def select_next_action(self):
 		radar_data = self._radar.scan(self._gps.location());
 		radar_data_size = len(radar_data)
-#		self._range_limit = np.max(radar_data)/1.2;
 		target_angle = self._gps.angle_to(self._target.position)
 		intervals = self._split_radar_to_intervals(radar_data);
 		self.debug_info['intervals'] = intervals;
