@@ -17,8 +17,8 @@ class StaticMapper:
 		full_scan = full_scan if full_scan is not None else self._radar.scan(location);
 		dynamic_scan = dynamic_scan if dynamic_scan is not None else self._radar.scan_dynamic_obstacles(location);
 
-		adjusted_scan = np.array(full_scan);
-		dynamic_scan = np.convolve(dynamic_scan, np.ones(5)/5, 'same');
+		adjusted_scan = np.array(full_scan, dtype=np.float64);
+		dynamic_scan = np.convolve(dynamic_scan, np.ones(5)/5.0, 'same');
 		adjusted_scan[dynamic_scan < self._radar.radius-0.001] = self._radar.radius;
 		adjusted_scan += 1;
 
