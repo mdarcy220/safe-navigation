@@ -114,9 +114,11 @@ class Game:
 	def update_game_image(self):
 		self._env.update_display(self._gameDisplay);
 		self._env.update_grid_data_from_display(self._gameDisplay)
-		self._target.draw(self._gameDisplay)
-		for robot in self._robot_list:
-			robot.draw(self._gameDisplay)
+
+		if self._display_every_frame:
+			self._target.draw(self._gameDisplay)
+			for robot in self._robot_list:
+				robot.draw(self._gameDisplay)
 
 	## Renders the stored game image onto the screen, to make it
 	# visible to the user.
