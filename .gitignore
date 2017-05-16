@@ -8,3 +8,4 @@ __pycache__
 *.c
 build
 doc
+run_once.sh
