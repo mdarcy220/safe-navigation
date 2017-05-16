@@ -29,6 +29,7 @@ class StaticMapper:
 
 		self._set_point_area(grid_data, self._gps.location(), 0b00000000);
 
+
 	def _set_point_area(self, grid_data, point, value):
 		x = int(point[0]);
 		y = int(point[1]);
@@ -86,10 +87,12 @@ class StaticMapper:
 		points = [];
 		radar_range = self._radar.radius
 
+		vec_buf = np.zeros(2, dtype=np.float64);
+
 		for angle_deg in np.arange(0, len(radar_data), 1):
 			dist = radar_data[angle_deg];
 			if dist < radar_range-3:
-				new_point = location + (dist * Vector.unit_vec_from_radians(angle_deg * np.pi / 180));
+				new_point = location + (dist * Vector.unit_vec_from_radians(angle_deg * np.pi / 180, buf=vec_buf));
 				if not (0 < len(points) and Vector.distance_between(points[-1], new_point) < 3):
 					points.append(new_point);
 		return points;
