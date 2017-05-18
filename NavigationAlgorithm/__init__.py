@@ -11,6 +11,7 @@ from .FuzzyNavAlgo import FuzzyNavigationAlgorithm
 from .GlobalLocalNavAlgo import GlobalLocalNavigationAlgorithm
 from .IntegratedEnvNavAlgo import IntegratedEnvNavigationAlgorithm
 from .LinearNavAlgo import LinearNavigationAlgorithm
+from .ManualMouseNavAlgo import ManualMouseNavigationAlgorithm
 from .MpRrtNavAlgo import MpRrtNavigationAlgorithm
 from .MultiLevelNavAlgo import MultiLevelNavigationAlgorithm
 from .SamplingNavAlgo import SamplingNavigationAlgorithm
