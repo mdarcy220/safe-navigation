@@ -189,39 +189,21 @@ class Robot:
 
 			# Draw circle representing radar range
 			PG.draw.circle(screen, self._path_color, np.array(self.location, dtype=int), int(self._sensors['radar'].radius), 2)
-#			if "node_list" in self._nav_algo.debug_info.keys():
-#				for node in self._nav_algo.debug_info["node_list"]:
-#					for edge in node.edges:
-#						if edge.weight < 20000.0:
-#							PG.draw.line(screen, (255, 255, 255), edge.from_node.pos, edge.to_node.pos, 1);
-#						else:
-#							pass
-#				for node in self._nav_algo.debug_info["node_list"]:
-#					color = (255, 128, 128);
-#					if not node.visited:
-#						color = (64, 255, 64)
-#					PG.draw.circle(screen, color, np.array(node.pos, dtype=int), 5);
-#			if 'multilevel.next_node' in self._nav_algo.debug_info.keys():
-#				next_node = self._nav_algo.debug_info['multilevel.next_node'];
-#				PG.draw.circle(screen, (255, 255, 64), np.array(next_node.pos, dtype=int), 5);
 
-			# Draw distribution values around robot
-#			if 'drawing_pdf' in self._nav_algo.debug_info.keys():
-#				self._draw_pdf(screen, self._sensors['radar'].scan(self._sensors['gps'].location()))
+			# Draw static mapper data
 			if 'mapdata' in self._nav_algo.debug_info.keys():
 				pix_arr = PG.surfarray.pixels2d(screen);
 				pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
 				del pix_arr
 
-#			if "intervals" in self._nav_algo.debug_info.keys():
-#				x,y = self.location[0], self.location[1];
-#				for fff in self._nav_algo.debug_info["intervals"]:
-#					PG.draw.arc(screen, (20,200,90), (x-50.0, y-50.0, 100.0, 100.0), float(fff[0]*np.pi/180), float(fff[1]*np.pi/180), 2)
+			# Draw predicted obstacle locations
 			if "future_obstacles" in self._nav_algo.debug_info.keys():
 				if self._nav_algo.debug_info["future_obstacles"]:
 					for fff in self._nav_algo.debug_info["future_obstacles"]:
 						for x,y in fff.keys():
 							gfxdraw.pixel(screen, x, y, (255,0,0))
+
+			# Draw planned path waypoints
 			if "path" in self._nav_algo.debug_info.keys():
 				if self._nav_algo.debug_info["path"]:
 					points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
