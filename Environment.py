@@ -54,6 +54,7 @@ class Environment:
 		self.static_overlay = np.zeros((grid_data_width, grid_data_height), dtype=int);
 		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
 		self.static_overlay[masked_pix_arr == obstacle_pixel_val] |= (CellFlag.STATIC_OBSTACLE | CellFlag.ANY_OBSTACLE);
+		del pix_arr
 
 		if (cmdargs):
 			self.apply_map_modifier_by_number(self.cmdargs.map_modifier_num)
@@ -458,6 +459,7 @@ class Environment:
 		pix_arr[self.grid_data == 0] = 0xFFFFFF
 		pix_arr[self.grid_data & CellFlag.STATIC_OBSTACLE != 0] = 0x000000
 		pix_arr[self.grid_data & CellFlag.DYNAMIC_OBSTACLE != 0] = 0x66ff88
+		del pix_arr
 
 
 	## Step the environment, updating dynamic obstacles and grid data.
