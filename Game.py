@@ -122,7 +122,7 @@ class Game:
 		if self._display_every_frame:
 			if self._display_robot_perspective:
 				self._mask_layer = PG.Surface(self._gameDisplay.get_size(), flags = PG.SRCALPHA) if self._mask_layer is None else self._mask_layer;
-				self._mask_layer.fill(0xFF000000);
+				self._mask_layer.fill(0xFF444444);
 				for robot in self._robot_list:
 					robot.draw_radar_mask(self._mask_layer);
 				self._gameDisplay.blit(self._mask_layer, (0,0));
