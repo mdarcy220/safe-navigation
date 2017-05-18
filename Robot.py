@@ -173,9 +173,6 @@ class Robot:
 	# <br>	-- The surface on which to draw the robot
 	#
 	def draw(self, screen):
-		if 'mapdata' in self._nav_algo.debug_info.keys():
-			pix_arr = PG.surfarray.pixels2d(screen);
-			pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
 		for ind, o in enumerate(self._PathList):
 			if ind == len(self._PathList) - 1:
 				continue
@@ -209,7 +206,12 @@ class Robot:
 #				PG.draw.circle(screen, (255, 255, 64), np.array(next_node.pos, dtype=int), 5);
 
 			# Draw distribution values around robot
-			#self._draw_pdf(screen, self._nav_algo.debug_info["drawing_pdf"])
+#			if 'drawing_pdf' in self._nav_algo.debug_info.keys():
+#				self._draw_pdf(screen, self._sensors['radar'].scan(self._sensors['gps'].location()))
+			if 'mapdata' in self._nav_algo.debug_info.keys():
+				pix_arr = PG.surfarray.pixels2d(screen);
+				pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
+				del pix_arr
 
 #			if "intervals" in self._nav_algo.debug_info.keys():
 #				x,y = self.location[0], self.location[1];
@@ -225,20 +227,25 @@ class Robot:
 					points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
 					for x,y in points:
 						PG.draw.circle(screen, (0,0,0), (x,y), 2)
-					#	gfxdraw.pixel(screen, x, y, (0,0,0))
 
 
-	def _draw_pdf(self, screen, pdf):
+	def draw_radar_mask(self, mask_screen, radar_data=None):
+		if radar_data is None:
+			radar_data = self._sensors['radar'].scan(self._sensors['gps'].location());
+		self._draw_pdf(mask_screen, radar_data, line_width=0, color=0x00000000);
+
+
+	def _draw_pdf(self, screen, pdf, line_width=1, color=(200, 0, 200)):
 		if pdf is None:
 			return;
-		deg_res = 360 / float(len(pdf))
-		scale = 1.0#self._sensors['radar'].radius
-		last_point = [self.location[0] + (pdf[0] * scale), self.location[1]]
+		deg_res = 360 / float(len(pdf));
+		scale = 1.0;
+		points = [];
 		for index in np.arange(0, len(pdf), 1):
-			ang = index * deg_res * np.pi / 180
-			cur_point = self.location + scale*pdf[index]*np.array([np.cos(ang), np.sin(ang)], dtype='float64')
-			PG.draw.line(screen, (200, 0, 200), last_point, cur_point, 1)
-			last_point = cur_point
+			ang = index * deg_res * np.pi / 180;
+			cur_point = self.location + scale*pdf[index]*np.array([np.cos(ang), np.sin(ang)], dtype='float64');
+			points.append(cur_point);
+		PG.draw.polygon(screen, color, points, line_width)
 
 
 	## Get the distance from this robot to the target point
