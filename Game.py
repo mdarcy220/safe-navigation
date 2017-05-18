@@ -7,11 +7,21 @@ import pygame	as PG
 import numpy	as np
 
 from Environment import Environment
-from Robot import Robot, RobotStats
+from Robot import Robot, RobotStats, GpsSensor
 from Radar import Radar
 from Target import Target
 import time
+import Vector
 
+from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
+from NavigationAlgorithm import FuzzyNavigationAlgorithm
+from NavigationAlgorithm import GlobalLocalNavigationAlgorithm
+from NavigationAlgorithm import IntegratedEnvNavigationAlgorithm
+from NavigationAlgorithm import LinearNavigationAlgorithm
+from NavigationAlgorithm import ManualMouseNavigationAlgorithm
+from NavigationAlgorithm import MpRrtNavigationAlgorithm
+from NavigationAlgorithm import MultiLevelNavigationAlgorithm
+from NavigationAlgorithm import SamplingNavigationAlgorithm
 
 ## Handles the main game loop
 #
@@ -29,12 +39,14 @@ class Game:
 	# 	`argparse`.
 	#
 	def __init__(self, cmdargs):
-		PG.init()
-		self._cmdargs	   = cmdargs
+		self._cmdargs = cmdargs
 
 		self._display_every_frame = True
 		if cmdargs.batch_mode and not cmdargs.display_every_frame:
 			self._display_every_frame = False
+
+		self._display_robot_perspective = cmdargs.display_robot_perspective;
+		self._mask_layer = None;
 
 		self._is_paused = False
 		self._doing_step = False
@@ -42,18 +54,31 @@ class Game:
 		self._step_num = 0;
 
 		# Initialize the game display to 800x600
+		PG.init()
 		self._gameDisplay = PG.display.set_mode((800, 600))
 
 		# Init environment
 		self._env = Environment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
-		self._target = Target((740,50))
+		self._target = Target((740, 50))
 
 		# Init robots
-		radar = Radar(self._env, resolution = cmdargs.radar_resolution);
+		radar = Radar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);
 		initial_position = np.array([50, 550]);
-		self._normal_robot  = Robot (self._target, initial_position, radar, cmdargs, using_safe_mode =False, name="NormalRobot")
-		self._safe_robot    = Robot (self._target, initial_position, radar, cmdargs, using_safe_mode = True, name="SafeRobot")
-		self._robot_list    = [self._normal_robot, self._safe_robot]
+		self._robot_list    = [];
+
+		self._normal_robot  = Robot(initial_position, cmdargs, path_color=(0,0,255),   name="NormalRobot");
+		self._normal_robot.put_sensor('radar', radar);
+		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
+		self._normal_robot.put_sensor('usemem', True);
+		self._normal_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs, local_algo_init = IntegratedEnvNavigationAlgorithm));
+		self._robot_list.append(self._normal_robot);
+
+		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(30,200,30), name="SafeRobot");
+		self._safe_robot.put_sensor('radar', radar);
+		self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
+		self._safe_robot.put_sensor('usemem', False);
+		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs));
+		self._robot_list.append(self._safe_robot);
 
 		# Set window title
 		PG.display.set_caption(cmdargs.window_title)
@@ -93,9 +118,19 @@ class Game:
 	def update_game_image(self):
 		self._env.update_display(self._gameDisplay);
 		self._env.update_grid_data_from_display(self._gameDisplay)
-		self._target.draw(self._gameDisplay)
-		for robot in self._robot_list:
-			robot.draw(self._gameDisplay)
+
+		if self._display_every_frame:
+			if self._display_robot_perspective:
+				self._mask_layer = PG.Surface(self._gameDisplay.get_size(), flags = PG.SRCALPHA) if self._mask_layer is None else self._mask_layer;
+				self._mask_layer.fill(0xFF444444);
+				for robot in self._robot_list:
+					robot.draw_radar_mask(self._mask_layer);
+				self._gameDisplay.blit(self._mask_layer, (0,0));
+
+			self._target.draw(self._gameDisplay)
+			for robot in self._robot_list:
+				robot.draw(self._gameDisplay)
+
 
 	## Renders the stored game image onto the screen, to make it
 	# visible to the user.
@@ -131,19 +166,25 @@ class Game:
 			self._doing_step = False
 
 			allBotsAtTarget = True
+			anyRobotQuit = False
 
 			# Process robot actions
 			for robot in self._robot_list:
-				if not (robot.distanceToTarget() < 20):
+				if robot.has_given_up():
+					anyRobotQuit = True;
+					break;
+				if not (self.check_robot_at_target(robot)):
 					allBotsAtTarget = False
 					robot.NextStep(self._env.grid_data)
 
 			# Step the environment
 			self._env.next_step()
 
-			if (self._cmdargs.batch_mode) and (allBotsAtTarget):
+			shouldEndSimulation = (anyRobotQuit or allBotsAtTarget);
+
+			if (self._cmdargs.batch_mode) and (shouldEndSimulation):
 				return
-			if not allBotsAtTarget:
+			if not shouldEndSimulation:
 				self._step_num += 1
 			if self._cmdargs.max_steps <= self._step_num:
 				return
@@ -175,7 +216,7 @@ class Game:
 
 			# Process robot actions
 			for robot in self._robot_list:
-				if not (robot.distanceToTarget() < 20):
+				if not self.check_robot_at_target(robot):
 					allBotsAtTarget = False
 					robot.NextStep(self._env.grid_data)
 			step_num += 1
@@ -225,7 +266,7 @@ class Game:
 	# 	otherwise.
 	#
 	def check_robot_at_target(self, robot):
-		return robot.distanceToTarget() < 20
+		return (Vector.distance_between(robot.location, self._target.position) < 20);
 
 
 	## Runs the game

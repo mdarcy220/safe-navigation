@@ -1,9 +1,7 @@
-import numpy as np;
+# cython: profile = True
 
-## @package Vector
-#
-# Provides basic vector math routines
-#
+import numpy as np
+import cython
 
 ## @deprecated
 # Gets the angle between points A and B
@@ -67,6 +65,8 @@ def distance_between(point_a, point_b):
 	vectorAB = np.subtract(point_a, point_b);
 	return magnitudeOf(vectorAB);
 
+if cython.compiled:
+	distance_between = _cython_wrap_distance_between;
 
 ## @deprecated
 # Gets the distance from PointA to PointB
@@ -118,8 +118,12 @@ def unitVectorFromAngle(angle):
 # <br>	Format: `[x, y]`
 # <br>	-- A unit vector pointing at the specified angle.
 #
-def unit_vec_from_radians(angle):
-	return np.array([np.cos(angle), np.sin(angle)], dtype='float64')
+def unit_vec_from_radians(angle, buf=None):
+	if buf is None or len(buf) < 2:
+		buf = np.zeros(2, dtype=np.float64);
+	buf[0] = np.cos(angle);
+	buf[1] = np.sin(angle);
+	return buf;
 
 
 ## Creates a unit vector pointing at the specified angle.

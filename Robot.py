@@ -13,15 +13,10 @@ import Vector
 import matplotlib.pyplot as plt
 import time
 import scipy.signal
+from pygame import gfxdraw
+from RobotControlInput import RobotControlInput
 
-## Represents a control input for a robot. The control consists of a speed
-# and a direction, which together define a single action for the robot to
-# take.
-#
-class RobotControlInput:
-	def __init__(self, speed=0, angle=0):
-		self.speed = speed;
-		self.angle = angle;
+from NavigationAlgorithm import LinearNavigationAlgorithm
 
 
 ## Holds statistics about the robot's progress, used for reporting the
@@ -31,6 +26,23 @@ class RobotStats:
 	def __init__(self):
 		self.num_collisions = 0
 		self.num_steps = 0
+
+
+## A GPS sensor for robots, that can give the robot's current location.
+#
+#
+class GpsSensor:
+	def __init__(self, robot):
+		self._robot = robot;
+
+	def location(self):
+		return self._robot.location;
+
+	def angle_to(self, pos):
+		return Vector.degrees_between(self._robot.location, pos);
+
+	def distance_to(self, pos):
+		return Vector.distance_between(self._robot.location, pos);
 
 
 ## Represents a robot attempting to navigate safely through the
@@ -62,20 +74,18 @@ class Robot:
 	# <br>	-- A name for the robot, only used for the purpose of
 	# 	printing debugging messages.
 	#
-	def __init__(self, target, initial_position, radar, cmdargs, using_safe_mode = False, name=""):
-		self._cmdargs		= cmdargs
-		self.target		= target
-		self.location		= initial_position
-		self.speed		= cmdargs.robot_speed
-		self.stats		= RobotStats()
-		self.name		= name
-		self.radar = radar
+	def __init__(self, initial_position, cmdargs, path_color = (0, 0, 255), name=""):
+		self.location           = initial_position;
+		self._cmdargs           = cmdargs;
+		self._path_color        = path_color
+		self.name               = name;
 
-		from NavigationAlgorithm import FuzzyNavigationAlgorithm, SamplingNavigationAlgorithm, MultiLevelNavigationAlgorithm
-		if using_safe_mode:
-			self._nav_algo = SamplingNavigationAlgorithm(self, cmdargs);
-		else:
-			self._nav_algo = FuzzyNavigationAlgorithm(self, cmdargs, using_safe_mode, with_predictor=True);
+		self.speed              = cmdargs.robot_speed;
+		self.stats              = RobotStats();
+
+		self._sensors           = {};
+
+		self._nav_algo = None;
 
 		self.movement_momentum = cmdargs.robot_movement_momentum
 
@@ -104,9 +114,12 @@ class Robot:
 		self.stepNum += 1
 		self.stats.num_steps += 1
 
+		if not self._nav_algo:
+			return;
+
 		control_input = self._nav_algo.select_next_action();
 
-		speed = control_input.speed;
+		speed = min(control_input.speed, self.speed);
 		movement_ang = control_input.angle;
 
 		# Update the robot's motion based on the chosen direction
@@ -139,6 +152,20 @@ class Robot:
 		self._PathList.append(np.array(self.location, dtype=int))
 
 
+	def set_nav_algo(self, nav_algo):
+		self._nav_algo = nav_algo;
+
+
+	def get_sensors(self):
+		return self._sensors;
+
+
+	def put_sensor(self, sensor_name, sensor):
+		self._sensors[sensor_name] = sensor;
+
+	def has_given_up(self):
+		return self._nav_algo.has_given_up();
+
 
 	## Draws this `Robot` to the given surface
 	#
@@ -146,17 +173,10 @@ class Robot:
 	# <br>	-- The surface on which to draw the robot
 	#
 	def draw(self, screen):
-		#PG.draw.circle(screen, (0, 0, 255), np.array(self.location, dtype=int), 4, 0)
-		BlueColor  = (0, 0, 255)
-		GreenColor = (10, 100, 10)
-		if (self._nav_algo.using_safe_mode):
-			PathColor = GreenColor
-		else:
-			PathColor = BlueColor
 		for ind, o in enumerate(self._PathList):
 			if ind == len(self._PathList) - 1:
 				continue
-			PG.draw.line(screen,PathColor,self._PathList[ind], self._PathList[ind +1], 2)
+			PG.draw.line(screen,self._path_color,self._PathList[ind], self._PathList[ind +1], 2)
 		if (0 < self._cmdargs.debug_level):
 			if self._drawcoll > 0:
 				PG.draw.circle(screen, (255, 127, 127), np.array(self.location, dtype=int), 15, 1)
@@ -168,38 +188,46 @@ class Robot:
 			#PG.draw.line(screen, (255,0,0), np.array(self.location, dtype=int), np.array(self.location+self._last_mmv*100, dtype=int), 1)
 
 			# Draw circle representing radar range
-			PG.draw.circle(screen, PathColor, np.array(self.location, dtype=int), self.radar.radius, 2)
-#			if "node_list" in self._nav_algo.debug_info.keys():
-#				for node in self._nav_algo.debug_info["node_list"]:
-#					for edge in node.edges:
-#						if edge.weight < 20000.0:
-#							PG.draw.line(screen, (255, 255, 255), edge.from_node.pos, edge.to_node.pos, 1);
-#						else:
-#							pass
-#				for node in self._nav_algo.debug_info["node_list"]:
-#					color = (255, 128, 128);
-#					if not node.visited:
-#						color = (64, 255, 64)
-#					PG.draw.circle(screen, color, np.array(node.pos, dtype=int), 5);
-#			if 'multilevel.next_node' in self._nav_algo.debug_info.keys():
-#				next_node = self._nav_algo.debug_info['multilevel.next_node'];
-#				PG.draw.circle(screen, (255, 255, 64), np.array(next_node.pos, dtype=int), 5);
+			PG.draw.circle(screen, self._path_color, np.array(self.location, dtype=int), int(self._sensors['radar'].radius), 2)
 
-			# Draw distribution values around robot
-			#self._draw_pdf(screen, self._nav_algo.debug_info["drawing_pdf"])
+			# Draw static mapper data
+			if 'mapdata' in self._nav_algo.debug_info.keys():
+				pix_arr = PG.surfarray.pixels2d(screen);
+				pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
+				del pix_arr
+
+			# Draw predicted obstacle locations
+			if "future_obstacles" in self._nav_algo.debug_info.keys():
+				if self._nav_algo.debug_info["future_obstacles"]:
+					for fff in self._nav_algo.debug_info["future_obstacles"]:
+						for x,y in fff.keys():
+							gfxdraw.pixel(screen, x, y, (255,0,0))
+
+			# Draw planned path waypoints
+			if "path" in self._nav_algo.debug_info.keys():
+				if self._nav_algo.debug_info["path"]:
+					points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
+					for x,y in points:
+						PG.draw.circle(screen, (0,0,0), (x,y), 2)
 
 
-	def _draw_pdf(self, screen, pdf):
+	def draw_radar_mask(self, mask_screen, radar_data=None):
+		if radar_data is None:
+			radar_data = self._sensors['radar'].scan(self._sensors['gps'].location());
+		self._draw_pdf(mask_screen, radar_data, line_width=0, color=0x00000000);
+
+
+	def _draw_pdf(self, screen, pdf, line_width=1, color=(200, 0, 200)):
 		if pdf is None:
 			return;
-		deg_res = 360 / float(len(pdf))
-		scale = 1.0#self.radar.radius
-		last_point = [self.location[0] + (pdf[0] * scale), self.location[1]]
+		deg_res = 360 / float(len(pdf));
+		scale = 1.0;
+		points = [];
 		for index in np.arange(0, len(pdf), 1):
-			ang = index * deg_res * np.pi / 180
-			cur_point = self.location + scale*pdf[index]*np.array([np.cos(ang), np.sin(ang)], dtype='float64')
-			PG.draw.line(screen, (200, 0, 200), last_point, cur_point, 1)
-			last_point = cur_point
+			ang = index * deg_res * np.pi / 180;
+			cur_point = self.location + scale*pdf[index]*np.array([np.cos(ang), np.sin(ang)], dtype='float64');
+			points.append(cur_point);
+		PG.draw.polygon(screen, color, points, line_width)
 
 
 	## Get the distance from this robot to the target point

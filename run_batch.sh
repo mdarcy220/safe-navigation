@@ -4,7 +4,7 @@
 
 num_cores=$(lscpu -p | egrep -v '^#' | sort -u -t, -k 2,4 | wc -l)
 [[ -z "$result_file_prefix" ]] && result_file_prefix="."
-[[ -z "$base_args" ]] && base_args="--enable-memory --debug-level 1 --robot-speed 6 --radar-resolution 5 --batch-mode --max-steps=5000 --robot-movement-momentum=0.0 --robot-memory-sigma=30 --robot-memory-decay=1 --robot-memory-size=500"
+[[ -z "$base_args" ]] && base_args="--enable-memory --debug-level 1 --robot-speed 6 --radar-resolution 5 --batch-mode --max-steps=5000 --robot-movement-momentum=0.0 --robot-memory-sigma=35 --robot-memory-decay=1 --robot-memory-size=500"
 [[ -z "$num_trials" ]] && num_trials=5
 [[ -z "$max_processes" ]] && max_processes=$num_cores
 
@@ -28,18 +28,17 @@ run_arg_set() {
 
 # Generate argument sets
 printf "Generating argument sets...\n"
-for ((speed = 1; speed <= 6; speed++))
+for ((speed = 7; speed <= 10; speed++))
 do
-
-	arg_sets+=("$base_args --map-modifier-num 1  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod1.png")
-	arg_sets+=("$base_args --map-modifier-num 4  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod4.png")
-	arg_sets+=("$base_args --map-modifier-num 5  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod5.png")
-	arg_sets+=("$base_args --map-modifier-num 0  --speed-mode $speed --map-name Maps/rooms.png")
-	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/parallel_walls.png")
-	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/rooms.png")
-	arg_sets+=("$base_args --map-modifier-num 10 --speed-mode $speed --map-name Maps/empty.png")
-	arg_sets+=("$base_args --map-modifier-num 7  --speed-mode $speed --map-name Maps/empty.png")
-	arg_sets+=("$base_args --map-modifier-num 9  --speed-mode $speed --map-name Maps/maze.png")
+	for map_modifier in 11 12
+	do
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod4.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/preset/preset_nothing_mod5.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/parallel_walls.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/rooms.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/empty.png")
+		arg_sets+=("$base_args --map-modifier-num $map_modifier  --speed-mode $speed --map-name Maps/block_columns.png")
+	done
 
 done
 

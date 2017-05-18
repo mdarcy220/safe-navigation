@@ -9,6 +9,15 @@ from  DynamicObstacles import DynamicObstacle
 import sys
 
 
+## Types of grid cells. Used in Environment grid_data
+#
+#
+class CellFlag:
+	ANY_OBSTACLE     = 0b0001;
+	DYNAMIC_OBSTACLE = 0b0010;
+	STATIC_OBSTACLE  = 0b0100;
+
+
 ## Holds information related to the simulation environment, such as the
 # position and motion of dynamic obstacles, and the static map.
 #
@@ -18,7 +27,7 @@ class Environment:
 		self.cmdargs = cmdargs
 		self.width = width
 		self.height = height
-		self.grid_data = np.zeros((self.width, self.height), dtype=int)
+		self.grid_data = np.zeros((self.width, self.height), dtype=np.uint8)
 		self.dynamic_obstacles = []
 
 		# Note: Order is important here:
@@ -35,6 +44,18 @@ class Environment:
 		# Load the static map and apply the modifier to produce
 		# dynamic obstacles
 		self.load_map(map_filename)
+
+		# Create static overlay (BEFORE applying map modifier)
+		pix_arr = PG.surfarray.pixels2d(self.static_base_image.copy())
+		pixel_mask = 0b11111100;
+		masked_pix_arr = np.bitwise_and(pix_arr, np.array([pixel_mask], dtype='uint8'));
+		grid_data_width = max(self.width, masked_pix_arr.shape[0]);
+		grid_data_height = max(self.height, masked_pix_arr.shape[1]);
+		self.static_overlay = np.zeros((grid_data_width, grid_data_height), dtype=int);
+		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
+		self.static_overlay[masked_pix_arr == obstacle_pixel_val] |= (CellFlag.STATIC_OBSTACLE | CellFlag.ANY_OBSTACLE);
+		del pix_arr
+
 		if (cmdargs):
 			self.apply_map_modifier_by_number(self.cmdargs.map_modifier_num)
 		# Set the speed mode
@@ -43,7 +64,6 @@ class Environment:
 		# Initialize the grid data
 		self._grid_data_display = PG.Surface((self.width, self.height))
 		self._update_grid_data();
-
 
 	def _update_grid_data(self):
 		self.update_display(self._grid_data_display);
@@ -61,11 +81,13 @@ class Environment:
 		self.map_modifiers.append(Environment._map_mod_8);
 		self.map_modifiers.append(Environment._map_mod_9);
 		self.map_modifiers.append(Environment._map_mod_10);
+		self.map_modifiers.append(Environment._map_mod_11);
+		self.map_modifiers.append(Environment._map_mod_12);
 
 
 	def load_map(self, map_filename):
-		image = PG.image.load(map_filename)
-		self.static_base_image = image
+		image = PG.image.load(map_filename).convert_alpha();
+		self.static_base_image = image;
 
 
 	## Sets the speed mode of the obstacles
@@ -89,17 +111,25 @@ class Environment:
 			if speedmode == 0:
 				pass; # Leave obstacle speeds as default
 			elif speedmode == 1:
-				obstacle.speed = 4		 
+				obstacle.speed = 4;		 
 			elif (speedmode == 2):
-				obstacle.speed = 8
+				obstacle.speed = 8;
 			elif speedmode == 3:
-				obstacle.speed = self.cmdargs.robot_speed
+				obstacle.speed = self.cmdargs.robot_speed;
 			elif speedmode == 4:
-				obstacle.speed = np.array ([4, 8])[np.random.randint(2)]
+				obstacle.speed = np.array ([4, 8])[np.random.randint(2)];
 			elif speedmode == 5:
-				obstacle.speed = 6
+				obstacle.speed = 6;
 			elif speedmode == 6:
-				obstacle.speed = 12
+				obstacle.speed = 12;
+			elif speedmode == 7:
+				obstacle.speed = 5;
+			elif speedmode == 8:
+				obstacle.speed = self.cmdargs.robot_speed;
+			elif speedmode == 9:
+				obstacle.speed = 15;
+			elif speedmode == 10:
+				obstacle.speed = np.random.uniform(low=5.0, high=15.0);
 			else:
 				sys.stderr.write("Invalid speed mode. Assuming mode 0.\n");
 				sys.stderr.flush();
@@ -145,9 +175,10 @@ class Environment:
 		
 		dynobs.movement_mode = 3
 		dynobs.radius = int(np.random.uniform(radius_low, radius_high))
+		dynobs.size = [dynobs.radius, dynobs.radius];
 		dynobs.shape = shape
 		dynobs.speed = np.random.uniform(low=speed_low, high=speed_high)
-		for j in range(1, num_path_points):
+		for j in range(num_path_points):
 			x_coord = int(np.random.uniform(path_x_low, path_x_high))
 			y_coord = int(np.random.uniform(path_y_low, path_y_high))
 			dynobs.path_list.append(np.array([x_coord, y_coord]))
@@ -355,6 +386,20 @@ class Environment:
 			self.dynamic_obstacles.append(dynobs)
 
 
+	def _map_mod_11(self):
+		for i in range(20):
+			dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30);
+			dynobs.shape = 1 if i < 10 else 2;
+			self.dynamic_obstacles.append(dynobs);
+
+
+	def _map_mod_12(self):
+		for i in range(20):
+			dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30, num_path_points=2);
+			dynobs.shape = 1 if i < 10 else 2;
+			self.dynamic_obstacles.append(dynobs);
+
+
 	def _update_dynamic_obstacles(self):
 		for dynobs in self.dynamic_obstacles:
 			dynobs.next_step();
@@ -405,18 +450,16 @@ class Environment:
 
 		grid_data_width = max(self.width, masked_pix_arr.shape[0])
 		grid_data_height = max(self.height, masked_pix_arr.shape[1] )
-		self.grid_data = np.zeros((grid_data_width, grid_data_height), dtype=int)
-
-		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
-		self.grid_data[masked_pix_arr == obstacle_pixel_val] = 1
+		self.grid_data = np.array(self.static_overlay);
 
 		dynamic_obstacle_pixel_val = 0x227722 & pixel_mask # (34, 119, 34) represented as integer
-		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] = 3
+		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] |= (CellFlag.DYNAMIC_OBSTACLE | CellFlag.ANY_OBSTACLE)
 		
 		# Uncomment the following lines to see the grid_data directly
-		pix_arr[self.grid_data==0] = 0
-		pix_arr[self.grid_data==3] = 0x115599
-		pix_arr[self.grid_data==1] = 0xFFFFFF
+		pix_arr[self.grid_data == 0] = 0xFFFFFF
+		pix_arr[self.grid_data & CellFlag.STATIC_OBSTACLE != 0] = 0x000000
+		pix_arr[self.grid_data & CellFlag.DYNAMIC_OBSTACLE != 0] = 0x66ff88
+		del pix_arr
 
 
 	## Step the environment, updating dynamic obstacles and grid data.

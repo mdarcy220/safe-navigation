@@ -52,6 +52,12 @@ def get_cmdline_args():
 			default=False,
 			action='store_true'
 	);
+	parser.add_argument('--display-robot-perspective',
+			help='Display robot\'s perspective (only show obstacles within radar range) ',
+			dest='display_robot_perspective',
+			default=False,
+			action='store_true'
+	);
 	parser.add_argument('--target-distribution-type',
 			help='Type of target distribution to use',
 			dest='target_distribution_type',
@@ -120,6 +126,13 @@ def get_cmdline_args():
 			dest='speedmode',
 			type=int,
 			default=1,
+			action='store'
+	);
+	parser.add_argument('--radar-range',
+			help='Range of the rader, in pixels',
+			dest='radar_range',
+			type=float,
+			default=100,
 			action='store'
 	);
 	parser.add_argument('--radar-resolution',
