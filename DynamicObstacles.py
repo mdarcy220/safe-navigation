@@ -83,6 +83,28 @@ class DynamicObstacle:
 	def set_radius(self, radius):
 		self.radius = radius
 
+	def get_velocity_vector(self):
+		if self.movement_mode == 1:
+			return np.random.uniform(-self.speed, self.speed, size=[2]);
+		elif self.movement_mode == 2:
+			return np.array([int(np.cos(self.tempind * np.pi / 180) * 30), int(np.sin(self.tempind * np.pi / 180) * 30)]);
+		elif self.movement_mode == 3:
+			if not self.cur_path_ind:
+				self.cur_path_ind = 0
+			if (not self.path_list) or (len(self.path_list) == 0):
+				return
+			elif (len(self.path_list) <= self.cur_path_ind):
+				self.cur_path_ind -= len(self.path_list)
+			next_waypoint = self.path_list[self.cur_path_ind]
+			dist2waypoint = Vector.distance_between(next_waypoint, self.coordinate)
+			if (dist2waypoint <= 2*self.speed):
+				return np.subtract(next_waypoint, self.coordinace)
+			movement_vec = np.array([next_waypoint[0] - self.coordinate[0], next_waypoint[1] - self.coordinate[1]], dtype='float64')
+			return movement_vec * self.speed / Vector.magnitudeOf(movement_vec)
+		else:
+			return np.zeros(2)
+			
+
 	## Does a motion step for this obstacle, updating its position and
 	# direction according to its movement mode.
 	#
@@ -102,7 +124,7 @@ class DynamicObstacle:
 			elif (len(self.path_list) <= self.cur_path_ind):
 				self.cur_path_ind -= len(self.path_list)
 			next_waypoint = self.path_list[self.cur_path_ind]
-			dist2waypoint = Vector.getDistanceBetweenPoints(next_waypoint, self.coordinate)
+			dist2waypoint = Vector.distance_between(next_waypoint, self.coordinate)
 			if (dist2waypoint <= 2*self.speed):
 				self.coordinate = np.array(next_waypoint)
 				self.cur_path_ind += 1

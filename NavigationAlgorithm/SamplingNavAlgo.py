@@ -86,7 +86,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self.debug_info["future_obstacles"] = self._obstacle_predictor.add_observation(self._gps.location(),
 				self._radar_data,
 				self._dynamic_radar_data,
-				self._obstacle_predictor_dynobs_getter_func
+				self._obstacle_predictor_dynobs_getter_func if self._sensors['use_getobs'] else None
 		);
 
 		# Replan if the current trajectory is either finished or no 

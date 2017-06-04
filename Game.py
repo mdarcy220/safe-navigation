@@ -69,15 +69,17 @@ class Game:
 		self._normal_robot  = Robot(initial_position, cmdargs, path_color=(0,0,255),   name="NormalRobot");
 		self._normal_robot.put_sensor('radar', radar);
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
-		self._normal_robot.put_sensor('usemem', True);
-		self._normal_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs, local_algo_init = IntegratedEnvNavigationAlgorithm));
+		self._normal_robot.put_sensor('usemem', False);
+		self._normal_robot.put_sensor('use_getobs', False);
+		self._normal_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
 		self._robot_list.append(self._normal_robot);
 
 		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(30,200,30), name="SafeRobot");
 		self._safe_robot.put_sensor('radar', radar);
 		self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
 		self._safe_robot.put_sensor('usemem', False);
-		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs));
+		self._safe_robot.put_sensor('use_getobs', True);
+		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
 		self._robot_list.append(self._safe_robot);
 
 		# Set window title
