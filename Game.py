@@ -248,8 +248,8 @@ class Game:
 		normal_robot_stats = self._normal_robot.get_stats()
 		safe_robot_stats = self._safe_robot.get_stats()
 
-		output_csv += str(normal_robot_stats.num_collisions) + ","
-		output_csv += str(safe_robot_stats.num_collisions) + ","
+		output_csv += str(normal_robot_stats.num_total_collisions()) + ","
+		output_csv += str(safe_robot_stats.num_total_collisions()) + ","
 
 		output_csv += str(self._normal_robot.stepNum if self.check_robot_at_target(self._normal_robot) else "") + ","
 		output_csv += str(self._safe_robot.stepNum if self.check_robot_at_target(self._safe_robot) else "") + ","

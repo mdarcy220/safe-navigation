@@ -14,8 +14,8 @@ import matplotlib.pyplot as plt
 import time
 import scipy.signal
 from pygame import gfxdraw
+from Environment import CellFlag
 from RobotControlInput import RobotControlInput
-
 from NavigationAlgorithm import LinearNavigationAlgorithm
 
 
@@ -24,8 +24,12 @@ from NavigationAlgorithm import LinearNavigationAlgorithm
 #
 class RobotStats:
 	def __init__(self):
-		self.num_collisions = 0
+		self.num_static_collisions = 0
+		self.num_dynamic_collisions = 0
 		self.num_steps = 0
+
+	def num_total_collisions(self):
+		return self.num_static_collisions + self.num_dynamic_collisions
 
 
 ## A GPS sensor for robots, that can give the robot's current location.
@@ -134,12 +138,15 @@ class Robot:
 		# Update the robot's position and check for a collision
 		# with an obstacle
 		new_location = np.add(self.location, movement_vec)
-		if (grid_data[int(new_location[0]), int(new_location[1])] & 1):
+		if (grid_data[int(new_location[0]), int(new_location[1])] & CellFlag.ANY_OBSTACLE):
 			if self.stepNum - self._last_collision_step > 1:
 				if not self._cmdargs.batch_mode:
 					print('Robot ({}) glitched into obstacle!'.format(self.name))
 				self._drawcoll = 10
-				self.stats.num_collisions += 1
+				if grid_data[int(new_location[0]), int(new_location[1])] & CellFlag.DYNAMIC_OBSTACLE:
+					self.stats.num_dynamic_collisions += 1
+				elif grid_data[int(new_location[0]), int(new_location[1])] & CellFlag.STATIC_OBSTACLE:
+					self.stats.num_static_collisions += 1
 			self._last_collision_step = self.stepNum
 			new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-.5, .5, size=2));
 			if(Vector.getDistanceBetweenPoints(self.location, new_location) > 2*self.speed):
