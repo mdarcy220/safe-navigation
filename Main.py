@@ -177,6 +177,19 @@ def get_cmdline_args():
 			default='Robot Simulator',
 			action='store'
 	);
+	parser.add_argument('--output-prng-state',
+			help='Include the starting state of the PRNG in the final output (pickled, encoded as base64)',
+			dest='output_prng_state',
+			default=False,
+			action='store_true'
+	);
+	parser.add_argument('--prng-start-state',
+			help='Base64-encoded pickle of the starting state for the PRNG',
+			dest='prng_start_state',
+			type=str,
+			default=None,
+			action='store'
+	);
 	return parser.parse_args(sys.argv[1:])
 
 

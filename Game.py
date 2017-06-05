@@ -5,6 +5,8 @@
 
 import pygame	as PG
 import numpy	as np
+import pickle
+import base64
 
 from Environment import Environment
 from Robot import Robot, RobotStats, GpsSensor
@@ -40,6 +42,11 @@ class Game:
 	#
 	def __init__(self, cmdargs):
 		self._cmdargs = cmdargs
+
+		if cmdargs.prng_start_state is not None:
+			np.random.set_state(pickle.loads(base64.b64decode(str.encode(cmdargs.prng_start_state))));
+
+		self._initial_random_state = base64.b64encode(pickle.dumps(np.random.get_state())).decode();
 
 		self._display_every_frame = True
 		if cmdargs.batch_mode and not cmdargs.display_every_frame:
@@ -248,14 +255,19 @@ class Game:
 		normal_robot_stats = self._normal_robot.get_stats()
 		safe_robot_stats = self._safe_robot.get_stats()
 
-		output_csv += str(normal_robot_stats.num_total_collisions()) + ","
-		output_csv += str(safe_robot_stats.num_total_collisions()) + ","
+		output_csv += str(normal_robot_stats.num_dynamic_collisions) + ","
+		output_csv += str(safe_robot_stats.num_dynamic_collisions) + ","
+
+		output_csv += str(normal_robot_stats.num_static_collisions) + ","
+		output_csv += str(safe_robot_stats.num_static_collisions) + ","
 
 		output_csv += str(self._normal_robot.stepNum if self.check_robot_at_target(self._normal_robot) else "") + ","
 		output_csv += str(self._safe_robot.stepNum if self.check_robot_at_target(self._safe_robot) else "") + ","
 
 		output_csv += str(0 if self.check_robot_at_target(self._normal_robot) else 1) + ","
-		output_csv += str(0 if self.check_robot_at_target(self._safe_robot) else 1) 
+		output_csv += str(0 if self.check_robot_at_target(self._safe_robot) else 1) + ","
+		if self._cmdargs.output_prng_state:
+			output_csv += str(self._initial_random_state)
 
 
 		return output_csv
