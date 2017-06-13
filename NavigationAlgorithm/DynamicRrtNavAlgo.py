@@ -45,7 +45,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
 
 		#Algo
-		self._maxstepsize = cmdargs.robot_speed*10;
+		self._maxstepsize = cmdargs.robot_speed*3;
 		self._maxWayPoints = 500;
 		self._wayPointCache = []
 		self._goalThreshold = cmdargs.robot_speed * 0.75; #In pixel distance
@@ -56,7 +56,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		#Make initial RRT from start to goal
 		self._solution = []
-		self._initRRT(self._target.position, self._gps.location(), False);
+		self._initRRT(self._target.position, self._gps.location());
 		self._grow_rrt(); 
 		self._extract_solution(); 
 
@@ -83,7 +83,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		robot_location = self._gps.location()
 		grid_data = self._radar._env.grid_data
 		if grid_data[int(robot_location[0])][int(robot_location[1])] != 3:
-			if self._solution_contains_invalid_node() or (len(self._solution) > 0 and self._collides(self._gps.location(), self._solution[0].data, False)):
+			if any([n.flag == 1 for n in self._solution]) or (len(self._solution) > 0 and self._collides(self._gps.location(), self._solution[0].data, False)):
 				self._regrow_rrt();
 				self._extract_solution();
 
@@ -108,7 +108,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			#If robot is inside dynamic obstacle
 			dist = 0
 			direction = np.random.uniform(low=0, high=360);
-
+#		self.debug_info['rrt_tree'] = self._rrt
 		return RobotControlInput(dist, direction);
 
 
@@ -117,89 +117,72 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 
 	def _regrow_rrt(self):
-		nearest_valid_node = self._nearest_neighbour(self._gps.location())
-
-		self._initRRT(nearest_valid_node.data, self._gps.location(), True);
+		self._qgoal = Node(self._gps.location())
 		self._grow_rrt();
 
 	def _grow_rrt(self):
-		# Always call initRRT before growRRT
-		qNew = self._qstart;
 		foundGoal = False;
 		count = 0;
+		self._final_node = None
 
-		while not foundGoal and count < self._maxRrtSize:
-			qTarget = self._choose_target(); #Type Node
-			qNew = self._rrt_extend(qTarget);
-			if qNew is not None:
-				count += 1
-				if Vector.distance_between(qNew.data, self._qgoal.data) < self._goalThreshold:
-					foundGoal = True
-
-		if foundGoal:
-			self._final_node = qNew
-		else:
-			self._final_node = None
+		while count < self._maxRrtSize and not foundGoal:
+			qNew = self._rrt_extend(self._choose_target())
+			if qNew is None:
+				continue;
+			count += 1
+			if Vector.distance_between(qNew.data, self._qgoal.data) < self._goalThreshold:
+				foundGoal = True
+				self._final_node = qNew
 
 	def _invalidateNodes(self):
 		nearby_nodes = self._rrt.get_nearby_nodes(self._gps.location(), self._radar_range)
+		# Add solution nodes to be checked (note: this may double-add some nodes unintentionally, but was easier to implement)
+		if len(self._solution) > 0:
+			nearby_nodes.extend(self._solution)
+			nearby_nodes.extend(self._solution[0]._children)
 		for node in nearby_nodes:
 			if node.parent and (node.flag == 0) and self._collides(node.data, node.parent.data, True):
 				node.invalidate()
 		self._qstart.flag = 0;
 
 
-	def _initRRT(self, qstart, qgoal, append):
+	def _initRRT(self, qstart, qgoal):
 			self._qstart = Node(qstart);
 			self._qgoal = Node(qgoal);
-
-			if not append:
-				self._rrt = Tree(self._qstart.data);
-
-	def _solution_contains_invalid_node(self):
-		for node in self._solution:
-			if node.flag == 1:
-				return True
-
-		return False
+			self._rrt = Tree(self._qstart.data);
 
 	def _choose_target(self):
 		randReal = np.random.uniform(0.0, 1.0);
-		if len(self._wayPointCache) > 0:
-				randInt = np.random.randint(0, len(self._wayPointCache) - 1);
 
 		if randReal < self._goalBias:
 			return self._qgoal;
+		elif randReal < (self._goalBias + self._wayPointBias) and self._wayPointCache and (len(self._wayPointCache) > 0):
+			randInt = np.random.randint(0, len(self._wayPointCache));
+			return self._wayPointCache[randInt];
 		else:
-			if randReal < (self._goalBias + self._wayPointBias) and self._wayPointCache:
-				return self._wayPointCache[randInt];
-			else:
-				return self._get_safe_random_node();
+			return self._get_safe_random_node();
 
 	def _extract_solution(self):
 		self._solution = []
-		if self._final_node is not None:
-			current_node = self._final_node; #Nearest node to the robot's current position
-			i = 0;
-			while current_node.data != self._target.position:
-				self._solution.append(current_node.parent);
-				current_node = current_node.parent;
+		if self._final_node is None:
+			return
+		current_node = self._final_node; # Nearest node to the robot's current position
+		i = 0;
+		while current_node.parent is not None:
+			self._solution.append(current_node.parent);
+			current_node = current_node.parent;
 
-			wayPointCacheSpaceLeft = self._maxWayPoints - len(self._wayPointCache);
-			numOfSolutionNodes = len(self._solution);
+		wayPointCacheSpaceLeft = self._maxWayPoints - len(self._wayPointCache);
+		numOfSolutionNodes = len(self._solution);
 
-			self._wayPointCache.extend(self._solution[0:wayPointCacheSpaceLeft]);
-			remaining_solution_nodes = self._solution[wayPointCacheSpaceLeft:];
-			solution_index = 0;
-			for randIndex in np.random.randint(low=0, high=len(self._wayPointCache), size=len(remaining_solution_nodes)):
-				self._wayPointCache[randIndex] = remaining_solution_nodes[solution_index];
-				solution_index += 1;
+		self._wayPointCache.extend(self._solution[0:wayPointCacheSpaceLeft]);
+		remaining_solution_nodes = self._solution[wayPointCacheSpaceLeft:];
+		solution_index = 0;
+		for randIndex in np.random.randint(low=0, high=len(self._wayPointCache), size=len(remaining_solution_nodes)):
+			self._wayPointCache[randIndex] = remaining_solution_nodes[solution_index];
+			solution_index += 1;
 
-			assert len(self._wayPointCache) <= self._maxWayPoints	
-
-		else:
-			#Algo ran out of max rrt size
-			pass
+		assert len(self._wayPointCache) <= self._maxWayPoints	
 
 	def _nearest_neighbour(self, qTarget):
 		nearest_node = min(self._rrt.toListValidNodes(), key=lambda t: (t.data[0]-qTarget.data[0])**2 + (t.data[1]-qTarget.data[1])**2)
@@ -212,7 +195,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _near(self, qTarget, n):
 		tree_nodes = self._rrt.toListValidNodes()
 		ZETA = np.pi  # Volume of unit ball in 2D
-		GAMMA = ZETA  # A constant
+		GAMMA = 800*600*6  # A constant: 2^d (1 + 1/d) mu_L(X_free)
 		ETA = self._maxstepsize
 		radius = min(((GAMMA/ZETA)*(np.log(n)/n))**2, ETA)
 		return [vertex for vertex in tree_nodes if Vector.distance_between(vertex.data, qTarget.data) < radius]
@@ -223,9 +206,8 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		dist = Vector.distance_between(p1, p2)
 		if dist  < self._maxstepsize:
 			return p2
-		else:
-			scale_factor = self._maxstepsize / dist
-			return (p1[0] + (p2[0] - p1[0])*scale_factor, p1[1] + (p2[1] - p1[1])*scale_factor)
+		scale_factor = self._maxstepsize / dist
+		return (p1[0] + (p2[0] - p1[0])*scale_factor, p1[1] + (p2[1] - p1[1])*scale_factor)
 
 	# The Extend() function for regular RRT
 	def _rrt_extend(self, qTarget):
@@ -236,6 +218,39 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		qNearest.addChild(qNew)
 		return qNew
 
+	# The Extend() function for RRT*, as described in:
+	# Karaman and Frazzoli, "Incremental Sampling-based Algorithms
+	# for Optimal Motion Planning".
+	def _rrtstar_extend(self, qTarget):
+		qNearest = self._nearest_neighbour(qTarget);
+		qNew = Node(self._steer(qNearest.data, qTarget.data))
+		if self._collides(qNearest.data, qNew.data, False):
+			return None
+		qMin = qNearest
+		nearby_points = self._near(qNew, self._rrt.root.size)
+		for qNear in nearby_points:
+			if not self._collides(qNear.data, qNew.data, False):
+				c = self._cost(qNear) + Vector.distance_between(qNear.data, qNew.data)
+				if c < self._cost(qNew):
+					qMin = qNear
+		qMin.addChild(qNew)
+		for qNear in nearby_points:
+			if self._cost(qNear) > (self._cost(qNew) + Vector.distance_between(qNew.data, qNear.data)) and not self._collides(qNew.data, qNear.data, False):
+				qParent = qNear.parent
+				qParent.removeChild(qNear)
+				qNew.addChild(qNear)
+		return qNew
+
+	def _cost(self, node):
+		total_cost = 0
+		qChild = node
+		qParent = qChild.parent
+		while qParent is not None:
+			total_cost += Vector.distance_between(qParent.data, qChild.data)
+			qChild = qParent
+			qParent = qChild.parent
+		return total_cost
+
 	def _get_safe_random_node(self):
 		while True:
 			rand_point = self._get_random_point()
@@ -243,7 +258,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				return Node(rand_point)
 
 	def _collides(self, fromPoint, toPoint, dynamicOnly):
-		grid_data = self._mapper.get_grid_data();#self._radar._env.grid_data
+		grid_data = self._mapper.get_grid_data();
 
 		if fromPoint is not None:
 			ang_in_radians = Vector.degrees_between(fromPoint, toPoint) * np.pi / 180
@@ -317,7 +332,12 @@ class Node:
 	def addChild(self, child):
 		self._children.append(child);
 		child.parent = self;
-		self.incrementSize();
+		self.incrementSize(child.size);
+
+	def removeChild(self, child):
+		self._children.remove(child);
+		child.parent = None
+		self.decrementSize(child.size);
 
 	def toList(self):
 		result = []
@@ -331,34 +351,10 @@ class Node:
 		while True:
 			if frontier.isEmpty() or len(result) == self.size:
 				return result;
-			else:
-				currentNode = frontier.pop();
-				result.append(currentNode);
-				for node in currentNode._children:
-					frontier.push(node);
-
-	def toListValidChildren(self):
-		result = []
-
-		frontier = Stack();
-		if self.flag == 0:
-			frontier.push(self);
-		else:
-			return None #No valid nodes found
-
-		for node in self._children:
-			if node.flag == 0:
-				frontier.push(node)
-
-		while True:
-			if len(result) == self.validSize:
-				return result;
-			else:
-				currentNode = frontier.pop();
-				result.append(currentNode);
-				for node in currentNode._children:
-					if node.flag == 0:
-						frontier.push(node);
+			currentNode = frontier.pop();
+			result.append(currentNode);
+			for node in currentNode._children:
+				frontier.push(node);
 
 	def invalidate(self):
 		self.flag = 1
@@ -372,10 +368,15 @@ class Node:
 		if self.parent is not None:
 			self.parent.validate()
 
-	def incrementSize(self):
-		self.size += 1;
+	def incrementSize(self, size=1):
+		self.size += size;
 		if self.parent:
-			self.parent.incrementSize();
+			self.parent.incrementSize(size);
+
+	def decrementSize(self, size=1):
+		self.size -= size;
+		if self.parent:
+			self.parent.decrementSize(size);
 
 
 class Stack:
