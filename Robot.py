@@ -217,6 +217,14 @@ class Robot:
 					for x,y in points:
 						PG.draw.circle(screen, (0,0,0), (x,y), 2)
 
+			# Draw RRT
+			if "rrt_tree" in self._nav_algo.debug_info.keys() and self._nav_algo.debug_info["rrt_tree"]:
+				points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
+				for node in self._nav_algo.debug_info['rrt_tree'].toListValidNodes():
+					if node.parent is None or node is None:
+						continue
+					PG.draw.line(screen, (255,0,0), (node.data[0],node.data[1]), (node.parent.data[0],node.parent.data[1]), 1)
+
 
 	def draw_radar_mask(self, mask_screen, radar_data=None):
 		if radar_data is None:
