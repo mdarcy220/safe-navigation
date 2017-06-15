@@ -134,6 +134,35 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				foundGoal = True
 				self._final_node = qNew
 
+		self._postprocess(self._final_node);
+
+
+	# Post-process (smooth) the path from start_node to the root
+	def _postprocess(self, start_node):
+		if start_node is None:
+			return;
+
+		qDescendant = start_node
+		qAncestor = qDescendant.parent
+		while qDescendant is not None and qDescendant.parent is not None:
+			# Check if there are any shorter paths we can take to the current node
+			# but to save time only check for paths originating from the current
+			# solution path
+			bestAncestor = None
+			while qAncestor is not None:
+				if not self._collides(qDescendant.data, qAncestor.data, False):
+					bestAncestor = qAncestor
+				qAncestor = qAncestor.parent
+
+			# Rewire the tree to take the better path
+			if bestAncestor is not None:
+				qDescendant.parent.removeChild(qDescendant)
+				bestAncestor.addChild(qDescendant)
+
+			qDescendant = qDescendant.parent # The parent of the old qDescendant (the current bestAncestor)
+			qAncestor = qDescendant.parent   # The parent of the parent of the old qDescendant
+
+
 	def _invalidateNodes(self):
 		nearby_nodes = self._rrt.get_nearby_nodes(self._gps.location(), self._radar_range)
 		# Add solution nodes to be checked (note: this may double-add some nodes unintentionally, but was easier to implement)
