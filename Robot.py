@@ -186,7 +186,7 @@ class Robot:
 			PG.draw.line(screen,self._path_color,self._PathList[ind], self._PathList[ind +1], 2)
 		if (0 < self._cmdargs.debug_level):
 			if self._drawcoll > 0:
-				PG.draw.circle(screen, (255, 127, 127), np.array(self.location, dtype=int), 15, 1)
+				PG.draw.circle(screen, (255, 80, 210), np.array(self.location, dtype=int), 16, 3)
 				self._drawcoll = self._drawcoll - 1
 			# Draw line representing memory effect
 			#PG.draw.line(screen, (0,255,0), np.array(self.location, dtype=int), np.array(self.location+self._last_mbv*100, dtype=int), 1)
@@ -215,11 +215,10 @@ class Robot:
 				if self._nav_algo.debug_info["path"]:
 					points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
 					for x,y in points:
-						PG.draw.circle(screen, (0,0,0), (x,y), 2)
+						PG.draw.circle(screen, (30,30,60), (x,y), 3)
 
 			# Draw RRT
 			if "rrt_tree" in self._nav_algo.debug_info.keys() and self._nav_algo.debug_info["rrt_tree"]:
-				points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
 				for node in self._nav_algo.debug_info['rrt_tree'].toListValidNodes():
 					if node.parent is None or node is None:
 						continue
