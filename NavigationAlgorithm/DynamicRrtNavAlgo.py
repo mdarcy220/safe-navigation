@@ -7,6 +7,7 @@ from math import *
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
 from StaticMapper import StaticMapper
+from Environment import CellFlag
 
 
 ## Implementation of the Dynamic Window algorithm for robotic navigation.
@@ -44,24 +45,24 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._radar_resolution = self._radar.resolution;
 		self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
 
-		#Algo
+		self._has_given_up = False
+
+		# Algorithm parameters
 		self._maxstepsize = cmdargs.robot_speed*3;
-		self._maxWayPoints = 500;
-		self._wayPointCache = []
-		self._goalThreshold = cmdargs.robot_speed * 0.75; #In pixel distance
+		self._maxWaypoints = 500;
+		self._waypointCache = []
+		self._goalThreshold = cmdargs.robot_speed * 0.75;
+		self._waypoint_threshold = 25
 		self._goalBias = 0.1;
-		self._wayPointBias = 0.3;
+		self._waypointBias = 0.3;
 		self._maxRrtSize = 5000;
 		self.debug_info = {"path": None, "point": None}
 
-		#Make initial RRT from start to goal
+		# Make initial RRT from start to goal
 		self._solution = []
 		self._initRRT(self._target.position, self._gps.location());
 		self._grow_rrt(); 
 		self._extract_solution(); 
-
-		self._last_solution_node = Node((int(self._gps.location()[0]), int(self._gps.location()[1])))
-		self._has_given_up = False
 
 
 	## Next action selector method.
@@ -71,33 +72,24 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 	#		"AbstractNavigationAlgorithm.select_next_action()"
 	#
 	def select_next_action(self):
-		self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
-
+		self._mapper.add_observation();
 		self.debug_info['mapdata'] = self._mapper.get_grid_data();
-
-		if self._last_solution_node.data != (int(self._gps.location()[0]), int(self._gps.location()[1])):
-			self._solution.insert(0, self._last_solution_node)
 
 		self._invalidateNodes();
 
 		robot_location = self._gps.location()
-		grid_data = self._radar._env.grid_data
-		if grid_data[int(robot_location[0])][int(robot_location[1])] != 3:
-			if any([n.flag == 1 for n in self._solution]) or (len(self._solution) > 0 and self._collides(self._gps.location(), self._solution[0].data, False)):
+		if not (self._radar._env.grid_data[int(robot_location[0])][int(robot_location[1])] & CellFlag.DYNAMIC_OBSTACLE):
+			if any([n.flag == 1 for n in self._solution]) or (len(self._solution) > 0 and self._collides(robot_location, self._solution[0].data)):
 				self._regrow_rrt();
 				self._extract_solution();
 
+			while 0 < len(self._solution) and Vector.distance_between(robot_location, self._solution[0].data) < self._waypoint_threshold:
+				del self._solution[0];
+
 			if len(self._solution) > 0:
-				while 0 < len(self._solution) and Vector.distance_between(self._gps.location(), self._solution[0].data) < 25:
-					del self._solution[0];
-				if len(self._solution) > 0:
-					direction = Vector.degrees_between(self._gps.location(), self._solution[0].data)
-					dist = min(self._maxstepsize, Vector.distance_between(self._gps.location(), self._solution[0].data))
-					self.debug_info["path"] = self._solution
-					self._last_solution_node = self._solution[0]
-				else:
-					dist = 0;
-					direction = 0;
+				direction = Vector.degrees_between(robot_location, self._solution[0].data)
+				dist = min(self._maxstepsize, Vector.distance_between(robot_location, self._solution[0].data))
+				self.debug_info["path"] = self._solution
 			else:
 				#No valid path found
 				self._has_given_up = True
@@ -108,7 +100,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			#If robot is inside dynamic obstacle
 			dist = 0
 			direction = np.random.uniform(low=0, high=360);
-#		self.debug_info['rrt_tree'] = self._rrt
+		self.debug_info['rrt_tree'] = self._rrt
 		return RobotControlInput(dist, direction);
 
 
@@ -137,7 +129,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._postprocess(self._final_node);
 
 
-	# Post-process (smooth) the path from start_node to the root
+	## Post-process (smooth) the path from start_node to the root
 	def _postprocess(self, start_node):
 		if start_node is None:
 			return;
@@ -150,7 +142,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			# solution path
 			bestAncestor = None
 			while qAncestor is not None:
-				if not self._collides(qDescendant.data, qAncestor.data, False):
+				if not self._collides(qDescendant.data, qAncestor.data):
 					bestAncestor = qAncestor
 				qAncestor = qAncestor.parent
 
@@ -170,7 +162,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			nearby_nodes.extend(self._solution)
 			nearby_nodes.extend(self._solution[0]._children)
 		for node in nearby_nodes:
-			if node.parent and (node.flag == 0) and self._collides(node.data, node.parent.data, True):
+			if node.parent and (node.flag == 0) and self._collides(node.data, node.parent.data):
 				node.invalidate()
 		self._qstart.flag = 0;
 
@@ -185,11 +177,14 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		if randReal < self._goalBias:
 			return self._qgoal;
-		elif randReal < (self._goalBias + self._wayPointBias) and self._wayPointCache and (len(self._wayPointCache) > 0):
-			randInt = np.random.randint(0, len(self._wayPointCache));
-			return self._wayPointCache[randInt];
+		elif randReal < (self._goalBias + self._waypointBias) and self._waypointCache and (len(self._waypointCache) > 0):
+			randInt = np.random.randint(0, len(self._waypointCache));
+			return self._waypointCache[randInt];
 		else:
-			return self._get_safe_random_node();
+			XDIM = 800
+			YDIM = 600
+			return Node((np.random.uniform(low=0.0, high=XDIM), np.random.uniform(low=0.0, high=YDIM)))
+
 
 	def _extract_solution(self):
 		self._solution = []
@@ -201,36 +196,38 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			self._solution.append(current_node.parent);
 			current_node = current_node.parent;
 
-		wayPointCacheSpaceLeft = self._maxWayPoints - len(self._wayPointCache);
+		waypointCacheSpaceLeft = self._maxWaypoints - len(self._waypointCache);
 		numOfSolutionNodes = len(self._solution);
 
-		self._wayPointCache.extend(self._solution[0:wayPointCacheSpaceLeft]);
-		remaining_solution_nodes = self._solution[wayPointCacheSpaceLeft:];
+		self._waypointCache.extend(self._solution[0:waypointCacheSpaceLeft]);
+		remaining_solution_nodes = self._solution[waypointCacheSpaceLeft:];
 		solution_index = 0;
-		for randIndex in np.random.randint(low=0, high=len(self._wayPointCache), size=len(remaining_solution_nodes)):
-			self._wayPointCache[randIndex] = remaining_solution_nodes[solution_index];
+		for randIndex in np.random.randint(low=0, high=len(self._waypointCache), size=len(remaining_solution_nodes)):
+			self._waypointCache[randIndex] = remaining_solution_nodes[solution_index];
 			solution_index += 1;
 
-		assert len(self._wayPointCache) <= self._maxWayPoints	
+		assert len(self._waypointCache) <= self._maxWaypoints
 
 	def _nearest_neighbour(self, qTarget):
-		nearest_node = min(self._rrt.toListValidNodes(), key=lambda t: (t.data[0]-qTarget.data[0])**2 + (t.data[1]-qTarget.data[1])**2)
-		return nearest_node
+		nodes = self._rrt.toListValidNodes();
+		if len(nodes) == 0:
+			return None
+		return min(nodes, key=lambda t: (t.data[0]-qTarget.data[0])**2 + (t.data[1]-qTarget.data[1])**2)
 
 
-	# Implementation of Near() as described in:
+	## Implementation of Near() as described in:
 	# Karaman and Frazzoli, "Incremental Sampling-based Algorithms
 	# for Optimal Motion Planning".
 	def _near(self, qTarget, n):
 		tree_nodes = self._rrt.toListValidNodes()
-		ZETA = np.pi  # Volume of unit ball in 2D
+		ZETA = np.pi       # Volume of unit ball in 2D
 		GAMMA = 800*600*6  # A constant: 2^d (1 + 1/d) mu_L(X_free)
-		ETA = self._maxstepsize
+		ETA = self._maxstepsize*5
 		radius = min(((GAMMA/ZETA)*(np.log(n)/n))**2, ETA)
 		return [vertex for vertex in tree_nodes if Vector.distance_between(vertex.data, qTarget.data) < radius]
 
 
-	# The Steer() function referenced in RRT papers (the main component of the typical Extend() function)
+	## The Steer() function referenced in RRT papers (the main component of the typical Extend() function)
 	def _steer(self, p1, p2):
 		dist = Vector.distance_between(p1, p2)
 		if dist  < self._maxstepsize:
@@ -238,33 +235,36 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		scale_factor = self._maxstepsize / dist
 		return (p1[0] + (p2[0] - p1[0])*scale_factor, p1[1] + (p2[1] - p1[1])*scale_factor)
 
-	# The Extend() function for regular RRT
+	## The Extend() function for regular RRT
 	def _rrt_extend(self, qTarget):
 		qNearest = self._nearest_neighbour(qTarget);
+		if qNearest is None:
+			return None
+
 		qNew = Node(self._steer(qNearest.data, qTarget.data))
-		if self._collides(qNearest.data, qNew.data, False):
+		if self._collides(qNearest.data, qNew.data):
 			return None
 		qNearest.addChild(qNew)
 		return qNew
 
-	# The Extend() function for RRT*, as described in:
+	## The Extend() function for RRT*, as described in:
 	# Karaman and Frazzoli, "Incremental Sampling-based Algorithms
 	# for Optimal Motion Planning".
 	def _rrtstar_extend(self, qTarget):
 		qNearest = self._nearest_neighbour(qTarget);
 		qNew = Node(self._steer(qNearest.data, qTarget.data))
-		if self._collides(qNearest.data, qNew.data, False):
+		if self._collides(qNearest.data, qNew.data):
 			return None
 		qMin = qNearest
 		nearby_points = self._near(qNew, self._rrt.root.size)
 		for qNear in nearby_points:
-			if not self._collides(qNear.data, qNew.data, False):
+			if not self._collides(qNear.data, qNew.data):
 				c = self._cost(qNear) + Vector.distance_between(qNear.data, qNew.data)
 				if c < self._cost(qNew):
 					qMin = qNear
 		qMin.addChild(qNew)
 		for qNear in nearby_points:
-			if self._cost(qNear) > (self._cost(qNew) + Vector.distance_between(qNew.data, qNear.data)) and not self._collides(qNew.data, qNear.data, False):
+			if self._cost(qNear) > (self._cost(qNew) + Vector.distance_between(qNew.data, qNear.data)) and not self._collides(qNew.data, qNear.data):
 				qParent = qNear.parent
 				qParent.removeChild(qNear)
 				qNew.addChild(qNear)
@@ -280,13 +280,8 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			qParent = qChild.parent
 		return total_cost
 
-	def _get_safe_random_node(self):
-		while True:
-			rand_point = self._get_random_point()
-			if not self._collides(None, rand_point, False):
-				return Node(rand_point)
 
-	def _collides(self, fromPoint, toPoint, dynamicOnly):
+	def _collides(self, fromPoint, toPoint):
 		grid_data = self._mapper.get_grid_data();
 
 		if fromPoint is not None:
@@ -295,29 +290,15 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 			cos_cached = np.cos(ang_in_radians)
 			sin_cached = np.sin(ang_in_radians)
-			for i in np.arange(0, dist, 2):
+			for i in np.arange(0, dist, 1):
 				x = int(cos_cached * i + fromPoint[0])
 				y = int(sin_cached * i + fromPoint[1])
-				if grid_data[x][y] & 1 and Vector.distance_between((x,y), self._gps.location()) < self._radar.radius:
+				if grid_data[x,y] & CellFlag.ANY_OBSTACLE:
 					return True
-				if not dynamicOnly:
-					if grid_data[x][y] & 4:
-						return True
-		else:
-			# Check for dynamic obstacle
-			if grid_data[int(toPoint[0])][int(toPoint[1])] & 1 and Vector.distance_between(toPoint, self._gps.location()) < self._radar.radius:
-				return True
-			# Check for static obstacle
-			if not dynamicOnly:
-				if grid_data[int(toPoint[0])][int(toPoint[1])] & 4:
-					return True;
+#				if self._sensors['debug_stuff']['name'] != 'safe' and self._radar._env.grid_data[x,y] & CellFlag.DYNAMIC_OBSTACLE and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius:
+#					return True
 
-		return False;
-
-	def _get_random_point(self):
-		XDIM = 800
-		YDIM = 600
-		return np.random.random() * XDIM, np.random.random() * YDIM
+		return grid_data[int(toPoint[0])][int(toPoint[1])] & CellFlag.ANY_OBSTACLE;
 
 
 class Tree:
@@ -328,20 +309,8 @@ class Tree:
 	def toList(self):
 		return self.root.toList();
 
-	def toDataList(self):
-		return [node.data for node in self.root.toList()]
-
 	def toListValidNodes(self):
 		return [node for node in self.root.toList() if node.flag == 0]
-
-	def toValidDataList(self):
-		return [node.data for node in self.root.toList() if node.flag == 0]
-
-	def toListInvalidNodes(self):
-		return [node for node in self.root.toList() if node.flag == 1]
-
-	def toInvalidDataList(self):
-		return [node.data for node in self.root.toList() if node.flag == 1]
 
 	def get_nearby_nodes(self, center, distance):
 		return [node for node in self.toList() if Vector.distance_between(center, node.data) <= distance]
@@ -351,12 +320,15 @@ class Tree:
 
 class Node:
 
+	VALID = 0
+	INVALID = 1
+
 	def __init__(self, data):
 		self.data = tuple((int(data[0]), int(data[1])));
 		self._children = [];
 		self.parent = None;
 		self.size = 1;
-		self.flag = 0; # 0 means valid
+		self.flag = Node.VALID;
 
 	def addChild(self, child):
 		self._children.append(child);
@@ -386,14 +358,14 @@ class Node:
 				frontier.push(node);
 
 	def invalidate(self):
-		self.flag = 1
+		self.flag = Node.INVALID
 		for child in self._children:
 			child.invalidate()
 		self.parent.size -= self.size;
 		self._children = [];
 
 	def validate(self):
-		self.flag = 0
+		self.flag = Node.VALID
 		if self.parent is not None:
 			self.parent.validate()
 
