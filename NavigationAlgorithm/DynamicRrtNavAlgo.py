@@ -52,10 +52,11 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._maxWaypoints = 500;
 		self._waypointCache = []
 		self._goalThreshold = cmdargs.robot_speed * 0.75;
-		self._waypoint_threshold = 25
+		self._waypoint_threshold = 25 if sensors['debug']['name'] == 'safe' else 3
 		self._goalBias = 0.1;
 		self._waypointBias = 0.3;
-		self._maxRrtSize = 5000;
+		self._maxGrowths = 5000;
+		self._maxFailedGrowths = 2000;
 		self.debug_info = {"path": None, "point": None}
 
 		# Make initial RRT from start to goal
@@ -78,7 +79,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._invalidateNodes();
 
 		robot_location = self._gps.location()
-		if not (self._radar._env.grid_data[int(robot_location[0])][int(robot_location[1])] & CellFlag.DYNAMIC_OBSTACLE):
+		if not (self._radar._env.grid_data[int(robot_location[0])][int(robot_location[1])] & CellFlag.DYNAMIC_OBSTACLE or self._mapper.get_grid_data()[int(robot_location[0])][int(robot_location[1])] & CellFlag.STATIC_OBSTACLE):
 			if any([n.flag == 1 for n in self._solution]) or (len(self._solution) > 0 and self._collides(robot_location, self._solution[0].data)):
 				self._regrow_rrt();
 				self._extract_solution();
@@ -95,7 +96,10 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				self._has_given_up = True
 				dist = 0
 				direction = np.random.uniform(low=0, high=360);
-
+		elif self._mapper.get_grid_data()[int(robot_location[0])][int(robot_location[1])] & CellFlag.STATIC_OBSTACLE:
+			self._has_given_up = True
+			dist = 0
+			direction = np.random.uniform(low=0, high=360);
 		else:
 			#If robot is inside dynamic obstacle
 			dist = 0
@@ -114,14 +118,20 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _grow_rrt(self):
 		foundGoal = False;
-		count = 0;
+		successfulGrowths = 0;
+		failedGrowths = 0;
 		self._final_node = None
 
-		while count < self._maxRrtSize and not foundGoal:
+		while successfulGrowths < self._maxGrowths and failedGrowths < self._maxFailedGrowths and not foundGoal:
 			qNew = self._rrt_extend(self._choose_target())
 			if qNew is None:
+				failedGrowths += 1;
 				continue;
-			count += 1
+
+			# We only care about consecutive failed growths
+			failedGrowths = 0;
+
+			successfulGrowths += 1;
 			if Vector.distance_between(qNew.data, self._qgoal.data) < self._goalThreshold:
 				foundGoal = True
 				self._final_node = qNew
@@ -295,8 +305,8 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				y = int(sin_cached * i + fromPoint[1])
 				if grid_data[x,y] & CellFlag.ANY_OBSTACLE:
 					return True
-#				if self._sensors['debug_stuff']['name'] != 'safe' and self._radar._env.grid_data[x,y] & CellFlag.DYNAMIC_OBSTACLE and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius:
-#					return True
+				if self._sensors['debug']['name'] != 'safe' and self._radar._env.grid_data[x,y] & CellFlag.DYNAMIC_OBSTACLE and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius:
+					return True
 
 		return grid_data[int(toPoint[0])][int(toPoint[1])] & CellFlag.ANY_OBSTACLE;
 
