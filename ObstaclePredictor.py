@@ -502,12 +502,13 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 			return 0.0;
 
 		# Map parameters into a valid range
-		time = max(int(np.round(time)), 0);
+		time = max(int(round(time)), 0);
 
 		# Cone expansion parameters
 		cone_initial_size = 5;
-		cone_expansion_rate = 9;
+		cone_expansion_rate = 10;
 
+		prob = 0.0
 
 		for obs_point in self._obs_points:
 			conesize = cone_initial_size
@@ -518,9 +519,10 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 			else:
 				conesize += (time*cone_expansion_rate);
 
-			if Vector.distance_between(location, future_point) <= conesize:
-				return 1.0;
-		return 0.0;
+			dist = Vector.distance_between(location, future_point)
+			if dist <= conesize:
+				prob = max(min(4.0*(time+1)/(1+dist), 1.0), prob)
+		return prob;
 
 
 	## Convert radar data to a list of observed obstacle locations
@@ -545,13 +547,14 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 			dist = radar_data[angle_deg];
 			if dist < self.radar_range-5:
 				new_point = location + (dist * Vector.unit_vec_from_radians(angle_deg * np.pi / 180));
+				if (0 < len(points) and Vector.distance_between(points[-1][0], new_point) < 3):
+					continue
 				velocity = None;
 				if get_obs_at_angle is not None:
 					dynobs = get_obs_at_angle(angle_deg);
 					if dynobs is not None and dynobs.movement_mode in [1, 2]:
 						velocity = dynobs.get_velocity_vector();
-				if not (0 < len(points) and Vector.distance_between(points[-1][0], new_point) < 3):
-					points.append((new_point, velocity));
+				points.append((new_point, velocity));
 		return points;
 
 
