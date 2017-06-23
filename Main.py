@@ -76,7 +76,7 @@ def get_cmdline_args():
 			help='Maximum number of visited points to store in memory',
 			dest='robot_memory_size',
 			type=int,
-			default=50505050500,
+			default=500,
 			action='store'
 	);
 	parser.add_argument('--robot-memory-sigma',
