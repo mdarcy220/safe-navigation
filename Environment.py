@@ -7,6 +7,7 @@ import numpy  as np
 import pygame as PG
 from  DynamicObstacles import DynamicObstacle
 import sys
+import Vector
 
 
 ## Types of grid cells. Used in Environment grid_data
@@ -388,14 +389,18 @@ class Environment:
 
 	def _map_mod_11(self):
 		for i in range(20):
-			dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30);
+			dynobs = None;
+			while dynobs is None or Vector.distance_between(dynobs.coordinate, [50,550]) < 100:
+				dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30);
 			dynobs.shape = 1 if i < 10 else 2;
 			self.dynamic_obstacles.append(dynobs);
 
 
 	def _map_mod_12(self):
 		for i in range(20):
-			dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30, num_path_points=2);
+			dynobs = None;
+			while dynobs is None or Vector.distance_between(dynobs.coordinate, [50,550]) < 100:
+				dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30, num_path_points=2);
 			dynobs.shape = 1 if i < 10 else 2;
 			self.dynamic_obstacles.append(dynobs);
 
