@@ -17,6 +17,7 @@ from pygame import gfxdraw
 from Environment import CellFlag
 from RobotControlInput import RobotControlInput
 from NavigationAlgorithm import LinearNavigationAlgorithm
+import DrawTool
 
 
 ## Holds statistics about the robot's progress, used for reporting the
@@ -176,30 +177,31 @@ class Robot:
 
 	## Draws this `Robot` to the given surface
 	#
-	# @param screen (`pygame.Surface` object)
-	# <br>	-- The surface on which to draw the robot
+	# @param dtool (`DrawTool` object)
+	# <br>	-- The `DrawTool` with which to draw the robot
 	#
-	def draw(self, screen):
+	def draw(self, dtool):
+		dtool.set_color(self._path_color);
+		dtool.set_stroke_width(2);
 		for ind, o in enumerate(self._PathList):
 			if ind == len(self._PathList) - 1:
 				continue
-			PG.draw.line(screen,self._path_color,self._PathList[ind], self._PathList[ind +1], 2)
+			dtool.draw_line(self._PathList[ind], self._PathList[ind+1])
 		if (0 < self._cmdargs.debug_level):
-			if self._drawcoll > 0:
-				PG.draw.circle(screen, (255, 80, 210), np.array(self.location, dtype=int), 16, 3)
-				self._drawcoll = self._drawcoll - 1
-			# Draw line representing memory effect
-			#PG.draw.line(screen, (0,255,0), np.array(self.location, dtype=int), np.array(self.location+self._last_mbv*100, dtype=int), 1)
-
-			# Draw line representing movement
-			#PG.draw.line(screen, (255,0,0), np.array(self.location, dtype=int), np.array(self.location+self._last_mmv*100, dtype=int), 1)
 
 			# Draw circle representing radar range
-			PG.draw.circle(screen, self._path_color, np.array(self.location, dtype=int), int(self._sensors['radar'].radius), 2)
+			dtool.draw_circle(np.array(self.location, dtype=int), int(self._sensors['radar'].radius))
+
+			# Draw circle to indicate a collision
+			if self._drawcoll > 0:
+				dtool.set_color((255, 80, 210))
+				dtool.set_stroke_width(3);
+				dtool.draw_circle(np.array(self.location, dtype=int), 16)
+				self._drawcoll = self._drawcoll - 1
 
 			# Draw static mapper data
-			if 'mapdata' in self._nav_algo.debug_info.keys():
-				pix_arr = PG.surfarray.pixels2d(screen);
+			if 'mapdata' in self._nav_algo.debug_info.keys() and isinstance(dtool, DrawTool.PygameDrawTool):
+				pix_arr = PG.surfarray.pixels2d(dtool._pg_surface);
 				pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
 				del pix_arr
 
@@ -208,30 +210,37 @@ class Robot:
 				if self._nav_algo.debug_info["future_obstacles"]:
 					for fff in self._nav_algo.debug_info["future_obstacles"]:
 						for x,y in fff.keys():
-							gfxdraw.pixel(screen, x, y, (255,0,0))
+							gfxdraw.pixel(dtool._pg_surface.screen, x, y, (255,0,0))
 
 			# Draw planned path waypoints
 			if "path" in self._nav_algo.debug_info.keys():
 				if self._nav_algo.debug_info["path"]:
 					points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
+					dtool.set_color((30,30,60));
+					dtool.set_stroke_width(0);
 					for x,y in points:
-						PG.draw.circle(screen, (30,30,60), (x,y), 3)
+						dtool.draw_circle((x,y), 3)
 
 			# Draw RRT
 			if "rrt_tree" in self._nav_algo.debug_info.keys() and self._nav_algo.debug_info["rrt_tree"]:
+				dtool.set_color((255,0,0));
+				dtool.set_stroke_width(1);
 				for node in self._nav_algo.debug_info['rrt_tree'].toListValidNodes():
 					if node.parent is None or node is None:
 						continue
-					PG.draw.line(screen, (255,0,0), (node.data[0],node.data[1]), (node.parent.data[0],node.parent.data[1]), 1)
+					dtool.draw_line((node.data[0],node.data[1]), (node.parent.data[0],node.parent.data[1]))
 
 
 	def draw_radar_mask(self, mask_screen, radar_data=None):
 		if radar_data is None:
 			radar_data = self._sensors['radar'].scan(self._sensors['gps'].location());
-		self._draw_pdf(mask_screen, radar_data, line_width=0, color=0x00000000);
+		mask_dtool = DrawTool.PygameDrawTool(mask_screen)
+		mask_dtool.set_color(0x00000000);
+		mask_dtool.set_stroke_width(0);
+		self._draw_pdf(mask_dtool, radar_data);
 
 
-	def _draw_pdf(self, screen, pdf, line_width=1, color=(200, 0, 200)):
+	def _draw_pdf(self, dtool, pdf):
 		if pdf is None:
 			return;
 		deg_res = 360 / float(len(pdf));
@@ -241,7 +250,7 @@ class Robot:
 			ang = index * deg_res * np.pi / 180;
 			cur_point = self.location + scale*pdf[index]*np.array([np.cos(ang), np.sin(ang)], dtype='float64');
 			points.append(cur_point);
-		PG.draw.polygon(screen, color, points, line_width)
+		dtool.draw_poly(points)
 
 
 	## Get the distance from this robot to the target point

@@ -8,6 +8,7 @@ import numpy	as np
 import pickle
 import base64
 
+import DrawTool
 from Environment import Environment
 from Robot import Robot, RobotStats, GpsSensor
 from Radar import Radar
@@ -123,7 +124,9 @@ class Game:
 	# not always need to be done.
 	#
 	def update_game_image(self):
-		self._env.update_display(self._gameDisplay);
+		dtool = DrawTool.PygameDrawTool(self._gameDisplay);
+
+		self._env.update_display(dtool);
 		self._env.update_grid_data_from_display(self._gameDisplay)
 
 		if self._display_every_frame:
@@ -134,9 +137,9 @@ class Game:
 					robot.draw_radar_mask(self._mask_layer);
 				self._gameDisplay.blit(self._mask_layer, (0,0));
 
-			self._target.draw(self._gameDisplay)
+			self._target.draw(dtool)
 			for robot in self._robot_list:
-				robot.draw(self._gameDisplay)
+				robot.draw(dtool)
 
 
 	## Renders the stored game image onto the screen, to make it

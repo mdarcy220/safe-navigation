@@ -5,6 +5,7 @@
 
 import numpy  as np
 import pygame as PG
+import DrawTool
 from  DynamicObstacles import DynamicObstacle
 import sys
 import Vector
@@ -67,7 +68,7 @@ class Environment:
 		self._update_grid_data();
 
 	def _update_grid_data(self):
-		self.update_display(self._grid_data_display);
+		self.update_display(DrawTool.PygameDrawTool(self._grid_data_display));
 		self.update_grid_data_from_display(self._grid_data_display);
 
 
@@ -412,16 +413,18 @@ class Environment:
 
 	## Draws the environment onto the given display.
 	#
-	# @param display (pygame.Surface object)
-	# <br>	-- The display to draw onto
+	# @param dtool (`DrawTool` object)
+	# <br>	-- The DrawTool to draw onto
 	#
-	def update_display(self, display):
-		display.blit(self.static_base_image, (0, 0))
+	def update_display(self, dtool):
+		dtool.draw_image(self.static_base_image, (0, 0))
+		dtool.set_stroke_width(0);
 		for i in self.dynamic_obstacles:
+			dtool.set_color(i.fillcolor);
 			if (i.shape == 1):
-				PG.draw.circle(display, i.fillcolor, np.array(i.coordinate, dtype='int64'), i.radius)
+				dtool.draw_circle(np.array(i.coordinate, dtype='int64'), i.radius)
 			if (i.shape == 2):
-				PG.draw.rect(display, i.fillcolor, i.coordinate.tolist() + i.size)
+				dtool.draw_rect(i.coordinate.tolist(), i.size)
 
 
 	## Update the grid data from the given display.
