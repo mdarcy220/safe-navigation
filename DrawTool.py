@@ -17,6 +17,9 @@ class DrawTool:
 	def draw_poly(self, points):
 		pass;
 
+	def draw_lineseries(self, points):
+		pass;
+
 	def draw_line(self, point1, point2):
 		pass;
 
@@ -50,6 +53,10 @@ class PygameDrawTool(DrawTool):
 
 	def draw_poly(self, points):
 		PG.draw.polygon(self._pg_surface, self._color, points, self._stroke_width);
+
+
+	def draw_lineseries(self, points, closed=False):
+		PG.draw.lines(self._pg_surface, self._color, closed, points, self._stroke_width);
 
 
 	def draw_line(self, point1, point2):
@@ -86,7 +93,7 @@ class SvgDrawTool(DrawTool):
 
 	def _gen_style_str(self):
 		style_attr = "stroke-width:{:d};".format(self._stroke_width);
-		color = '#'+hex(_color_to_int(self._color))[2:];
+		color = '#{:06x}'.format(_color_to_int(self._color));
 		style_attr += ("fill:none;stroke:{};" if self._stroke_width != 0 else "fill:{};stroke:none;").format(color);
 		return style_attr
 
@@ -97,6 +104,10 @@ class SvgDrawTool(DrawTool):
 
 
 	def draw_poly(self, points):
+		self.draw_lineseries(points, True);
+
+
+	def draw_lineseries(self, points, closed=False):
 		if len(points) == 0:
 			return
 		style_attr = self._gen_style_str();
@@ -104,7 +115,8 @@ class SvgDrawTool(DrawTool):
 		d += "M {:f},{:f} ".format(points[0][0], points[0][1]);
 		for point in points[1:]:
 			d += " L {:f},{:f} ".format(point[0], point[1]);
-		d += " z ";
+		if closed:
+			d += " z ";
 		self._elems.append("""<path id="path{:d}" style="{}" d="{}" />""".format(len(self._elems), style_attr, d));
 
 

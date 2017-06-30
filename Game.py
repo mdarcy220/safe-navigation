@@ -67,11 +67,12 @@ class Game:
 
 		# Init environment
 		self._env = Environment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
+		self._start_point = Target((50,550), color=0x00FF00)
 		self._target = Target((740, 50))
 
 		# Init robots
 		radar = Radar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);
-		initial_position = np.array([50, 550]);
+		initial_position = np.array(self._start_point.position);
 		self._robot_list    = [];
 
 		self._normal_robot  = Robot(initial_position, cmdargs, path_color=(0,0,255),   name="NormalRobot");
@@ -137,6 +138,7 @@ class Game:
 					robot.draw_radar_mask(self._mask_layer);
 				self._gameDisplay.blit(self._mask_layer, (0,0));
 
+			self._start_point.draw(dtool)
 			self._target.draw(dtool)
 			for robot in self._robot_list:
 				robot.draw(dtool)

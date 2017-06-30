@@ -97,7 +97,7 @@ class Robot:
 		# Variables to store drawing and debugging info
 		self._last_mmv		= np.array([0, 0])
 		self._drawcoll = 0
-		self._PathList	= []
+		self._visited_points	= [self.location]
 
 		# Number of steps taken in the navigation
 		self.stepNum = 0
@@ -157,7 +157,7 @@ class Robot:
 			new_location = np.array(new_location, dtype=int)
 		self.location = new_location
 
-		self._PathList.append(np.array(self.location, dtype=int))
+		self._visited_points.append(np.array(self.location, dtype=int))
 
 
 	def set_nav_algo(self, nav_algo):
@@ -183,10 +183,7 @@ class Robot:
 	def draw(self, dtool):
 		dtool.set_color(self._path_color);
 		dtool.set_stroke_width(2);
-		for ind, o in enumerate(self._PathList):
-			if ind == len(self._PathList) - 1:
-				continue
-			dtool.draw_line(self._PathList[ind], self._PathList[ind+1])
+		dtool.draw_lineseries(self._visited_points)
 		if (0 < self._cmdargs.debug_level):
 
 			# Draw circle representing radar range
