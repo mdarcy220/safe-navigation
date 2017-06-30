@@ -63,7 +63,8 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._mem_bias_vec = np.array([0.7, 0.7])
 		self.using_safe_mode = True
 
-		self._gaussian = Distributions.Gaussian()
+		gaussian_sigma = 100
+		self._gaussian = Distributions.Gaussian(sigma=gaussian_sigma, amplitude=(1/(np.sqrt(2*np.pi)*gaussian_sigma)))
 
 		# Obstecle Predictor
 		self._obstacle_predictor = CollisionConeObstaclePredictor(360, sensors['radar'].radius, 5);
@@ -233,7 +234,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		raw_radar_data = self._radar_data_at(center, time_offset);
 
-		normalized_radar_data = raw_radar_data / self._radar.radius;
+		normalized_radar_data = self._gaussian.amplitude * raw_radar_data / self._radar.radius;
 
 		# Add the obstacle distribution into the combined PDF
 		combined_pdf = combiner_func(combined_pdf, normalized_radar_data);
