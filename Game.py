@@ -16,6 +16,7 @@ from Target import Target
 import time
 import Vector
 
+from NavigationAlgorithm import DeepQNavigationAlgorithm
 from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
 from NavigationAlgorithm import FuzzyNavigationAlgorithm
 from NavigationAlgorithm import GlobalLocalNavigationAlgorithm
@@ -80,13 +81,14 @@ class Game:
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
 		self._normal_robot.put_sensor('debug', {'name': 'normal'});
 		self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
-		self._robot_list.append(self._normal_robot);
+#		self._robot_list.append(self._normal_robot);
 
 		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(30,200,30), name="SafeRobot");
 		self._safe_robot.put_sensor('radar', radar);
 		self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
 		self._safe_robot.put_sensor('debug', {'name': 'safe'});
-		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
+#		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
+		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = DeepQNavigationAlgorithm));
 		self._robot_list.append(self._safe_robot);
 
 		# Set window title

@@ -51,7 +51,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._maxstepsize = cmdargs.robot_speed*3;
 		self._maxWaypoints = 500;
 		self._waypointCache = []
-		self._goalThreshold = cmdargs.robot_speed * 0.75;
+		self._goalThreshold = cmdargs.robot_speed * 1.5;
 		self._waypoint_threshold = 25 if sensors['debug']['name'] == 'safe' else 3
 		self._goalBias = 0.1;
 		self._waypointBias = 0.3;
@@ -136,7 +136,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				foundGoal = True
 				self._final_node = qNew
 
-		self._postprocess(self._final_node);
+		#self._postprocess(self._final_node);
 
 
 	## Post-process (smooth) the path from start_node to the root

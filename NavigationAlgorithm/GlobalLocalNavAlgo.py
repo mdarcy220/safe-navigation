@@ -64,7 +64,8 @@ class GlobalLocalNavigationAlgorithm(AbstractNavigationAlgorithm):
 				self._next_waypoint = self._target
 			else:
 				self._next_waypoint = Target(np.array(self._global_algo._solution[0].data), radius=self._waypoint_radius);
-			self._local_algo = self._local_algo_init(self._sensors, self._next_waypoint, self._cmdargs);
+			#self._local_algo = self._local_algo_init(self._sensors, self._next_waypoint, self._cmdargs);
+			self._local_algo.set_target(self._next_waypoint)
 		elif self._gps.distance_to(self._next_waypoint.position) < self._next_waypoint.radius or self._tmp_counter % rcnt == (rcnt-1):
 			if self._gps.distance_to(self._next_waypoint.position) < self._next_waypoint.radius:
 				self._tmp_counter = 0;
@@ -77,7 +78,8 @@ class GlobalLocalNavigationAlgorithm(AbstractNavigationAlgorithm):
 				self._next_waypoint = self._target
 
 			if self._next_waypoint != old_waypoint:
-				self._local_algo = self._local_algo_init(self._sensors, self._next_waypoint, self._cmdargs);
+				#self._local_algo = self._local_algo_init(self._sensors, self._next_waypoint, self._cmdargs);
+				self._local_algo.set_target(self._next_waypoint)
 
 		self._tmp_counter += 1;
 		next_action = self._local_algo.select_next_action();
