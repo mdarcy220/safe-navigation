@@ -2,7 +2,8 @@
 
 import numpy  as np
 import cntk
-import cntk.contrib
+#import cntk.contrib
+import cntk_deeprl
 import gym.spaces as gs
 import Vector
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
@@ -48,7 +49,7 @@ class DeepQNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._o_space = gs.Box(low=0, high=100, shape=(2,360));
 		self._a_space = gs.Discrete(360);
-		self._qlearner = cntk.contrib.deeprl.agent.qlearning.QLearning('', self._o_space, self._a_space);
+		self._qlearner = cntk_deeprl.agent.qlearning.QLearning('', self._o_space, self._a_space);
 		self._get_observation();
 		self._last_badness = self._get_badness();
 		self._ravg = 0.0
