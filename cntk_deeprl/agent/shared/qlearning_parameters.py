@@ -26,7 +26,7 @@ class QLearningParameters:
 
         # Discount factor
         self.gamma = self.config.getfloat(
-            'General', 'Gamma', fallback=0.98)
+            'General', 'Gamma', fallback=0.95)
 
         # Name of class that does preprocessing.
         self.preprocessing = self.config.get(
@@ -39,25 +39,25 @@ class QLearningParameters:
 
         # Representation of Q function, taking value from {'tabular', 'nn'}.
         self.q_representation = self.config.get(
-            'QLearningAlgo', 'QRepresentation', fallback='dqn')
+            'QLearningAlgo', 'QRepresentation', fallback='cntk_deeprl.agent.shared.models.custom_network')
 
         # Initial value of epsilon (exploration rate), used by epsilon-greedy
         # policy.
         self.initial_epsilon = self.config.getfloat(
-            'QLearningAlgo', 'InitialEpsilon', fallback=0.7)
+            'QLearningAlgo', 'InitialEpsilon', fallback=0.99)
 
         # Number of steps before epsilon reaches minimum value.
         self.epsilon_decay_step_count = self.config.getint(
-            'QLearningAlgo', 'EpsilonDecayStepCount', fallback=50000)
+            'QLearningAlgo', 'EpsilonDecayStepCount', fallback=40000)
 
         # Minimum value of epsilon.
         self.epsilon_minimum = self.config.getfloat(
-            'QLearningAlgo', 'EpsilonMinimum', fallback=0.01)
+            'QLearningAlgo', 'EpsilonMinimum', fallback=0.1)
 
         # Initial value of eta, which is the learning rate for gradient
         # descent.
         self.initial_eta = self.config.getfloat(
-            'Optimization', 'InitialEta', fallback=0.001)
+            'Optimization', 'InitialEta', fallback=0.003)
 
         # Number of steps before eta reaches minimum value.
         self.eta_decay_step_count = self.config.getint(
@@ -71,7 +71,7 @@ class QLearningParameters:
 
         # Momentum used by RMSProp.
         self.momentum = self.config.getfloat(
-            'Optimization', 'Momentum', fallback=0.95)
+            'Optimization', 'Momentum', fallback=0.99)
 
         # Initial value for table entries.
         # TODO(maoyi): allow DQN initialization through config file.
@@ -90,7 +90,7 @@ class QLearningParameters:
         # Number of actions chosen between successive
         # target network updates.
         self.target_q_update_frequency = self.config.getint(
-            'QLearningAlgo', 'TargetQUpdateFrequency', fallback=4000)
+            'QLearningAlgo', 'TargetQUpdateFrequency', fallback=80)
 
         # Sample size of each minibatch.
         self.minibatch_size = self.config.getint(
@@ -98,11 +98,11 @@ class QLearningParameters:
 
         # Number of replays per update.
         self.replays_per_update = self.config.getint(
-            'QLearningAlgo', 'ReplaysPerUpdate', fallback=40)
+            'QLearningAlgo', 'ReplaysPerUpdate', fallback=2)
 
         # Number of actions chosen between successive SGD updates of Q.
         self.q_update_frequency = self.config.getint(
-            'QLearningAlgo', 'QUpdateFrequency', fallback=8)
+            'QLearningAlgo', 'QUpdateFrequency', fallback=1)
 
         # Use Huber loss with \delta=1 when True. Otherwise, use least square
         # loss.
@@ -116,7 +116,7 @@ class QLearningParameters:
         # A uniform random policy is run for this number of steps to populate
         # replay memory.
         self.replay_start_size = self.config.getint(
-            'ExperienceReplay', 'StartSize', fallback=500)
+            'ExperienceReplay', 'StartSize', fallback=3000)
 
         # Use prioritized replay. Fall back to uniform sampling when False .
         self.use_prioritized_replay = self.config.getboolean(
@@ -135,11 +135,11 @@ class QLearningParameters:
         # Used by prioritized replay, to prevent transitions not being visited
         # once their error is zero.
         self.priority_epsilon = self.config.getfloat(
-            'ExperienceReplay', 'PriorityEpsilon', fallback=0.01)
+            'ExperienceReplay', 'PriorityEpsilon', fallback=0.03)
 
         # Number of nodes in each hidden layer, starting after the input layer.
         self.hidden_layers = self.config.get(
-            'NetworkModel', 'HiddenLayerNodes', fallback='[50, 50, 50]')
+            'NetworkModel', 'HiddenLayerNodes', fallback='[200, 200]')
 
         # Maximum norm of gradient per sample. No gradient clipping if the
         # parameter is missing from the config file.

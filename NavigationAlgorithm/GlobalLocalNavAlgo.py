@@ -53,13 +53,13 @@ class GlobalLocalNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 
 	def select_next_action(self):
-		rcnt = 10
-		if self._tmp_counter > 30:
+		rcnt = 500
+		if self._tmp_counter > 1500:
 			self._tmp_counter = 0;
 			self._global_algo = self._global_algo_init(self._sensors, self._target, self._cmdargs);
 			self._global_algo.select_next_action();
 			if self._global_algo.has_given_up():
-				self._has_given_up = True
+				self._has_given_up = False#True
 			if len(self._global_algo._solution) == 0:
 				self._next_waypoint = self._target
 			else:
@@ -88,3 +88,8 @@ class GlobalLocalNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def has_given_up(self):
 		return self._has_given_up
+
+	def set_target(self, new_target):
+		self._target = new_target
+		self._global_algo = self._global_algo_init(self._sensors, self._target, self._cmdargs);
+

@@ -48,14 +48,14 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._has_given_up = False
 
 		# Algorithm parameters
-		self._maxstepsize = cmdargs.robot_speed*3;
+		self._maxstepsize = cmdargs.robot_speed*5;
 		self._maxWaypoints = 500;
 		self._waypointCache = []
 		self._goalThreshold = cmdargs.robot_speed * 1.5;
 		self._waypoint_threshold = 25 if sensors['debug']['name'] == 'safe' else 3
 		self._goalBias = 0.1;
 		self._waypointBias = 0.3;
-		self._maxGrowths = 5000;
+		self._maxGrowths = 3000;
 		self._maxFailedGrowths = 2000;
 		self.debug_info = {"path": None, "point": None}
 

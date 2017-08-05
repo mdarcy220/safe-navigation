@@ -10,6 +10,69 @@ import numpy as np
 
 import ast
 
+def custom_network(shape_of_inputs,
+		    number_of_outputs,
+		    loss_function=None,
+		    use_placeholder_for_input=False):
+	"""Feedforward network to approximate Q or log of pi.
+
+	Args:
+	    shape_of_inputs: tuple of array (input) dimensions.
+	    number_of_outputs: dimension of output, equals the number of
+		possible actions.
+	    model_hidden_layers: string representing a list of integers
+		corresponding to number of nodes in each hidden layer.
+	    loss_function: if not specified, use squared loss by default.
+	    use_placeholder_for_input: if true, inputs have to be replaced
+		later with actual input_variable.
+
+	Returns: a Python dictionary with string valued keys including
+	    'inputs', 'outputs', 'loss' and 'f'.
+	"""
+	# input/output
+	inputs = C.ops.placeholder(shape=shape_of_inputs) \
+	    if use_placeholder_for_input \
+	    else C.ops.input_variable(shape=shape_of_inputs, dtype=np.float32)
+	outputs = C.ops.input_variable(shape=(number_of_outputs,), dtype=np.float32)
+
+	# network structure
+	model_hidden_layers = '[100, 75, 75, 75, 75, 25]'
+	hidden_layers = ast.literal_eval(model_hidden_layers)
+	#f = C.layers.Sequential([
+	#    C.layers.For(range(len(hidden_layers)),
+	#	lambda h: C.layers.Dense(hidden_layers[h], activation=C.ops.relu)),
+	#    C.layers.Dense(number_of_outputs, activation=None)
+	#])(inputs)
+	f = C.layers.Sequential([
+	    C.layers.Convolution2D((1,5), num_filters=16, pad=True, reduction_rank=0, activation=C.ops.relu),
+	    C.layers.Convolution2D((1,5), num_filters=24, pad=True, reduction_rank=1, activation=C.ops.relu),
+	    C.layers.Convolution2D((1,5), num_filters=32, pad=False, reduction_rank=1, activation=C.ops.relu),
+	    #C.layers.Convolution2D((2,5), num_filters=32, pad=False, reduction_rank=1, activation=C.ops.relu),
+	    C.layers.MaxPooling((1,3), pad=False),
+	#    C.layers.For(range(len(hidden_layers)),
+	#	lambda h: C.layers.Sequential([C.layers.Dense(hidden_layers[h], activation=C.ops.relu))]),
+		C.layers.Dense(180, activation=None),
+		#C.layers.BatchNormalization(),
+		C.layers.Activation(activation=C.ops.relu),
+		#C.layers.Dropout(0.2),
+		C.layers.Dense(140, activation=C.ops.relu),
+		C.layers.Dense(120, activation=C.ops.relu),
+		C.layers.Dense(100, activation=C.ops.relu),
+		C.layers.Dense(50, activation=C.ops.relu),
+	    C.layers.Dense(number_of_outputs, activation=None)
+	])(inputs)
+
+	if loss_function is None:
+	    loss = C.losses.squared_error(f, outputs)
+	else:
+	    loss = loss_function(f, outputs)
+
+	return {
+	    'inputs': inputs,
+	    'outputs': outputs,
+	    'f': f,
+	    'loss': loss
+	}
 
 class Models:
     """A set of predefined models to approximate Q or log of pi (policy).

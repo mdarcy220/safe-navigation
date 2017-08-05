@@ -197,7 +197,9 @@ class Game:
 			shouldEndSimulation = (anyRobotQuit or allBotsAtTarget);
 
 			if (self._cmdargs.batch_mode) and (shouldEndSimulation):
-				return
+				self._target = Target((np.random.randint(10, 790), np.random.randint(10,590)))
+				self._robot_list[0]._nav_algo.set_target(self._target)
+				#return
 			if not shouldEndSimulation:
 				self._step_num += 1
 			if self._cmdargs.max_steps <= self._step_num:

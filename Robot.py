@@ -183,7 +183,7 @@ class Robot:
 	def draw(self, dtool):
 		dtool.set_color(self._path_color);
 		dtool.set_stroke_width(2);
-		dtool.draw_lineseries(self._visited_points)
+		dtool.draw_lineseries(self._visited_points[-1500:])
 		if (0 < self._cmdargs.debug_level):
 
 			# Draw circle representing radar range
