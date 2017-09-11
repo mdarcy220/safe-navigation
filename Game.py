@@ -275,6 +275,11 @@ class Game:
 		output_csv += str(0 if self.check_robot_at_target(self._safe_robot) else 1) + ","
 		if self._cmdargs.output_prng_state:
 			output_csv += str(self._initial_random_state)
+		else:
+			output_csv += ","
+
+		output_csv += str(normal_robot_stats.avg_decision_time()) + ","
+		output_csv += str(safe_robot_stats.avg_decision_time())
 
 
 		return output_csv
