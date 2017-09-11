@@ -14,6 +14,7 @@ printf "Using base arguments: %s\n" "$base_args"
 printf "Running %d trials per argument set\n" "$num_trials"
 printf "Using up to %d parallel processes\n" "$max_processes"
 
+ulimit -t 1500
 
 arg_sets=()
 cur_num_processes=0

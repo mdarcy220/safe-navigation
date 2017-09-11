@@ -28,9 +28,14 @@ class RobotStats:
 		self.num_static_collisions = 0
 		self.num_dynamic_collisions = 0
 		self.num_steps = 0
+		self.decision_times = []
 
 	def num_total_collisions(self):
 		return self.num_static_collisions + self.num_dynamic_collisions
+
+
+	def avg_decision_time(self):
+		return sum(self.decision_times)/len(self.decision_times)
 
 
 ## A GPS sensor for robots, that can give the robot's current location.
@@ -122,7 +127,9 @@ class Robot:
 		if not self._nav_algo:
 			return;
 
+		start_decision_time = time.perf_counter()
 		control_input = self._nav_algo.select_next_action();
+		self.stats.decision_times.append(time.perf_counter() - start_decision_time)
 
 		speed = min(control_input.speed, self.speed);
 		movement_ang = control_input.angle;
