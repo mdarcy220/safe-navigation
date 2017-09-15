@@ -94,7 +94,7 @@ class DeepQNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _get_observation(self):
 		onehot_goaldirection = np.zeros(360)
-		onehot_goaldirection[int(Vector.degrees_between(self._gps.location(), self._target.position))] = Vector.distance_between(self._gps.location(), self_target.position)/200.0
+		onehot_goaldirection[int(Vector.degrees_between(self._gps.location(), self._target.position))] = Vector.distance_between(self._gps.location(), self.target.position)/200.0
 		self._radar_data = self._radar.scan(self._gps.location());
 		return np.vstack([self._radar_data/100.0, onehot_goaldirection]);
 
