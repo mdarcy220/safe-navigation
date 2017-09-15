@@ -2,6 +2,7 @@
 
 from Robot import RobotControlInput
 from .LinearNavAlgo import LinearNavigationAlgorithm
+from .AbstractNavAlgo import AbstractNavigationAlgorithm
 
 
 ## Maximum Entropy Deep Inverse Reinforcement Learning navigation algorithm.
