@@ -81,14 +81,13 @@ class Game:
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
 		self._normal_robot.put_sensor('debug', {'name': 'normal'});
 		self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
-#		self._robot_list.append(self._normal_robot);
+		self._robot_list.append(self._normal_robot);
 
-		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(30,200,30), name="SafeRobot");
+		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(0xf3,0x91,0x12), name="SafeRobot");
 		self._safe_robot.put_sensor('radar', radar);
 		self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
 		self._safe_robot.put_sensor('debug', {'name': 'safe'});
-#		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
-		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = DeepQNavigationAlgorithm));
+		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
 		self._robot_list.append(self._safe_robot);
 
 		# Set window title
@@ -128,7 +127,6 @@ class Game:
 	#
 	def update_game_image(self):
 		dtool = DrawTool.PygameDrawTool(self._gameDisplay);
-
 		self._env.update_display(dtool);
 		self._env.update_grid_data_from_display(self._gameDisplay)
 
@@ -197,9 +195,7 @@ class Game:
 			shouldEndSimulation = (anyRobotQuit or allBotsAtTarget);
 
 			if (self._cmdargs.batch_mode) and (shouldEndSimulation):
-				self._target = Target((np.random.randint(10, 790), np.random.randint(10,590)))
-				self._robot_list[0]._nav_algo.set_target(self._target)
-				#return
+				return
 			if not shouldEndSimulation:
 				self._step_num += 1
 			if self._cmdargs.max_steps <= self._step_num:

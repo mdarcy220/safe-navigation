@@ -35,6 +35,8 @@ class RobotStats:
 
 
 	def avg_decision_time(self):
+		if len(self.decision_times) == 0:
+			return float('nan')
 		return sum(self.decision_times)/len(self.decision_times)
 
 
@@ -195,6 +197,9 @@ class Robot:
 
 			# Draw circle representing radar range
 			dtool.draw_circle(np.array(self.location, dtype=int), int(self._sensors['radar'].radius))
+			#dtool.set_color((0xaa, 0x55, 0xdd))
+			#self._draw_pdf(dtool, self._sensors['radar'].scan(self._sensors['gps'].location()))
+			#dtool.set_color(self._path_color)
 
 			# Draw circle to indicate a collision
 			if self._drawcoll > 0:

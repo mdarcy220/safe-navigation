@@ -466,7 +466,7 @@ class Environment:
 		# Uncomment the following lines to see the grid_data directly
 		pix_arr[self.grid_data == 0] = 0xFFFFFF
 		pix_arr[self.grid_data & CellFlag.STATIC_OBSTACLE != 0] = 0x000000
-		pix_arr[self.grid_data & CellFlag.DYNAMIC_OBSTACLE != 0] = 0x66ff88
+		pix_arr[self.grid_data & CellFlag.DYNAMIC_OBSTACLE != 0] = 0x44ccee
 		del pix_arr
 
 
