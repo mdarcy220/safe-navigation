@@ -37,7 +37,7 @@ cdef inline void scan_generic(double centerx,
 		int(grid_data.shape[0]),
 		int(grid_data.shape[1]),
 		int(cell_type_flags),
-		int(resolution),
+		resolution,
 		int(degreeStep),
 		<double *> np.PyArray_DATA(out_data),
 		int(out_data.shape[0]));
