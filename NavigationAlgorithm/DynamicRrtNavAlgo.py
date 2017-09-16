@@ -351,21 +351,10 @@ class Node:
 		self.decrementSize(child.size);
 
 	def toList(self):
-		result = []
-
-		frontier = Stack();
-		frontier.push(self);
-
-		for node in self._children:
-			frontier.push(node)
-
-		while True:
-			if frontier.isEmpty() or len(result) == self.size:
-				return result;
-			currentNode = frontier.pop();
-			result.append(currentNode);
-			for node in currentNode._children:
-				frontier.push(node);
+		result = [self]
+		for child in self._children:
+			result += child.toList()
+		return result
 
 	def invalidate(self):
 		self.flag = Node.INVALID
