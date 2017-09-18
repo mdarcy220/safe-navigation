@@ -49,7 +49,20 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	# 	should take.
 	#
 	def select_next_action(self):
-		return self._real_algo.select_next_action();
+		state = (self._gps.location(), self._radar.scan(self._gps.location()));
+		action = self._real_algo.select_next_action();
+
+		self._add_demonstration_step(state, action);
+
+		return action;
+
+
+	## Adds a (state, action) pair to the current demonstration for the IRL
+	# algorithm.
+	#
+	def _add_demonstration_step(self, state, action):
+		# TODO: Implement this method
+		pass
 
 
 	def has_given_up(self):
