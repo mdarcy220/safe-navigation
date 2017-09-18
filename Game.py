@@ -210,31 +210,6 @@ class Game:
 			clock.tick(self._cmdargs.max_fps)
 
 
-	## A reduced game loop that is much faster for static maps.
-	# 
-	# This game loop does not step the environment or update the game
-	# image, so it is much faster than the standard loop. It should
-	# not be used for maps with dynamic obstacles or in cases where
-	# viewing the progress is desired, but it is highly performant for
-	# static maps in batch runs.
-	#
-	def fast_computing_game_loop(self):
-		safe_robot_at_target = False
-		normal_robot_at_target = False 
-		allRobotsAtTarget = False
-		step_num = 0
-		while (not allRobotsAtTarget):
-			allBotsAtTarget = True
-
-			# Process robot actions
-			for robot in self._robot_list:
-				if not self.check_robot_at_target(robot):
-					allBotsAtTarget = False
-					robot.NextStep(self._env.grid_data)
-			step_num += 1
-			if self._cmdargs.max_steps <= step_num:
-				return
-
 	## Creates a result summary in CSV form
 	#
 	# @returns (string)
@@ -299,10 +274,8 @@ class Game:
 	#
 	def GameLoop(self):
 		time.sleep(self._cmdargs.start_delay)
-		if self._cmdargs.fast_computing:
-			self.fast_computing_game_loop()
-		else:
-			self.standard_game_loop()
+
+		self.standard_game_loop()
 
 		print(self.make_csv_line());
 

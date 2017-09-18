@@ -28,12 +28,6 @@ def get_cmdline_args():
 			default=False,
 			action='store_true'
 	);
-	parser.add_argument('--fast-computing',
-			help='Enable fast computing mode',
-			dest='fast_computing',
-			default=False,
-			action='store_true'
-	);
 	parser.add_argument('--show-real-time-plot',
 			help='Show a real-time plot of PDFs',
 			dest='show_real_time_plot',
