@@ -5,8 +5,10 @@
 
 import numpy  as np
 import pygame as PG
+import DrawTool
 from  DynamicObstacles import DynamicObstacle
 import sys
+import Vector
 
 
 ## Types of grid cells. Used in Environment grid_data
@@ -66,7 +68,7 @@ class Environment:
 		self._update_grid_data();
 
 	def _update_grid_data(self):
-		self.update_display(self._grid_data_display);
+		self.update_display(DrawTool.PygameDrawTool(self._grid_data_display));
 		self.update_grid_data_from_display(self._grid_data_display);
 
 
@@ -388,14 +390,18 @@ class Environment:
 
 	def _map_mod_11(self):
 		for i in range(20):
-			dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30);
+			dynobs = None;
+			while dynobs is None or Vector.distance_between(dynobs.coordinate, [50,550]) < 100:
+				dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30);
 			dynobs.shape = 1 if i < 10 else 2;
 			self.dynamic_obstacles.append(dynobs);
 
 
 	def _map_mod_12(self):
 		for i in range(20):
-			dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30, num_path_points=2);
+			dynobs = None;
+			while dynobs is None or Vector.distance_between(dynobs.coordinate, [50,550]) < 100:
+				dynobs = self._make_randompath_dynamic_obstacle(radius_low=5, radius_high=30, num_path_points=2);
 			dynobs.shape = 1 if i < 10 else 2;
 			self.dynamic_obstacles.append(dynobs);
 
@@ -407,16 +413,18 @@ class Environment:
 
 	## Draws the environment onto the given display.
 	#
-	# @param display (pygame.Surface object)
-	# <br>	-- The display to draw onto
+	# @param dtool (`DrawTool` object)
+	# <br>	-- The DrawTool to draw onto
 	#
-	def update_display(self, display):
-		display.blit(self.static_base_image, (0, 0))
+	def update_display(self, dtool):
+		dtool.draw_image(self.static_base_image, (0, 0))
+		dtool.set_stroke_width(0);
 		for i in self.dynamic_obstacles:
+			dtool.set_color(i.fillcolor);
 			if (i.shape == 1):
-				PG.draw.circle(display, i.fillcolor, np.array(i.coordinate, dtype='int64'), i.radius)
+				dtool.draw_circle(np.array(i.coordinate, dtype='int64'), i.radius)
 			if (i.shape == 2):
-				PG.draw.rect(display, i.fillcolor, i.coordinate.tolist() + i.size)
+				dtool.draw_rect(i.coordinate.tolist(), i.size)
 
 
 	## Update the grid data from the given display.
@@ -458,7 +466,7 @@ class Environment:
 		# Uncomment the following lines to see the grid_data directly
 		pix_arr[self.grid_data == 0] = 0xFFFFFF
 		pix_arr[self.grid_data & CellFlag.STATIC_OBSTACLE != 0] = 0x000000
-		pix_arr[self.grid_data & CellFlag.DYNAMIC_OBSTACLE != 0] = 0x66ff88
+		pix_arr[self.grid_data & CellFlag.DYNAMIC_OBSTACLE != 0] = 0x44ccee
 		del pix_arr
 
 

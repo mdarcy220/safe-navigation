@@ -28,12 +28,6 @@ def get_cmdline_args():
 			default=False,
 			action='store_true'
 	);
-	parser.add_argument('--fast-computing',
-			help='Enable fast computing mode',
-			dest='fast_computing',
-			default=False,
-			action='store_true'
-	);
 	parser.add_argument('--show-real-time-plot',
 			help='Show a real-time plot of PDFs',
 			dest='show_real_time_plot',
@@ -76,7 +70,7 @@ def get_cmdline_args():
 			help='Maximum number of visited points to store in memory',
 			dest='robot_memory_size',
 			type=int,
-			default=50505050500,
+			default=500,
 			action='store'
 	);
 	parser.add_argument('--robot-memory-sigma',
@@ -175,6 +169,19 @@ def get_cmdline_args():
 			dest='window_title',
 			type=str,
 			default='Robot Simulator',
+			action='store'
+	);
+	parser.add_argument('--output-prng-state',
+			help='Include the starting state of the PRNG in the final output (pickled, encoded as base64)',
+			dest='output_prng_state',
+			default=False,
+			action='store_true'
+	);
+	parser.add_argument('--prng-start-state',
+			help='Base64-encoded pickle of the starting state for the PRNG',
+			dest='prng_start_state',
+			type=str,
+			default=None,
 			action='store'
 	);
 	return parser.parse_args(sys.argv[1:])

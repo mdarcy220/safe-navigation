@@ -6,6 +6,7 @@
 # A package containing safe navigation algorithms
 
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
+from .DeepQNavAlgo import DeepQNavigationAlgorithm
 from .DynamicRrtNavAlgo import DynamicRrtNavigationAlgorithm
 from .FuzzyNavAlgo import FuzzyNavigationAlgorithm
 from .GlobalLocalNavAlgo import GlobalLocalNavigationAlgorithm

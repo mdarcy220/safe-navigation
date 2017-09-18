@@ -108,8 +108,8 @@ def circle_line_intersection(circle_center, circle_radius, line):
 	x2, y2 = p2[0], p2[1];
 
 	# Distances
-	dx = np.abs(x2 - x1);
-	dy = np.abs(y2 - y1);
+	dx = x2 - x1;
+	dy = y2 - y1;
 
 	# Leave these in squared form since we never need the raw distance
 	line_len_squared = dx*dx + dy*dy;
@@ -142,11 +142,11 @@ def circle_line_intersection(circle_center, circle_radius, line):
 		intersections.append(np.array([x, y]));
 	else:                  # Two intersections
 		x = ((determinent * dy) + (sign_dy * dx) * np.sqrt(discriminent)) / line_len_squared;
-		y = ((determinent * dx) + np.abs(dy) * np.sqrt(discriminent)) / line_len_squared;
+		y = ((-determinent * dx) + np.abs(dy) * np.sqrt(discriminent)) / line_len_squared;
 		intersections.append(np.array([x, y]));
 
 		x = ((determinent * dy) - (sign_dy * dx) * np.sqrt(discriminent)) / line_len_squared;
-		y = ((determinent * dx) - np.abs(dy) * np.sqrt(discriminent)) / line_len_squared;
+		y = ((-determinent * dx) - np.abs(dy) * np.sqrt(discriminent)) / line_len_squared;
 		intersections.append(np.array([x, y]));
 
 	# Set up vectors
@@ -515,4 +515,9 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 
 	return rectangle_shadow_angle_range(circle_center, rect_pos, rect_dim);
 
+
+
+if __name__ == '__main__':
+	print(circle_line_intersection(np.array([2.46,1.04]), 2.6**0.5, [[3.72,-1.96], [0.9,2.84]]))
+	print(circle_line_intersection(np.array([2.46,1.04]), 2.6**0.5, [[0.9,2.84],[3.72,-1.96]]))
 

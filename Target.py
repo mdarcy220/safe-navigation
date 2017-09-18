@@ -16,10 +16,14 @@ class Target:
 
 	## Draws this target point to the specified surface.
 	#
-	# @param screen (pygame.Surface object)
-	# <br>	-- the surface to draw to
+	# @param dtool (`DrawTool` object)
+	# <br>	-- the DrawTool to draw to
 	#
-	def draw(self, screen):
-		PG.draw.circle(screen, self._color, self.position, int(self.radius), self._linewidth)
-		PG.draw.circle(screen, (255,255,255) ,self.position, int(self.radius/1.5), self._linewidth)
-		PG.draw.circle(screen, self._color, self.position, int(self.radius/4), self._linewidth)
+	def draw(self, dtool):
+		dtool.set_color(self._color);
+		dtool.set_stroke_width(0);
+		dtool.draw_circle(self.position, int(self.radius))
+		dtool.set_color((0xFF, 0xFF, 0xFF));
+		dtool.draw_circle(self.position, int(self.radius/1.5))
+		dtool.set_color(self._color);
+		dtool.draw_circle(self.position, int(self.radius/4))

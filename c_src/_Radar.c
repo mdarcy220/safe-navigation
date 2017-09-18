@@ -2,12 +2,18 @@
 #include <stdio.h>
 #include "_Radar.h"
 
+#define MIN_RESOLUTION 0.00001
+
 void _c_scan_generic(double centerx, double centery, double radius, long * grid_data, int grid_data_width, int grid_data_height, int cell_type_flags, double resolution, double degreeStep, double * out_data, int out_data_size)
 {
 	
 	int i;
 	double degree;
 	double check_dist;
+
+	if (resolution <= MIN_RESOLUTION) {
+		resolution = MIN_RESOLUTION;
+	}
 
 	for(i = 0, degree = 0.0; i < out_data_size && degree <= 360.0; i++, degree+=degreeStep) {
 		double ang_in_radians = degree * M_PI / 180.0;

@@ -5,7 +5,10 @@
 
 import pygame	as PG
 import numpy	as np
+import pickle
+import base64
 
+import DrawTool
 from Environment import Environment
 from Robot import Robot, RobotStats, GpsSensor
 from Radar import Radar
@@ -13,6 +16,7 @@ from Target import Target
 import time
 import Vector
 
+from NavigationAlgorithm import DeepQNavigationAlgorithm
 from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
 from NavigationAlgorithm import FuzzyNavigationAlgorithm
 from NavigationAlgorithm import GlobalLocalNavigationAlgorithm
@@ -41,6 +45,11 @@ class Game:
 	def __init__(self, cmdargs):
 		self._cmdargs = cmdargs
 
+		if cmdargs.prng_start_state is not None:
+			np.random.set_state(pickle.loads(base64.b64decode(str.encode(cmdargs.prng_start_state))));
+
+		self._initial_random_state = base64.b64encode(pickle.dumps(np.random.get_state())).decode();
+
 		self._display_every_frame = True
 		if cmdargs.batch_mode and not cmdargs.display_every_frame:
 			self._display_every_frame = False
@@ -59,25 +68,26 @@ class Game:
 
 		# Init environment
 		self._env = Environment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
+		self._start_point = Target((50,550), color=0x00FF00)
 		self._target = Target((740, 50))
 
 		# Init robots
 		radar = Radar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);
-		initial_position = np.array([50, 550]);
+		initial_position = np.array(self._start_point.position);
 		self._robot_list    = [];
 
 		self._normal_robot  = Robot(initial_position, cmdargs, path_color=(0,0,255),   name="NormalRobot");
 		self._normal_robot.put_sensor('radar', radar);
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
-		self._normal_robot.put_sensor('usemem', True);
-		self._normal_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs, local_algo_init = IntegratedEnvNavigationAlgorithm));
+		self._normal_robot.put_sensor('debug', {'name': 'normal'});
+		self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		self._robot_list.append(self._normal_robot);
 
-		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(30,200,30), name="SafeRobot");
+		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(0xf3,0x91,0x12), name="SafeRobot");
 		self._safe_robot.put_sensor('radar', radar);
 		self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
-		self._safe_robot.put_sensor('usemem', False);
-		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs));
+		self._safe_robot.put_sensor('debug', {'name': 'safe'});
+		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
 		self._robot_list.append(self._safe_robot);
 
 		# Set window title
@@ -116,7 +126,8 @@ class Game:
 	# not always need to be done.
 	#
 	def update_game_image(self):
-		self._env.update_display(self._gameDisplay);
+		dtool = DrawTool.PygameDrawTool(self._gameDisplay);
+		self._env.update_display(dtool);
 		self._env.update_grid_data_from_display(self._gameDisplay)
 
 		if self._display_every_frame:
@@ -127,9 +138,10 @@ class Game:
 					robot.draw_radar_mask(self._mask_layer);
 				self._gameDisplay.blit(self._mask_layer, (0,0));
 
-			self._target.draw(self._gameDisplay)
+			self._start_point.draw(dtool)
+			self._target.draw(dtool)
 			for robot in self._robot_list:
-				robot.draw(self._gameDisplay)
+				robot.draw(dtool)
 
 
 	## Renders the stored game image onto the screen, to make it
@@ -198,31 +210,6 @@ class Game:
 			clock.tick(self._cmdargs.max_fps)
 
 
-	## A reduced game loop that is much faster for static maps.
-	# 
-	# This game loop does not step the environment or update the game
-	# image, so it is much faster than the standard loop. It should
-	# not be used for maps with dynamic obstacles or in cases where
-	# viewing the progress is desired, but it is highly performant for
-	# static maps in batch runs.
-	#
-	def fast_computing_game_loop(self):
-		safe_robot_at_target = False
-		normal_robot_at_target = False 
-		allRobotsAtTarget = False
-		step_num = 0
-		while (not allRobotsAtTarget):
-			allBotsAtTarget = True
-
-			# Process robot actions
-			for robot in self._robot_list:
-				if not self.check_robot_at_target(robot):
-					allBotsAtTarget = False
-					robot.NextStep(self._env.grid_data)
-			step_num += 1
-			if self._cmdargs.max_steps <= step_num:
-				return
-
 	## Creates a result summary in CSV form
 	#
 	# @returns (string)
@@ -246,14 +233,24 @@ class Game:
 		normal_robot_stats = self._normal_robot.get_stats()
 		safe_robot_stats = self._safe_robot.get_stats()
 
-		output_csv += str(normal_robot_stats.num_collisions) + ","
-		output_csv += str(safe_robot_stats.num_collisions) + ","
+		output_csv += str(normal_robot_stats.num_dynamic_collisions) + ","
+		output_csv += str(safe_robot_stats.num_dynamic_collisions) + ","
+
+		output_csv += str(normal_robot_stats.num_static_collisions) + ","
+		output_csv += str(safe_robot_stats.num_static_collisions) + ","
 
 		output_csv += str(self._normal_robot.stepNum if self.check_robot_at_target(self._normal_robot) else "") + ","
 		output_csv += str(self._safe_robot.stepNum if self.check_robot_at_target(self._safe_robot) else "") + ","
 
 		output_csv += str(0 if self.check_robot_at_target(self._normal_robot) else 1) + ","
-		output_csv += str(0 if self.check_robot_at_target(self._safe_robot) else 1) 
+		output_csv += str(0 if self.check_robot_at_target(self._safe_robot) else 1) + ","
+		if self._cmdargs.output_prng_state:
+			output_csv += str(self._initial_random_state)
+		else:
+			output_csv += ","
+
+		output_csv += str(normal_robot_stats.avg_decision_time()) + ","
+		output_csv += str(safe_robot_stats.avg_decision_time())
 
 
 		return output_csv
@@ -277,10 +274,8 @@ class Game:
 	#
 	def GameLoop(self):
 		time.sleep(self._cmdargs.start_delay)
-		if self._cmdargs.fast_computing:
-			self.fast_computing_game_loop()
-		else:
-			self.standard_game_loop()
+
+		self.standard_game_loop()
 
 		print(self.make_csv_line());
 

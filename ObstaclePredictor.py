@@ -492,7 +492,7 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 		self.last_dynamic_obstacle_distribution = radar_dynamic;
 		self.last_obstacle_getter_func = get_obs_at_angle;
 
-		self._obs_points = self._obs_points_from_radar(radar_dynamic, location);
+		self._obs_points = self._obs_points_from_radar(radar_dynamic, location, get_obs_at_angle=get_obs_at_angle);
 
 
 	## @copydoc AbstractObstaclePredictor#get_prediction()
@@ -502,20 +502,27 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 			return 0.0;
 
 		# Map parameters into a valid range
-		time = max(int(np.round(time)), 0);
+		time = max(int(round(time)), 0);
 
 		# Cone expansion parameters
 		cone_initial_size = 5;
-		cone_expansion_rate = 9;
+		cone_expansion_rate = 10;
 
-		# Init cone size to 10 to leave a little extra space
-		# (account for any numerical precision errors)
-		conesize = cone_initial_size + (time*cone_expansion_rate);
+		prob = 0.0
 
 		for obs_point in self._obs_points:
-			if Vector.distance_between(location, obs_point) <= conesize:
-				return 1.0;
-		return 0.0;
+			conesize = cone_initial_size
+			future_point = obs_point[0];
+			if obs_point[1] is not None:
+				future_point += obs_point[1]*time
+				conesize += (time*2);
+			else:
+				conesize += (time*cone_expansion_rate);
+
+			dist = Vector.distance_between(location, future_point)
+			if dist <= conesize:
+				prob = max(min(4.0*(time+1)/(1+dist), 1.0), prob)
+		return prob;
 
 
 	## Convert radar data to a list of observed obstacle locations
@@ -533,15 +540,21 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 	# <br>	Point of reference for the conversion. All obstacle points 
 	# 	are translated by this value
 	#
-	def _obs_points_from_radar(self, radar_data, location=np.array([0, 0])):
+	def _obs_points_from_radar(self, radar_data, location=np.array([0, 0]), get_obs_at_angle=None):
 		points = [];
 
 		for angle_deg in np.arange(0, len(radar_data), 1):
 			dist = radar_data[angle_deg];
-			if dist < self.radar_range-1:
+			if dist < self.radar_range-5:
 				new_point = location + (dist * Vector.unit_vec_from_radians(angle_deg * np.pi / 180));
-				if not (0 < len(points) and Vector.distance_between(points[-1], new_point) < 3):
-					points.append(new_point);
+				if (0 < len(points) and Vector.distance_between(points[-1][0], new_point) < 3):
+					continue
+				velocity = None;
+				if get_obs_at_angle is not None:
+					dynobs = get_obs_at_angle(angle_deg);
+					if dynobs is not None and dynobs.movement_mode in [1, 2]:
+						velocity = dynobs.get_velocity_vector();
+				points.append((new_point, velocity));
 		return points;
 
 

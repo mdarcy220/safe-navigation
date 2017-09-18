@@ -41,9 +41,9 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._gps     = self._sensors['gps'];
 
 		self._normal_speed = cmdargs.robot_speed;
-		self._max_sampling_iters = 50
+		self._max_sampling_iters = 200
 		self._current_mem_bias_pdf = None
-		self._safety_threshold = 0.20;
+		self._safety_threshold = 0.1
 		self._stepNum = 0;
 
 		self._cur_traj = [];
@@ -63,10 +63,11 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._mem_bias_vec = np.array([0.7, 0.7])
 		self.using_safe_mode = True
 
-		self._gaussian = Distributions.Gaussian()
+		gaussian_sigma = 100
+		self._gaussian = Distributions.Gaussian(sigma=gaussian_sigma, amplitude=(1/(np.sqrt(2*np.pi)*gaussian_sigma)))
 
 		# Obstecle Predictor
-		self._obstacle_predictor = CollisionConeObstaclePredictor(360, sensors['radar'].radius, 2);
+		self._obstacle_predictor = CollisionConeObstaclePredictor(360, sensors['radar'].radius, 5);
 
 
 	## Next action selector method.
@@ -86,7 +87,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self.debug_info["future_obstacles"] = self._obstacle_predictor.add_observation(self._gps.location(),
 				self._radar_data,
 				self._dynamic_radar_data,
-				self._obstacle_predictor_dynobs_getter_func
+				None
 		);
 
 		# Replan if the current trajectory is either finished or no 
@@ -158,8 +159,9 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		distance_h1 = self._eval_distance_heuristic(traj1);
 		distance_h2 = self._eval_distance_heuristic(traj2);
-		heuristic1 = 0.9*distance_h1 + 0.1*safety1;
-		heuristic2 = 0.9*distance_h2 + 0.1*safety2;
+		safety_bias = 0.5;
+		heuristic1 = (1-safety_bias)*distance_h1 + safety_bias*safety1;
+		heuristic2 = (1-safety_bias)*distance_h2 + safety_bias*safety2;
 		return int(np.sign(heuristic1 - heuristic2));
 
 
@@ -223,6 +225,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 
 	def _create_distribution_at(self, center, time_offset):
+		combiner_func = np.minimum
 		targetpoint_pdf = self._gaussian.get_distribution(Vector.degrees_between(center, self._target.position));
 
 		# The combined PDF will store the combination of all the
@@ -231,17 +234,17 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		raw_radar_data = self._radar_data_at(center, time_offset);
 
-		normalized_radar_data = raw_radar_data / self._radar.radius;
+		normalized_radar_data = self._gaussian.amplitude * raw_radar_data / self._radar.radius;
 
 		# Add the obstacle distribution into the combined PDF
-		combined_pdf = np.minimum(combined_pdf, normalized_radar_data);
+		combined_pdf = combiner_func(combined_pdf, normalized_radar_data);
 
 		# Process memory
-		if self._cmdargs.enable_memory and self._sensors['usemem']:
+		if self._cmdargs.enable_memory:
 			mem_bias_pdf = self._create_memory_bias_pdf_at(center, time_offset);
 
 			# Add the memory distribution to the combined PDF
-			combined_pdf = np.minimum(combined_pdf, mem_bias_pdf);
+			combined_pdf = combiner_func(combined_pdf, mem_bias_pdf);
 
 		combined_pdf = np.maximum(combined_pdf, 0);
 
@@ -318,6 +321,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			return 10.0;
 		if angle >= 360.0:
 			angle = 0;
+
 		return 1.0 - (self.debug_info["cur_dist"][int(angle)] * 1.0) * distance / len(traj) / self._normal_speed;
 
 
@@ -325,21 +329,23 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		if len(traj) == 0:
 			return 0.0;
 		radar_data = self._radar_data;
+		dynamic_radar_data = self._dynamic_radar_data;
 		safety = 1.0;
 		degree_step = self._radar.get_degree_step();
 		data_size = self._radar.get_data_size();
 		radar_range = self._radar.radius;
 		time_offset = 1;
+		safety_buffer = 3;
 
 		for waypoint in traj:
 
-			waypoint_dist = Vector.distance_between(self._gps.location(), waypoint);
+			waypoint_dist = Vector.distance_between(self._gps.location(), waypoint) + safety_buffer;
 			angle_to_waypoint = Vector.degrees_between(self._gps.location(), waypoint);
 
 			index1 = int(np.ceil(angle_to_waypoint / degree_step)) % data_size;
 			index2 = int(np.floor(angle_to_waypoint / degree_step)) % data_size;
 
-			if (radar_data[index1]-5) <= waypoint_dist or (radar_data[index2]-5) <= waypoint_dist:
+			if (radar_data[index1] <= waypoint_dist or radar_data[index2] <= waypoint_dist) and (dynamic_radar_data[index1] > radar_data[index1] and dynamic_radar_data[index2] > radar_data[index2]):
 				return 1.0;
 
 			safety *= 1.0 - self._obstacle_predictor.get_prediction(waypoint, time_offset);
@@ -349,7 +355,4 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _is_trajectory_feasible(self, traj):
 		return self._safety_heuristic(traj) < self._safety_threshold;
-
-	def _obstacle_predictor_dynobs_getter_func(self, angle):
-		return self._radar.get_dynobs_at_angle(self._gps.location(), angle)
 

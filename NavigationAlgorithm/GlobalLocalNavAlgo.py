@@ -49,26 +49,47 @@ class GlobalLocalNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._next_waypoint = Target(self._gps.location(), radius = self._waypoint_radius);
 		self._local_algo = local_algo_init(sensors, self._next_waypoint, cmdargs);
 		self._tmp_counter = 0;
+		self._has_given_up = False
 
 
 	def select_next_action(self):
-		self._sensors['mapper'].add_observation(None, None, None);
+		rcnt = 10
 		if self._tmp_counter > 30:
 			self._tmp_counter = 0;
 			self._global_algo = self._global_algo_init(self._sensors, self._target, self._cmdargs);
 			self._global_algo.select_next_action();
-			self._next_waypoint = Target(np.array(self._global_algo._solution[0].data), radius=self._waypoint_radius);
+			if self._global_algo.has_given_up():
+				self._has_given_up = True
+			if len(self._global_algo._solution) == 0:
+				self._next_waypoint = self._target
+			else:
+				self._next_waypoint = Target(np.array(self._global_algo._solution[0].data), radius=self._waypoint_radius);
 			self._local_algo = self._local_algo_init(self._sensors, self._next_waypoint, self._cmdargs);
-		elif self._gps.distance_to(self._next_waypoint.position) < self._next_waypoint.radius or self._tmp_counter > 29:
+			#self._local_algo.set_target(self._next_waypoint)
+		elif self._gps.distance_to(self._next_waypoint.position) < self._next_waypoint.radius or self._tmp_counter % rcnt == (rcnt-1):
 			if self._gps.distance_to(self._next_waypoint.position) < self._next_waypoint.radius:
 				self._tmp_counter = 0;
+
+			old_waypoint = self._next_waypoint
 			self._global_algo.select_next_action();
 			if len(self._global_algo._solution) > 0:
 				self._next_waypoint = Target(np.array(self._global_algo._solution[0].data), radius=self._waypoint_radius);
 			else:
 				self._next_waypoint = self._target
-			self._local_algo = self._local_algo_init(self._sensors, self._next_waypoint, self._cmdargs);
+
+			if self._next_waypoint != old_waypoint:
+				self._local_algo = self._local_algo_init(self._sensors, self._next_waypoint, self._cmdargs);
+				#self._local_algo.set_target(self._next_waypoint)
+
 		self._tmp_counter += 1;
 		next_action = self._local_algo.select_next_action();
 		self.debug_info = {**self._local_algo.debug_info, **self._global_algo.debug_info};
 		return next_action;
+
+	def has_given_up(self):
+		return self._has_given_up
+
+	def set_target(self, new_target):
+		self._target = new_target
+		self._global_algo = self._global_algo_init(self._sensors, self._target, self._cmdargs);
+
