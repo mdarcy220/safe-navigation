@@ -460,7 +460,7 @@ class Environment:
 		grid_data_height = max(self.height, masked_pix_arr.shape[1] )
 		self.grid_data = np.array(self.static_overlay);
 
-		dynamic_obstacle_pixel_val = 0x227722 & pixel_mask # (34, 119, 34) represented as integer
+		dynamic_obstacle_pixel_val = 0x44ccee & pixel_mask
 		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] |= (CellFlag.DYNAMIC_OBSTACLE | CellFlag.ANY_OBSTACLE)
 		
 		# Uncomment the following lines to see the grid_data directly

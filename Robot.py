@@ -197,6 +197,8 @@ class Robot:
 
 			# Draw circle representing radar range
 			dtool.draw_circle(np.array(self.location, dtype=int), int(self._sensors['radar'].radius))
+
+			# Draw the robot's sensor observations
 			#dtool.set_color((0xaa, 0x55, 0xdd))
 			#self._draw_pdf(dtool, self._sensors['radar'].scan(self._sensors['gps'].location()))
 			#dtool.set_color(self._path_color)

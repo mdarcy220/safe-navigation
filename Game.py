@@ -126,7 +126,11 @@ class Game:
 	# not always need to be done.
 	#
 	def update_game_image(self):
+		#dtool = DrawTool.MultiDrawTool();
+		#dtool.dtools.append(DrawTool.PygameDrawTool(self._gameDisplay));
+		#dtool.dtools.append(DrawTool.SvgDrawTool());
 		dtool = DrawTool.PygameDrawTool(self._gameDisplay);
+
 		self._env.update_display(dtool);
 		self._env.update_grid_data_from_display(self._gameDisplay)
 
@@ -142,6 +146,10 @@ class Game:
 			self._target.draw(dtool)
 			for robot in self._robot_list:
 				robot.draw(dtool)
+
+		#dtool.dtools[1]._elems.insert(0, '<image x="0" y="0" width="800" height="600" xlink:href="../{}" />'.format(self._cmdargs.map_name))
+		#with open('imdir/frame-{:04d}.svg'.format(self._step_num), 'x') as f:
+		#	f.write(dtool.dtools[1].get_svg_xml())
 
 
 	## Renders the stored game image onto the screen, to make it

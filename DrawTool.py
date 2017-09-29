@@ -42,6 +42,8 @@ class DrawTool:
 		return self._stroke_width;
 
 
+## Draws to the screen using Pygame
+#
 class PygameDrawTool(DrawTool):
 	def __init__(self, pg_surface):
 		self._pg_surface = pg_surface;
@@ -80,6 +82,9 @@ def _color_to_int(color_tuple):
 		return color_int
 	return color_tuple
 
+
+## Draws to SVG markup
+#
 class SvgDrawTool(DrawTool):
 	def __init__(self):
 		self._svg_template_xml = """<svg width="800px" height="600px" viewBox="0 0 800 600"><g id="layer1">{}</g></svg>""";
@@ -88,7 +93,7 @@ class SvgDrawTool(DrawTool):
 		self._stroke_width = 1
 
 	def get_svg_xml(self):
-		return self._svg_template_xml.format(" ".join(self._elems));
+		return self._svg_template_xml.format("\n".join(self._elems));
 
 
 	def _gen_style_str(self):
@@ -133,3 +138,51 @@ class SvgDrawTool(DrawTool):
 	def draw_image(self, image_data, location):
 		pass;
 
+
+## Composite tool that duplicates drawing commands over all its component tools
+#
+class MultiDrawTool:
+	def __init__(self):
+		self.dtools = []
+
+	def draw_circle(self, center, radius):
+		for dtool in self.dtools:
+			dtool.draw_circle(center, radius)
+
+	def draw_poly(self, points):
+		for dtool in self.dtools:
+			dtool.draw_poly(points)
+
+	def draw_lineseries(self, points):
+		for dtool in self.dtools:
+			dtool.draw_lineseries(points)
+
+	def draw_line(self, point1, point2):
+		for dtool in self.dtools:
+			dtool.draw_line(point1, point2)
+
+	def draw_rect(self, point, dimension):
+		for dtool in self.dtools:
+			dtool.draw_rect(point, dimension)
+
+	def draw_image(self, image_data, location):
+		for dtool in self.dtools:
+			dtool.draw_image(image_data, location)
+
+	def set_color(self, color):
+		for dtool in self.dtools:
+			dtool.set_color(color)
+
+	def get_color(self):
+		if len(self.dtools) == 0:
+			return (0,0,0)
+		return self.dtools[0].get_color()
+
+	def set_stroke_width(self, width):
+		for dtool in self.dtools:
+			dtool.set_stroke_width(width)
+
+	def get_stroke_width(self):
+		if len(self.dtools) == 0:
+			return 0
+		return self.dtools[0].get_stroke_width()

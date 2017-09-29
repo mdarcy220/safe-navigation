@@ -68,7 +68,7 @@ class DynamicObstacle:
 		self.coordinate		= np.array([0, 0]) # Location
 		self.origin		= np.array([0, 0]) # Point around which the obstacle rotates for circular motion
 		self.size		= [50, 50] # Used for Rectangle shape
-		self.fillcolor		= (0x22, 0x77, 0x22)
+		self.fillcolor		= (0x44, 0xcc, 0xee)
 		self.bordercolor	= (0xFF, 0x00, 0x00)
 		self.movement_mode	= 1
 		self.shape		= 1 # 1 = Circle, 2 = Rectangle
