@@ -16,3 +16,4 @@ from .ManualMouseNavAlgo import ManualMouseNavigationAlgorithm
 from .MpRrtNavAlgo import MpRrtNavigationAlgorithm
 from .MultiLevelNavAlgo import MultiLevelNavigationAlgorithm
 from .SamplingNavAlgo import SamplingNavigationAlgorithm
+from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
