@@ -28,6 +28,7 @@ from NavigationAlgorithm import MpRrtNavigationAlgorithm
 from NavigationAlgorithm import MultiLevelNavigationAlgorithm
 from NavigationAlgorithm import SamplingNavigationAlgorithm
 from NavigationAlgorithm import ValueIterationNavigationAlgorithm
+from NavigationAlgorithm import InverseRLNavigationAlgorithm
 
 ## Handles the main game loop
 #
@@ -83,9 +84,11 @@ class Game:
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
 		self._normal_robot.put_sensor('mdp', MDPAdapterSensor(self._env, self._start_point.position, self._target.position));
 		self._normal_robot.put_sensor('debug', {'name': 'normal'});
+		self._normal_robot.set_nav_algo(InverseRLNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(ValueIterationNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
-		self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		self._robot_list.append(self._normal_robot);
+
 
 		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(0xf3,0x91,0x12), name="SafeRobot");
 		self._safe_robot.put_sensor('radar', radar);

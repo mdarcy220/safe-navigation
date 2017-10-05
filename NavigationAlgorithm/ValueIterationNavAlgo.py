@@ -123,9 +123,23 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 	## Adds a (state, action) pair to the current demonstration for the IRL
 	# algorithm.
 	#
-	def _add_demonstration_step(self, state, action):
-		# TODO: Implement this method
-		pass
+	def add_demonstration_step(self, state, max_steps):
+		# returns sequence of (state, action, next_state, reward)
+		# until goal is reached, or max number of steps taken
+		sequence = set()
+		steps = 0
+		while state != self._mdp.goal_state() and steps < max_steps:
+		    # return (s, a, s', r)
+		    action = self._get_action(state)
+		    next_state = self._mdp.get_successor_state(state, action)
+		    reward = self._mdp.reward(state, action, next_state)
+		    step = (state, action, next_state, reward)
+		    sequence.add(step)
+		    state = next_state
+		    steps += 1
+		return sequence
+
+
 
 
 	def has_given_up(self):

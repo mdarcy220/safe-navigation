@@ -1,9 +1,16 @@
 #!/usr/bin/python3
 
 from Robot import RobotControlInput
-from .LinearNavAlgo import LinearNavigationAlgorithm
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
+from .LinearNavAlgo import LinearNavigationAlgorithm  
+from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
 
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+from matplotlib import style
+import pandas as pd
+import seaborn as sns
 
 ## Maximum Entropy Deep Inverse Reinforcement Learning navigation algorithm.
 # This is actually just a wrapper around another navigation algorithm, and this
@@ -26,6 +33,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
+		self._max_steps = 300;
+		self._max_loops = 300;
 
 		if real_algo_init is None:
 			real_algo_init = LinearNavigationAlgorithm
@@ -36,6 +45,15 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._dynamic_radar_data = None
 
 		self._gps     = self._sensors['gps'];
+		self._mdp = self._sensors['mdp'];
+		self._reward = self._init_reward();
+		self.plot_reward(1)
+
+		self._valueIteration = ValueIterationNavigationAlgorithm(self._sensors, self._target, self._cmdargs);
+		self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
+		self._policy = self._do_value_iter(self._reward)
+		self._reward = self.IRLloop()
+
 
 
 	## Select the next action for the robot
@@ -43,18 +61,20 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	# This function uses the robot's radar and location information, as
 	# well as internally stored information about previous locations,
 	# to compute the next action the robot should take.
+
 	#
+
 	# @returns (`Robot.RobotControlInput` object)
 	# <br>	-- A control input representing the next action the robot
 	# 	should take.
 	#
-	def select_next_action(self):
-		state = self._get_state();
-		action = self._get_action(state);
+	#def select_next_action(self):
+	#	state = self._get_state();
+	#	action = self._get_action(state);
 
-		self._add_demonstration_step(state, action);
+	#	self._add_demonstration_step(state, action);
 
-		return action;
+	#	return action;
 
 
 	## Gets the state representation for IRL
@@ -67,6 +87,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	#
 	def _get_action(self, state):
 		# We won't actually use the "state" parameter here, since the
+
 		# real algo can scan the radar itself to get the state. It is
 		# included because it could be used if we decided to use a
 		# different type of demonstrator
@@ -77,12 +98,173 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	## Adds a (state, action) pair to the current demonstration for the IRL
 	# algorithm.
 	#
-	def _add_demonstration_step(self, state, action):
-		# TODO: Implement this method
-		pass
+	def _add_demonstration_loop(self, max_steps, max_loops):
+		demonstrations = set()
+		for loop in range(0,max_loops):
+			start_state = random.sample(self._mdp.states(),1)[0]
+			for demonstration in self._valueIteration.add_demonstration_step(start_state,max_steps):
+			    demonstrations.add(demonstration)
+		return demonstrations
+
 
 
 	def has_given_up(self):
 		return False;
+	
+	def _do_value_iter(self, reward):
+		mdp = self._mdp
+		gamma = 0.98
+
+
+		old_values = {state: 0.0 for state in self._mdp.states()}
+		old_values[self._mdp.goal_state()] = 1
+		new_values = old_values
+
+		qvals = dict()
+		for state in mdp.states():
+			qvals[state] = dict()
+			for action in mdp.actions(state):
+				qvals[state][action] = 0.0
+
+		while True:
+			old_values = new_values
+			new_values = dict()
+			for state in mdp.states():
+				for action in mdp.actions(state):
+					# Fear not: this massive line is just a Bellman-ish update
+					qvals[state][action] = self._get_reward(state, action, reward) + gamma*sum({mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state)})
+
+				## Softmax to get value
+				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
+				#new_values[state] = max(exp_qvals.values())/sum(exp_qvals.values())
+
+				# Just take the max to get values
+				new_values[state] = max(qvals[state].values())
+
+			# Quit if we have converged
+			if max({abs(old_values[s] - new_values[s]) for s in mdp.states()}) < 0.01:
+				break
+
+		policy = dict()
+		for state in mdp.states():
+			policy[state] = dict()
+			exp_qvals = {action: np.exp(qval)*10 for action, qval in qvals[state].items()}
+			sum_exp_qvals = sum(exp_qvals.values())
+			for action in mdp.actions(state):
+				#print(policy[state], exp_qvals, qvals[state])
+				policy[state][action] = exp_qvals[action]/sum_exp_qvals
+
+		return policy
+
+	def _init_reward(self):
+	    mdp = self._mdp
+	    reward = dict()
+	    num_states = len(mdp.states())
+	    for state in mdp.states():
+		#    reward[state] =dict()
+		#    num_actions = len(mdp.actions(state))
+		#    for action in mdp.actions(state):
+		#	    reward[state][action] = 1.0/(num_states * num_actions)
+		    reward[state] = 1.0/num_states
+	    
+	    return reward
+	
+	def _get_reward(self, state, action, reward):
+	    return reward[state]
+	
+	def _get_action(self, state):
+		total = 0.0
+		rand = np.random.random()
+		for action in self._policy[state]:
+			total += self._policy[state][action]
+			if rand < total:
+				return action
+		return self._policy[state].keys()[0]
+
+	## Adds a (state, action) pair to the current demonstration for the IRL
+	# algorithm.
+	#
+	def add_demonstration_step(self, state, max_steps):
+		# returns sequence of (state, action, next_state, reward)
+		# until goal is reached, or max number of steps taken
+		sequence = set()
+		steps = 0
+		while state != self._mdp.goal_state() and steps < max_steps:
+		    # return (s, a, s', r)
+		    action = self._get_action(state)
+		    next_state = self._mdp.get_successor_state(state, action)
+		    reward = self._reward(state, action)
+		    step = (state, action, next_state, reward)
+		    sequence.add(step)
+		    state = next_state
+		    steps += 1
+		return sequence
+	def IRLloop(self):
+
+		reward = self._reward
+		feat_true = self._visitation_frequency(self._demonstrations)
+
+		maxIter = 1000
+		lr = 0.5
+		for i in range(maxIter):
+			new_demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops)
+			newFeat = self._visitation_frequency(new_demonstrations)
+			grad_avg = 0.0
+			counter = 0
+			for state in self._mdp.states():
+			    
+				#for action in newFeat[state]:
+				#    grad = feat_true[state][action] - newFeat[state][action]
+				#    reward[state][action] += lr * grad
+				#    grad_avg += grad
+				#    counter +=1
+				grad = feat_true[state] - newFeat[state]
+				reward[state] += lr*grad
+				grad_avg += grad
+				counter +=1
+			self._reward = reward
+			self._policy = self._do_value_iter(self._reward)
+			print(grad_avg/counter)
+			if (abs(grad_avg/counter) < 10**-50):
+			    break
+			self.plot_reward(i)
+
+		print (max([max(reward[state].values()) for state in self._mdp.states()]))
+		return reward
+
+	
+
+	def _visitation_frequency(self, demonstrations):
+		mdp = self._mdp
+		visited = dict()
+		for state in mdp.states():
+			#visited[state] = dict()
+			#for action in mdp.actions(state):
+			#    visited[state][action] = 0
+			visited[state] = 0.0
+
+		num_demonstrations = len(demonstrations)
+		for demonstration in demonstrations:
+			(state, action, _, r) = demonstration
+			visited[state] += 1/num_demonstrations
+		
+		return visited
+	
+	def plot_reward(self, iteration, figsize=(7,7)):
+		sns.set(style="white")
+		max_x = max([x for x,y in self._mdp.states()])
+		max_y = max([y for x,y in self._mdp.states()])
+		reward = np.zeros((max_x, max_y))
+		for state in self._mdp.states():
+		    x,y = state
+		    reward[x-1,y-1] = self._reward[state]
+
+		plt.imshow(reward, cmap='hot', interpolation='nearest')
+
+		plt.savefig('reward_states.png')
+		pass
+
+
+
 
 
