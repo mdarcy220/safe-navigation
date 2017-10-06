@@ -40,7 +40,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _do_value_iter(self):
 		mdp = self._mdp
-		gamma = 0.98
+		gamma = 0.97
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
 		old_values[self._mdp.goal_state()] = 1
@@ -129,17 +129,15 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 		sequence = set()
 		steps = 0
 		while state != self._mdp.goal_state() and steps < max_steps:
-		    # return (s, a, s', r)
-		    action = self._get_action(state)
-		    next_state = self._mdp.get_successor_state(state, action)
-		    reward = self._mdp.reward(state, action, next_state)
-		    step = (state, action, next_state, reward)
-		    sequence.add(step)
-		    state = next_state
-		    steps += 1
+			# return (s, a, s', r)
+			action = self._get_action(state)
+			next_state = self._mdp.get_successor_state(state, action)
+			reward = self._mdp.reward(state, action, next_state)
+			step = (state, action, next_state, reward)
+			sequence.add(step)
+			state = next_state
+			steps += 1
 		return sequence
-
-
 
 
 	def has_given_up(self):
