@@ -33,8 +33,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
-		self._max_steps = 300;
-		self._max_loops = 300;
+		self._max_steps = 1000;
+		self._max_loops = 50;
 
 		if real_algo_init is None:
 			real_algo_init = LinearNavigationAlgorithm
@@ -101,9 +101,11 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _add_demonstration_loop(self, max_steps, max_loops):
 		demonstrations = set()
 		for loop in range(0,max_loops):
-			start_state = random.sample(self._mdp.states(),1)[0]
-			for demonstration in self._valueIteration.add_demonstration_step(start_state,max_steps):
-				demonstrations.add(demonstration)
+			start_state = (1000,1000)
+			start_state = (random.randint(1,5), random.randint(1,5))
+			#start_state = random.sample(self._mdp.states(),1)[0]
+			demon_traj = self._valueIteration.add_demonstration_step(start_state,max_steps)
+			demonstrations.add(demon_traj)
 		return demonstrations
 
 
@@ -191,21 +193,29 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		sequence = set()
 		steps = 0
 		while state != self._mdp.goal_state() and steps < max_steps:
-			# return (s, a, s', r)
-			action = self._get_action(state)
-			next_state = self._mdp.get_successor_state(state, action)
-			reward = self._reward(state, action)
-			step = (state, action, next_state, reward)
-			sequence.add(step)
-			state = next_state
-			steps += 1
-		return sequence
+		    # return (s, a, s', r)
+		    action = self._get_action(state)
+		    next_state = self._mdp.get_successor_state(state, action)
+		    reward = self._reward(state, action)
+		    step = (state, action, next_state, reward)
+		    sequence.add(step)
+		    state = next_state
+		    steps += 1
+		return frozenset(sequence)
 
 
 	def IRLloop(self):
 
+
+		mdp = self._mdp
 		reward = self._reward
-		feat_true = self._visitation_frequency(self._demonstrations)
+		feat_true = dict()
+		for state in mdp.states():
+		    feat_true[state] = 0.0
+		for traj in self._demonstrations:
+			for state, action, next_action, reward in traj:
+			    feat_true[state] += 1/self._max_loops
+
 
 		maxIter = 1000
 		lr = 0.5
@@ -224,12 +234,12 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 				grad = feat_true[state] - newFeat[state]
 				reward[state] += lr*grad
 				grad_avg += abs(grad)
-				counter += 1
+				counter +=1
 			self._reward = reward
 			self._policy = self._do_value_iter(self._reward)
 			print(grad_avg/counter)
-			if (abs(grad_avg/counter) < 10**-50):
-				break
+			if (abs(grad_avg/counter) < 10**-6):
+			    break
 			self.plot_reward(i)
 
 		print (max([max(reward[state].values()) for state in self._mdp.states()]))
@@ -264,7 +274,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		plt.imshow(reward, cmap='hot', interpolation='nearest')
 
-		plt.savefig('reward_states.png')
+		plt.savefig('../output_data/reward_states_test3.png')
 		pass
 
 
