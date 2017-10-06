@@ -259,7 +259,11 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			visited[state] += 1/num_demonstrations
 		
 		return visited
-	
+	def _visitation_trajectory_frequency(self, demonstrations):
+		mdp = self._mdp
+		visited = dict()
+
+
 	def plot_reward(self, iteration, figsize=(7,7)):
 		sns.set(style="white")
 		max_x = max([x for x,y in self._mdp.states()])
