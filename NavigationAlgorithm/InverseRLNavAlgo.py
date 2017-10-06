@@ -134,7 +134,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			for state in mdp.states():
 				for action in mdp.actions(state):
 					# Fear not: this massive line is just a Bellman-ish update
-					qvals[state][action] = self._get_reward(state, action, reward) + gamma*sum({mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state)})
+					qvals[state][action] = self._get_reward(state, action, reward) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 
 				## Softmax to get value
 				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
