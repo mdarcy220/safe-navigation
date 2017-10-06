@@ -113,7 +113,8 @@ class MDPAdapterSensor(MDP):
 
 		direction = action[0]
 		# Scaled-down speed
-		scaled_speed = action[1]/self._cell_size
+		#scaled_speed = action[1]/self._cell_size
+		scaled_speed = 3*action[1]/self._cell_size
 
 		next_x = next_state[0]
 		next_y = next_state[1]
@@ -149,5 +150,8 @@ class MDPAdapterSensor(MDP):
 
 
 	def reward(self, state, action, next_state):
-		return self.transition_prob(state, action, self._goal_state)
+		reachGoalProb = self.transition_prob(state, action, self._goal_state)
+		if reachGoalProb > 0:
+			return reachGoalProb
+		return -0.3
 
