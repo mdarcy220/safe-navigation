@@ -47,6 +47,20 @@ class MDPAdapterSensor(MDP):
 		self._goal_state = self.discretize(goal_state)
 		self._states = MDPAdapterSensor._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
+		self._transition_table = self._init_transition_table()
+
+
+	def _init_transition_table(self):
+		transition_table = {}
+		for state in self._states:
+			transition_table[state] = {}
+			for action in self._actions:
+				transition_table[state][action] = {}
+				for next_state in self._states:
+					prob = self._compute_transition_prob(state, action, next_state)
+					if 0 < prob:
+						transition_table[state][action][next_state] = prob
+		return transition_table
 
 
 	def discretize(self, continuous_state):
@@ -103,7 +117,18 @@ class MDPAdapterSensor(MDP):
 	    transition_probs.append(self.transition_prob(state, action, next_state))
 	  return next_states[transition_probs.index(max(transition_probs))]
 
+
 	def transition_prob(self, state, action, next_state):
+		if state not in self._transition_table:
+			return self._compute_transition_prob(state, action, next_state)
+		if action not in self._transition_table[state]:
+			return self._compute_transition_prob(state, action, next_state)
+		if next_state not in self._transition_table[state][action]:
+			return 0
+		return self._transition_table[state][action][next_state]
+
+
+	def _compute_transition_prob(self, state, action, next_state):
 		# Some of the numbers are a little tricky here; they need to be
 		# scaled down by the cell size because the entire state space
 		# is also scaled down by the cell size
@@ -113,7 +138,8 @@ class MDPAdapterSensor(MDP):
 
 		direction = action[0]
 		# Scaled-down speed
-		scaled_speed = action[1]/self._cell_size
+		#scaled_speed = action[1]/self._cell_size
+		scaled_speed = 3*action[1]/self._cell_size
 
 		next_x = next_state[0]
 		next_y = next_state[1]
@@ -149,5 +175,8 @@ class MDPAdapterSensor(MDP):
 
 
 	def reward(self, state, action, next_state):
-		return self.transition_prob(state, action, self._goal_state)
+		reachGoalProb = self.transition_prob(state, action, self._goal_state)
+		if reachGoalProb > 0:
+			return reachGoalProb
+		return -0.3
 

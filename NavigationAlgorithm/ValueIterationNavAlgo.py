@@ -40,7 +40,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _do_value_iter(self):
 		mdp = self._mdp
-		gamma = 0.98
+		gamma = 0.97
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
 		old_values[self._mdp.goal_state()] = 1
@@ -58,7 +58,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 			for state in mdp.states():
 				for action in mdp.actions(state):
 					# Fear not: this massive line is just a Bellman-ish update
-					qvals[state][action] = mdp.reward(state, action, None) + gamma*sum({mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state)})
+					qvals[state][action] = mdp.reward(state, action, None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 
 				## Softmax to get value
 				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
@@ -138,8 +138,6 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    state = next_state
 		    steps += 1
 		return frozenset(sequence)
-
-
 
 
 	def has_given_up(self):
