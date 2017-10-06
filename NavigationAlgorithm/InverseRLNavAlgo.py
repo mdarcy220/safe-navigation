@@ -40,11 +40,11 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			real_algo_init = LinearNavigationAlgorithm
 		self._real_algo = real_algo_init(sensors, target, cmdargs)
 
-		self._radar   = self._sensors['radar'];
+		self._radar = self._sensors['radar'];
 		self._radar_data = None
 		self._dynamic_radar_data = None
 
-		self._gps     = self._sensors['gps'];
+		self._gps = self._sensors['gps'];
 		self._mdp = self._sensors['mdp'];
 		self._reward = self._init_reward();
 		self.plot_reward(1)
@@ -103,7 +103,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		for loop in range(0,max_loops):
 			start_state = random.sample(self._mdp.states(),1)[0]
 			for demonstration in self._valueIteration.add_demonstration_step(start_state,max_steps):
-			    demonstrations.add(demonstration)
+				demonstrations.add(demonstration)
 		return demonstrations
 
 
@@ -113,7 +113,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	
 	def _do_value_iter(self, reward):
 		mdp = self._mdp
-		gamma = 0.98
+		gamma = 0.97
 
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
@@ -157,20 +157,20 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		return policy
 
 	def _init_reward(self):
-	    mdp = self._mdp
-	    reward = dict()
-	    num_states = len(mdp.states())
-	    for state in mdp.states():
-		#    reward[state] =dict()
-		#    num_actions = len(mdp.actions(state))
-		#    for action in mdp.actions(state):
-		#	    reward[state][action] = 1.0/(num_states * num_actions)
-		    reward[state] = 1.0/num_states
-	    
-	    return reward
+		mdp = self._mdp
+		reward = dict()
+		num_states = len(mdp.states())
+		for state in mdp.states():
+		#	reward[state] =dict()
+		#	num_actions = len(mdp.actions(state))
+		#	for action in mdp.actions(state):
+		#		reward[state][action] = 1.0/(num_states * num_actions)
+			reward[state] = 1.0/num_states
+		
+		return reward
 	
 	def _get_reward(self, state, action, reward):
-	    return reward[state]
+		return reward[state]
 	
 	def _get_action(self, state):
 		total = 0.0
@@ -181,6 +181,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 				return action
 		return self._policy[state].keys()[0]
 
+
 	## Adds a (state, action) pair to the current demonstration for the IRL
 	# algorithm.
 	#
@@ -190,15 +191,17 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		sequence = set()
 		steps = 0
 		while state != self._mdp.goal_state() and steps < max_steps:
-		    # return (s, a, s', r)
-		    action = self._get_action(state)
-		    next_state = self._mdp.get_successor_state(state, action)
-		    reward = self._reward(state, action)
-		    step = (state, action, next_state, reward)
-		    sequence.add(step)
-		    state = next_state
-		    steps += 1
+			# return (s, a, s', r)
+			action = self._get_action(state)
+			next_state = self._mdp.get_successor_state(state, action)
+			reward = self._reward(state, action)
+			step = (state, action, next_state, reward)
+			sequence.add(step)
+			state = next_state
+			steps += 1
 		return sequence
+
+
 	def IRLloop(self):
 
 		reward = self._reward
@@ -212,21 +215,21 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			grad_avg = 0.0
 			counter = 0
 			for state in self._mdp.states():
-			    
+				
 				#for action in newFeat[state]:
-				#    grad = feat_true[state][action] - newFeat[state][action]
-				#    reward[state][action] += lr * grad
-				#    grad_avg += grad
-				#    counter +=1
+				#	grad = feat_true[state][action] - newFeat[state][action]
+				#	reward[state][action] += lr * grad
+				#	grad_avg += grad
+				#	counter +=1
 				grad = feat_true[state] - newFeat[state]
 				reward[state] += lr*grad
-				grad_avg += grad
-				counter +=1
+				grad_avg += abs(grad)
+				counter += 1
 			self._reward = reward
 			self._policy = self._do_value_iter(self._reward)
 			print(grad_avg/counter)
 			if (abs(grad_avg/counter) < 10**-50):
-			    break
+				break
 			self.plot_reward(i)
 
 		print (max([max(reward[state].values()) for state in self._mdp.states()]))
@@ -240,7 +243,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		for state in mdp.states():
 			#visited[state] = dict()
 			#for action in mdp.actions(state):
-			#    visited[state][action] = 0
+			#	visited[state][action] = 0
 			visited[state] = 0.0
 
 		num_demonstrations = len(demonstrations)
@@ -256,15 +259,12 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		max_y = max([y for x,y in self._mdp.states()])
 		reward = np.zeros((max_x, max_y))
 		for state in self._mdp.states():
-		    x,y = state
-		    reward[x-1,y-1] = self._reward[state]
+			x,y = state
+			reward[x-1,y-1] = self._reward[state]
 
 		plt.imshow(reward, cmap='hot', interpolation='nearest')
 
 		plt.savefig('reward_states.png')
 		pass
-
-
-
 
 
