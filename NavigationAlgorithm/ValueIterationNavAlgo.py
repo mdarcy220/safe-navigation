@@ -137,7 +137,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    sequence.add(step)
 		    state = next_state
 		    steps += 1
-		return sequence
+		return frozenset(sequence)
 
 
 
