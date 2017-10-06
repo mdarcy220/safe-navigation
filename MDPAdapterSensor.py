@@ -47,6 +47,20 @@ class MDPAdapterSensor(MDP):
 		self._goal_state = self.discretize(goal_state)
 		self._states = MDPAdapterSensor._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
+		self._transition_table = self._init_transition_table()
+
+
+	def _init_transition_table(self):
+		transition_table = {}
+		for state in self._states:
+			transition_table[state] = {}
+			for action in self._actions:
+				transition_table[state][action] = {}
+				for next_state in self._states:
+					prob = self._compute_transition_prob(state, action, next_state)
+					if 0 < prob:
+						transition_table[state][action][next_state] = prob
+		return transition_table
 
 
 	def discretize(self, continuous_state):
@@ -103,7 +117,18 @@ class MDPAdapterSensor(MDP):
 	    transition_probs.append(self.transition_prob(state, action, next_state))
 	  return next_states[transition_probs.index(max(transition_probs))]
 
+
 	def transition_prob(self, state, action, next_state):
+		if state not in self._transition_table:
+			return self._compute_transition_prob(state, action, next_state)
+		if action not in self._transition_table[state]:
+			return self._compute_transition_prob(state, action, next_state)
+		if next_state not in self._transition_table[state][action]:
+			return 0
+		return self._transition_table[state][action][next_state]
+
+
+	def _compute_transition_prob(self, state, action, next_state):
 		# Some of the numbers are a little tricky here; they need to be
 		# scaled down by the cell size because the entire state space
 		# is also scaled down by the cell size
