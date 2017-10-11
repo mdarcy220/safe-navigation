@@ -48,6 +48,7 @@ class MDPAdapterSensor(MDP):
 		self._states = MDPAdapterSensor._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
 		self._transition_table = self._init_transition_table()
+        self._walls = self._init_walls()
 
 
 	def _init_transition_table(self):
@@ -74,7 +75,10 @@ class MDPAdapterSensor(MDP):
 				states.add((x, y))
 		return states
 
-
+	def _init_walls():
+	  	for cell in env.grid_data:
+				print (cell)
+	
 	def _init_actions(num_actions, robot_speed):
 		return {(action, robot_speed) for action in np.arange(0, 360, 360/num_actions)}
 
