@@ -85,6 +85,7 @@ class Game:
 		self._normal_robot.put_sensor('mdp', MDPAdapterSensor(self._env, self._start_point.position, self._target.position));
 		self._normal_robot.put_sensor('debug', {'name': 'normal'});
 		self._normal_robot.set_nav_algo(InverseRLNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(DeepQNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(ValueIterationNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		self._robot_list.append(self._normal_robot);

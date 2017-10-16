@@ -1,7 +1,7 @@
 #!/usr/bin/env -p python3
 
 import numpy as np
-
+import math
 
 class MDP:
 	def __init__(self):
@@ -45,10 +45,13 @@ class MDPAdapterSensor(MDP):
 		self._cell_size = cell_size
 		self._start_state = self.discretize(start_state)
 		self._goal_state = self.discretize(goal_state)
-		self._states = MDPAdapterSensor._init_states(env, cell_size)
+		self._height = int(np.ceil(env.height/cell_size))
+		self._width = int(np.ceil(env.width/cell_size))
+		self._states = self._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
 		self._transition_table = self._init_transition_table()
-        self._walls = self._init_walls()
+		self._walls = self._init_walls(self._env, self._cell_size)
+		self._features = self._get_features(self._states, self._walls, self._goal_state)
 
 
 	def _init_transition_table(self):
@@ -68,16 +71,26 @@ class MDPAdapterSensor(MDP):
 		return (continuous_state[0]//self._cell_size, continuous_state[1]//self._cell_size)
 
 
-	def _init_states(env, cell_size):
+	def _init_states(self, env, cell_size):
 		states = set()
-		for x in range(int(np.ceil(env.width/cell_size))+1):
-			for y in range(int(np.ceil(env.height/cell_size))+1):
+		for x in range(self._width):
+			for y in range(self._height):
 				states.add((x, y))
 		return states
 
-	def _init_walls():
-	  	for cell in env.grid_data:
-				print (cell)
+	def _init_walls(self, env, cell_size):
+		# numpy array with entry of zero if free space and one if
+		# not free
+		# entries are according to states, y for columns and x for rows
+		grid_data = env.grid_data
+		walls = np.zeros((self._height,self._width))
+		for x in range(self._width):
+			for y in range(self._height):
+				temp_wall = grid_data[x*cell_size:(x+1)*cell_size-1,y*cell_size:(y+1)*cell_size-1]
+				walls[y,x] = 1 if np.sum(temp_wall) > 0 else 0
+		return walls
+
+
 	
 	def _init_actions(num_actions, robot_speed):
 		return {(action, robot_speed) for action in np.arange(0, 360, 360/num_actions)}
@@ -110,7 +123,7 @@ class MDPAdapterSensor(MDP):
 		        (x-1, y),
 		        (x-1, y-1)
 		       }
-		return {state for state in possible_successors if state in self._states}
+		return {state for state in possible_successors if state in self._states and self._walls[state[1],state[0]] ==0}
 
 
 	def get_successor_state(self, state, action):
@@ -178,9 +191,52 @@ class MDPAdapterSensor(MDP):
 		return self._goal_state
 
 
+
 	def reward(self, state, action, next_state):
 		reachGoalProb = self.transition_prob(state, action, self._goal_state)
 		if reachGoalProb > 0:
 			return reachGoalProb
 		return -0.3
+	def _get_features(self, states, walls, goal):
+		features = dict()
+		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
+		for state in states:
+			(x,y) = state
+			"""
+			feature = np.zeros(5)
+			if walls[y,x] == 1:
+				feature[0:4] = max_dist
+			else:
+				i=1
+				while(walls[y+i,x] == 0):
+					i += 1
+				feature[0] = i
+				i=1
+				while(walls[y-i,x] == 0):
+					i += 1
+				feature[1] = i
+				i=1
+				while(walls[y,x+i] == 0):
+					i += 1
+				feature[2] = i
+				i=1
+				while(walls[y,x-i] == 0):
+					i += 1
+				feature[3] = i
+			feature[4] = math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
+			feature[4] *= -1
+			features[state] = feature
+			"""
+			# testing with a simpler feature vector
+			# f_1 is a negative number if state is wall
+			# f_2 is max_dist - dist to goal
+			feature = np.zeros(2)
+			if walls[y,x] == 1:
+				feature[0] = -max_dist
+			feature[1] = max_dist - math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
+			features[state] = feature
+		return features
+
+
+
 
