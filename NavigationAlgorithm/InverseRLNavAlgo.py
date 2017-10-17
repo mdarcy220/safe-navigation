@@ -342,7 +342,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			policy = self._do_value_iter(reward)
 			if (grad_avg < 10**-6):
 			    break
-			self.plot_reward(reward)
+			self.plot_reward_policy(reward,policy,i)
 			#print (grad)
 			
 			print ('grad_avg: ', grad_avg)
@@ -390,8 +390,49 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		reward = rewards.reshape(self._mdp._height, self._mdp._width)
 
 		plt.imshow(reward, cmap='hot', interpolation='nearest')
+		ax = plt.axes()
+		ax.arrow(0, 0, 0.5, 0.5, head_width=0.05, head_length=0.1, fc='k', ec='k')
 
 		plt.savefig('../output_data/reward_states_test3.png')
 		pass
 
+
+	def plot_reward_policy(self, rewards, policy, iteration, figsize=(7,7)):
+		sns.set(style="white")
+		#max_x = max([x for x,y in self._mdp.states()])
+		#max_y = max([y for x,y in self._mdp.states()])
+		#reward = np.zeros((max_x, max_y))
+
+		#for state in self._mdp.states():
+		#	x,y = state
+		#	reward[x-1,y-1] = rewards[state]
+		reward = rewards.reshape(self._mdp._height, self._mdp._width)
+
+		plt.imshow(reward, cmap='hot', interpolation='nearest')
+		ax = plt.axes()
+		
+		w = self._mdp._cell_size *0.5
+		l = self._mdp._cell_size *0.5
+		#dist = self._mdp._cell_size/2.0
+		dist = 0.0
+		w = 0.9
+		l = 0.9
+
+		for state in self._mdp.states():
+		    (x,y) = state
+		    center = (x+dist, y+dist)
+		    for i, action in enumerate(self._mdp.actions(state)):
+			    p = policy[state][action]
+			    if p < 0.2:
+				    continue
+			    if i == 0:
+				    ax.arrow(center[0], center[1], -0.1, 0.0, head_width= w * p, head_length = l * p)
+			    elif i ==3:
+				    ax.arrow(center[0], center[1], 0.0, 0.1, head_width= w * p, head_length = l * p)
+			    elif i ==2:
+				    ax.arrow(center[0], center[1], 0.1, 0.0, head_width= w * p, head_length = l * p)
+			    else:
+				    ax.arrow(center[0], center[1], 0.0, -0.1, head_width= w * p, head_length = l * p)
+		plt.savefig('../output_data/r_p' + str(iteration) + '.png')
+		pass
 
