@@ -41,7 +41,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._cmdargs = cmdargs;
 		self._max_steps = 52;
 		self._max_loops = 1;
-		self._lr = 0.001;
+		self._lr = 0.01;
 		self._decay = 0.99
 
 		if real_algo_init is None:
@@ -96,7 +96,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def hand_crafted_demonstrations(self):
 		sequence = []
-		"""
+		
 		step = ((1,18),0.0,(2,18), 0.0)
 		sequence.append(step)
 		for i in range(2,17):
@@ -133,6 +133,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 					y -= 1
 					flip = 1
 			sequence.append(step)
+		"""
 		demo = []
 		demo.append(sequence)
 		
@@ -182,7 +183,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def has_given_up(self):
 		return False;
-	
+	"""
 	def _do_value_iter(self, reward):
 		mdp = self._mdp
 		height = mdp._height
@@ -219,14 +220,65 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			(x,y) = state
 			for i, action in enumerate(mdp.actions(state)):
 				policy[state][action] = Z_a[y,x,i]/ Z[y,x]
-		print('policies')
-		state = (1,18)
-		print([policy[state][action] for action in mdp.actions(state)])
-		state = (17,18)
-		print([policy[state][action] for action in mdp.actions(state)])
-		state = (17,1)
-		print([policy[state][action] for action in mdp.actions(state)])
+		#print('policies')
+		#state = (1,18)
+		#print([policy[state][action] for action in mdp.actions(state)])
+		#state = (17,18)
+		#print([policy[state][action] for action in mdp.actions(state)])
+		#state = (17,1)
+		#print([policy[state][action] for action in mdp.actions(state)])
 		return policy
+	"""
+	def _do_value_iter(self, reward):
+		mdp = self._mdp
+		gamma = 0.98
+
+
+		old_values = {state: 0.0 for state in self._mdp.states()}
+		old_values[self._mdp.goal_state()] = 1
+		new_values = old_values
+
+		qvals = dict()
+		for state in mdp.states():
+			qvals[state] = dict()
+			for action in mdp.actions(state):
+				qvals[state][action] = 0.0
+
+		iteration = 0
+		max_iter = 1000
+		while (iteration < max_iter):
+			old_values = new_values
+			new_values = dict()
+			for state in mdp.states():
+				(x,y) = state
+				for action in mdp.actions(state):
+					# Fear not: this massive line is just a Bellman-ish update
+					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+
+				## Softmax to get value
+				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
+				#new_values[state] = max(exp_qvals.values())/sum(exp_qvals.values())
+
+				# Just take the max to get values
+				new_values[state] = max(qvals[state].values())
+
+			# Quit if we have converged
+			if max({abs(old_values[s] - new_values[s]) for s in mdp.states()}) < 0.01:
+				break
+			iteration += 1
+
+		policy = dict()
+		for state in mdp.states():
+			policy[state] = dict()
+			exp_qvals = {action: np.exp(qval)*10 for action, qval in qvals[state].items()}
+			sum_exp_qvals = sum(exp_qvals.values())
+			for action in mdp.actions(state):
+				#print(policy[state], exp_qvals, qvals[state])
+				policy[state][action] = exp_qvals[action]/sum_exp_qvals
+
+		return policy
+
 
 	def _init_reward(self):
 		# the reward function is a 1D numpy array corresponding to
@@ -267,11 +319,15 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		a_feature = features[rand_state[0]]
 		# testing with a smaller range of initial theata
 		theta = np.random.uniform( 0.5, 0.8, (1,a_feature.size))
+		theta[0,0] *= -1
+		theta[0,2] *= -1
+		theta[0.3] *= -1
 		return theta
 		
 
 	def _get_reward(self, features, theta):
 		reward = np.dot(theta,features)
+		reward -= 0.1
 		return reward
 	
 	def _get_action(self, state, policy):
@@ -336,6 +392,9 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			newFeat_mult = self._visitation_trajectory_frequency(self._demonstrations, policy)
 			grad = feat_exp - np.dot(self._features, newFeat_mult)
 			grad_avg  = sum(abs(grad))/grad.size
+			grad = np.dot(grad,lr)
+			#grad_exp = np.exp(grad)
+			#self._theta *= grad_exp
 			self._theta += np.dot(grad, lr)
 			#self._theta /= self._theta.sum()
 			reward = self._get_reward(self._features, self._theta)
@@ -369,7 +428,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		for t in range(T-1):
 			for s in mdp.states():
 				(x,y) = s
-				mu[y*height + x,t+1] = sum([mu[y*height + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
+				#mu[y*height + x,t+1] = sum([mu[y*height + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
+				mu[y*height + x,t+1] = sum([sum([mu[y*height + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
 		p = np.sum(mu,1)
 		
 		#for state in mdp.states():
@@ -417,22 +477,39 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		dist = 0.0
 		w = 0.9
 		l = 0.9
+		directions = np.array([0.0, 90.0, 180.0, 270.0])
+		directions = np.deg2rad(directions)
+		direct = np.zeros((2,4))
+		direct[0,:] = 0.1 * np.cos(directions)
+		direct[1,:] = 0.1 * np.sin(directions)
 
 		for state in self._mdp.states():
 		    (x,y) = state
 		    center = (x+dist, y+dist)
-		    for i, action in enumerate(self._mdp.actions(state)):
-			    p = policy[state][action]
-			    if p < 0.2:
-				    continue
-			    if i == 0:
-				    ax.arrow(center[0], center[1], -0.1, 0.0, head_width= w * p, head_length = l * p)
-			    elif i ==3:
-				    ax.arrow(center[0], center[1], 0.0, 0.1, head_width= w * p, head_length = l * p)
-			    elif i ==2:
-				    ax.arrow(center[0], center[1], 0.1, 0.0, head_width= w * p, head_length = l * p)
-			    else:
-				    ax.arrow(center[0], center[1], 0.0, -0.1, head_width= w * p, head_length = l * p)
+		    temp = [policy[state][action] for action in self._mdp.actions(state)]
+		    temp = np.array(temp)
+		    i = np.argmax(temp)
+		    p = temp[i]
+		    dir_x = np.sum(temp * direct[0,:])
+		    dir_y = np.sum(temp * direct[1,:])
+		    p = np.sum(temp)/4
+
+		    #for i, action in enumerate(self._mdp.actions(state)):
+			#    p = policy[state][action]
+			#    if p < 0.2:
+			#	    continue
+		    #if i == 0:
+			#    ax.arrow(center[0], center[1], -0.1, 0.0, head_width= w * p, head_length = l * p)
+		    #elif i ==3:
+			#    ax.arrow(center[0], center[1], 0.0, 0.1, head_width= w * p, head_length = l * p)
+		    #elif i ==2:
+			#    ax.arrow(center[0], center[1], 0.1, 0.0, head_width= w * p, head_length = l * p)
+		    #else:
+			#    ax.arrow(center[0], center[1], 0.0, -0.1, head_width= w * p, head_length = l * p)
+		    #ax.arrow(center[0], center[1], direct[0,i], direct[1,i], head_width= w * p, head_length = l * p)
+		    m_dir = max([abs(dir_x), abs(dir_y)])
+		    ax.arrow(center[0], center[1], dir_x*0.1/m_dir, dir_y*0.1/m_dir, head_width= w * p, head_length = l * p)
+		    ax.arrow(center[0], center[1], direct[0,i], direct[1,i], head_width= w * temp[i], head_length = l * temp[i], color='r')
 		plt.savefig('../output_data/r_p' + str(iteration) + '.png')
 		pass
 

@@ -47,10 +47,10 @@ class MDPAdapterSensor(MDP):
 		self._goal_state = self.discretize(goal_state)
 		self._height = int(np.ceil(env.height/cell_size))
 		self._width = int(np.ceil(env.width/cell_size))
+		self._walls = self._init_walls(self._env, self._cell_size)
 		self._states = self._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
 		self._transition_table = self._init_transition_table()
-		self._walls = self._init_walls(self._env, self._cell_size)
 		self._features = self._get_features(self._states, self._walls, self._goal_state)
 
 
@@ -123,7 +123,8 @@ class MDPAdapterSensor(MDP):
 		        (x-1, y),
 		        (x-1, y-1)
 		       }
-		return {state for state in possible_successors if state in self._states and self._walls[state[1],state[0]] ==0}
+		#return {state for state in possible_successors if state in self._states }
+		return {state for state in possible_successors if state in self._states and self._walls[state[1],state[0]] <1}
 
 
 	def get_successor_state(self, state, action):
@@ -180,7 +181,8 @@ class MDPAdapterSensor(MDP):
 		overlap_y = max(0, 1 - abs(next_y - shifted_cur_y))
 
 		overlap_area = overlap_x * overlap_y
-
+		if self._walls[next_y,next_x] == 0:
+		  overlap_area *= 0.01
 		return overlap_area / scaled_cell_area
 
 
@@ -227,6 +229,7 @@ class MDPAdapterSensor(MDP):
 			feature[4] *= -1
 			features[state] = feature
 			"""
+			"""
 			# testing with a simpler feature vector
 			# f_1 is a negative number if state is wall
 			# f_2 is max_dist - dist to goal
@@ -234,6 +237,37 @@ class MDPAdapterSensor(MDP):
 			if walls[y,x] == 1:
 				feature[0] = -max_dist
 			feature[1] = max_dist - math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
+			"""
+			feature = np.zeros(4)
+			temp = np.zeros(2)
+			if walls[y,x] == 1:
+				#feature[0:1] = 0
+				feature[0] = 1
+				feature[2] = 0
+			else:
+				#temp[0] = abs(self._height/2 - y)/self._height
+				#temp[1] = abs(self._width/2 -  x)/self._width
+				#feature[0] = 1 if temp[0] > temp[1] else 0
+				#feature[1] = 1 - feature[0]
+				feature[0] = 0
+				if (walls[y+1,x] ==1 or walls[y-1,x] ==1 or walls[y,x+1] ==1 or walls[y,x-1] ==1):
+					feature[0] = 1
+					feature[2] = 1
+					feature[3] = 0
+				elif (walls[y+2,x] ==1 or walls[y-2,x] ==1 or walls[y,x+2] ==1 or walls[y,x-2] ==1):
+					feature[0] = 1
+					feature[2] = 1
+					feature[3] = 1
+				else:
+					feature[2] = 0
+					feature[3] = 0
+
+			dist = math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
+			if(dist < 0.1 and walls[y,x] == 0):
+				feature[1] = 1
+				feature[2] = 1
+			else:
+				feature[1] = 0
 			features[state] = feature
 		return features
 
