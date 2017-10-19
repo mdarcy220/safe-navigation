@@ -156,7 +156,7 @@ class Game:
 				robot.draw(dtool)
 
 		#dtool.dtools[1]._elems.insert(0, '<image x="0" y="0" width="800" height="600" xlink:href="../{}" />'.format(self._cmdargs.map_name))
-		#with open('imdir/frame-{:04d}.svg'.format(self._step_num), 'x') as f:
+		#with open('imdir/frame-{:05d}.svg'.format(self._step_num), 'x') as f:
 		#	f.write(dtool.dtools[1].get_svg_xml())
 
 
