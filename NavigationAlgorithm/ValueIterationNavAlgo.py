@@ -4,6 +4,7 @@ from Robot import RobotControlInput
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 import numpy as np
 import copy
+import Vector
 
 
 ## Value Iteration navigation algorithm
@@ -40,7 +41,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _do_value_iter(self):
 		mdp = self._mdp
-		gamma = 0.97
+		gamma = 0.993
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
 		old_values[self._mdp.goal_state()] = 1
@@ -68,7 +69,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 				new_values[state] = max(qvals[state].values())
 
 			# Quit if we have converged
-			if max({abs(old_values[s] - new_values[s]) for s in mdp.states()}) < 0.01:
+			if max(abs(old_values[s] - new_values[s]) for s in mdp.states()) < 0.01:
 				break
 
 		policy = dict()
