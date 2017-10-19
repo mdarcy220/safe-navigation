@@ -12,6 +12,7 @@ from matplotlib import style
 import pandas as pd
 import seaborn as sns
 import math
+import Vector
 
 ## Maximum Entropy Deep Inverse Reinforcement Learning navigation algorithm.
 # This is actually just a wrapper around another navigation algorithm, and this
@@ -231,7 +232,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	"""
 	def _do_value_iter(self, reward):
 		mdp = self._mdp
-		gamma = 0.98
+		gamma = 0.993
 
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
@@ -253,8 +254,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 				(x,y) = state
 				for action in mdp.actions(state):
 					# Fear not: this massive line is just a Bellman-ish update
-					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 
 				## Softmax to get value
 				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
@@ -308,7 +309,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			feature_mat[:, y * mdp._width + x] = features[state]
 			#print(feature_mat[:,(19-1) * mdp._width + 15])
 		for i in range(feature_mat.shape[0]):
-		    feature_mat[i,:] = np.divide(feature_mat[i,:],abs(feature_mat[i,:]).max())
+			feature_mat[i,:] = np.divide(feature_mat[i,:],abs(feature_mat[i,:]).max())
 
 		return feature_mat
 	
@@ -321,7 +322,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		theta = np.random.uniform( 0.5, 0.8, (1,a_feature.size))
 		theta[0,0] *= -1
 		theta[0,2] *= -1
-		theta[0.3] *= -1
+		theta[0,3] *= -1
 		return theta
 		
 
@@ -349,16 +350,16 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		sequence = []
 		steps = 0
 		while state != self._mdp.goal_state() and steps < max_steps:
-		    # return (s, a, s', r)
-		    action = self._get_action(state, policy)
-		    next_state = self._mdp.get_successor_state(state, action)
-		    # the reward here is set to a trivial zero to decrease
-		    # redundant runtie because it is
-		    # not required later
-		    step = (state, action, next_state, 0.0)
-		    sequence.append(step)
-		    state = next_state
-		    steps += 1
+			# return (s, a, s', r)
+			action = self._get_action(state, policy)
+			next_state = self._mdp.get_successor_state(state, action)
+			# the reward here is set to a trivial zero to decrease
+			# redundant runtie because it is
+			# not required later
+			step = (state, action, next_state, 0.0)
+			sequence.append(step)
+			state = next_state
+			steps += 1
 		return sequence
 
 
@@ -400,7 +401,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			reward = self._get_reward(self._features, self._theta)
 			policy = self._do_value_iter(reward)
 			if (grad_avg < 10**-6):
-			    break
+				break
 			self.plot_reward_policy(reward,policy,i)
 			#print (grad)
 			
@@ -454,62 +455,36 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		ax.arrow(0, 0, 0.5, 0.5, head_width=0.05, head_length=0.1, fc='k', ec='k')
 
 		plt.savefig('../output_data/reward_states_test3.png')
-		pass
 
 
-	def plot_reward_policy(self, rewards, policy, iteration, figsize=(7,7)):
-		sns.set(style="white")
-		#max_x = max([x for x,y in self._mdp.states()])
-		#max_y = max([y for x,y in self._mdp.states()])
-		#reward = np.zeros((max_x, max_y))
-
-		#for state in self._mdp.states():
-		#	x,y = state
-		#	reward[x-1,y-1] = rewards[state]
-		reward = rewards.reshape(self._mdp._height, self._mdp._width)
-
-		plt.imshow(reward, cmap='hot', interpolation='nearest')
+	def plot_reward_policy(self, reward_map, policy, iteration, dpi=196.0):
+		# Set up the figure
+		plt.gcf().set_dpi(dpi)
 		ax = plt.axes()
-		
-		w = self._mdp._cell_size *0.5
-		l = self._mdp._cell_size *0.5
-		#dist = self._mdp._cell_size/2.0
-		dist = 0.0
-		w = 0.9
-		l = 0.9
-		directions = np.array([0.0, 90.0, 180.0, 270.0])
-		directions = np.deg2rad(directions)
-		direct = np.zeros((2,4))
-		direct[0,:] = 0.1 * np.cos(directions)
-		direct[1,:] = 0.1 * np.sin(directions)
+
+		# Note that we're messing with the input args here
+		reward_map = reward_map.reshape(self._mdp._height, self._mdp._width)
+		plt.imshow(reward_map, cmap='hot', interpolation='nearest')
+
+		# The scale controls the size of the arrows
+		scale = 0.8
 
 		for state in self._mdp.states():
-		    (x,y) = state
-		    center = (x+dist, y+dist)
-		    temp = [policy[state][action] for action in self._mdp.actions(state)]
-		    temp = np.array(temp)
-		    i = np.argmax(temp)
-		    p = temp[i]
-		    dir_x = np.sum(temp * direct[0,:])
-		    dir_y = np.sum(temp * direct[1,:])
-		    p = np.sum(temp)/4
+			# Init a dict of the values for each action
+			action_values = {action:policy[state][action] for action in self._mdp.actions(state)}
 
-		    #for i, action in enumerate(self._mdp.actions(state)):
-			#    p = policy[state][action]
-			#    if p < 0.2:
-			#	    continue
-		    #if i == 0:
-			#    ax.arrow(center[0], center[1], -0.1, 0.0, head_width= w * p, head_length = l * p)
-		    #elif i ==3:
-			#    ax.arrow(center[0], center[1], 0.0, 0.1, head_width= w * p, head_length = l * p)
-		    #elif i ==2:
-			#    ax.arrow(center[0], center[1], 0.1, 0.0, head_width= w * p, head_length = l * p)
-		    #else:
-			#    ax.arrow(center[0], center[1], 0.0, -0.1, head_width= w * p, head_length = l * p)
-		    #ax.arrow(center[0], center[1], direct[0,i], direct[1,i], head_width= w * p, head_length = l * p)
-		    m_dir = max([abs(dir_x), abs(dir_y)])
-		    ax.arrow(center[0], center[1], dir_x*0.1/m_dir, dir_y*0.1/m_dir, head_width= w * p, head_length = l * p)
-		    ax.arrow(center[0], center[1], direct[0,i], direct[1,i], head_width= w * temp[i], head_length = l * temp[i], color='r')
-		plt.savefig('../output_data/r_p' + str(iteration) + '.png')
-		pass
+			# avgarrow points in the average direction the robot
+			# will travel based on the stochastic policy
+			avgarrow_vec = np.sum(item[1]*Vector.unit_vec_from_degrees(item[0][0]) for item in action_values.items())
+			avgarrow_mag = Vector.magnitudeOf(avgarrow_vec)
+			avgarrow_vec = avgarrow_vec/avgarrow_mag
+			ax.arrow(state[0], state[1], avgarrow_vec[0]*0.1, avgarrow_vec[1]*0.1, head_width = scale * avgarrow_mag, head_length = scale * avgarrow_mag)
+
+			# maxarrow points in the single most likely direction
+			max_action = max((item for item in action_values.items()), key=lambda item: item[1])
+			maxarrow_vec = Vector.unit_vec_from_degrees(max_action[0][0])
+			ax.arrow(state[0], state[1], 0.1*maxarrow_vec[0], 0.1*maxarrow_vec[1], head_width= scale * max_action[1], head_length = scale * max_action[1], color='g')
+
+		# Output the figure to the image file
+		plt.savefig('../output_data/r_p{:02d}.png'.format(iteration))
 
