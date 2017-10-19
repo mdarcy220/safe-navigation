@@ -181,8 +181,8 @@ class MDPAdapterSensor(MDP):
 		overlap_y = max(0, 1 - abs(next_y - shifted_cur_y))
 
 		overlap_area = overlap_x * overlap_y
-		if self._walls[next_y,next_x] == 0:
-		  overlap_area *= 0.01
+		if self._walls[next_y,next_x] != 0:
+			return 0
 		return overlap_area / scaled_cell_area
 
 
@@ -198,7 +198,9 @@ class MDPAdapterSensor(MDP):
 		reachGoalProb = self.transition_prob(state, action, self._goal_state)
 		if reachGoalProb > 0:
 			return reachGoalProb
-		return -0.3
+		return -0.5
+
+
 	def _get_features(self, states, walls, goal):
 		features = dict()
 		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
