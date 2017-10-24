@@ -206,7 +206,7 @@ class MDPAdapterSensor(MDP):
 		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
 		for state in states:
 			(x,y) = state
-			"""
+			
 			feature = np.zeros(5)
 			if walls[y,x] == 1:
 				feature[0:4] = max_dist
@@ -228,9 +228,7 @@ class MDPAdapterSensor(MDP):
 					i += 1
 				feature[3] = i
 			feature[4] = math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
-			feature[4] *= -1
 			features[state] = feature
-			"""
 			"""
 			# testing with a simpler feature vector
 			# f_1 is a negative number if state is wall
@@ -239,37 +237,38 @@ class MDPAdapterSensor(MDP):
 			if walls[y,x] == 1:
 				feature[0] = -max_dist
 			feature[1] = max_dist - math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
-			"""
-			feature = np.zeros(4)
+			
+			feature = np.zeros(2)
 			temp = np.zeros(2)
 			if walls[y,x] == 1:
 				#feature[0:1] = 0
 				feature[0] = 1
-				feature[2] = 0
+				#feature[2] = 0
 			else:
 				#temp[0] = abs(self._height/2 - y)/self._height
 				#temp[1] = abs(self._width/2 -  x)/self._width
 				#feature[0] = 1 if temp[0] > temp[1] else 0
 				#feature[1] = 1 - feature[0]
 				feature[0] = 0
-				if (walls[y+1,x] ==1 or walls[y-1,x] ==1 or walls[y,x+1] ==1 or walls[y,x-1] ==1):
-					feature[0] = 1
-					feature[2] = 1
-					feature[3] = 0
-				elif (walls[y+2,x] ==1 or walls[y-2,x] ==1 or walls[y,x+2] ==1 or walls[y,x-2] ==1):
-					feature[0] = 1
-					feature[2] = 1
-					feature[3] = 1
-				else:
-					feature[2] = 0
-					feature[3] = 0
+				#if (walls[y+1,x] ==1 or walls[y-1,x] ==1 or walls[y,x+1] ==1 or walls[y,x-1] ==1):
+				#	feature[0] = 1
+				#	feature[2] = 1
+				#	feature[3] = 0
+				#elif (walls[y+2,x] ==1 or walls[y-2,x] ==1 or walls[y,x+2] ==1 or walls[y,x-2] ==1):
+				#	feature[0] = 1
+				#	feature[2] = 1
+				#	feature[3] = 1
+				#else:
+				#	feature[2] = 0
+				#	feature[3] = 0
 
 			dist = math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
-			if(dist < 0.1 and walls[y,x] == 0):
+			if(dist < 5.0 and walls[y,x] == 0):
 				feature[1] = 1
-				feature[2] = 1
+				#feature[2] = 1
 			else:
 				feature[1] = 0
+			"""
 			features[state] = feature
 		return features
 

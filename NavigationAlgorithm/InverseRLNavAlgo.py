@@ -6,6 +6,7 @@ from .LinearNavAlgo import LinearNavigationAlgorithm
 from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
 
 import numpy as np
+from numpy import linalg as LA
 import random
 import matplotlib.pyplot as plt
 from matplotlib import style
@@ -40,9 +41,9 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
-		self._max_steps = 52;
-		self._max_loops = 1;
-		self._lr = 0.01;
+		self._max_steps = 10;
+		self._max_loops = 500;
+		self._lr = 0.1;
 		self._decay = 0.99
 
 		if real_algo_init is None:
@@ -61,9 +62,9 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._reward = self._get_reward(self._features, self._theta)
 		self.plot_reward(self._reward)
 
-		#self._valueIteration = ValueIterationNavigationAlgorithm(self._sensors, self._target, self._cmdargs);
-		#self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
-		self._demonstrations = self.hand_crafted_demonstrations()
+		self._valueIteration = ValueIterationNavigationAlgorithm(self._sensors, self._target, self._cmdargs);
+		self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
+		#self._demonstrations = self.hand_crafted_demonstrations()
 		self._policy = self._do_value_iter(self._reward)
 
 		self._reward = self.IRLloop()
@@ -165,10 +166,14 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		demonstrations = []
 		for loop in range(0,max_loops):
 			start_state = (1000,1000)
-			start_state = (random.randint(1,5), random.randint(17,19))
+			while True:
+			    start_state = (random.randint(1,self._mdp._width-2), random.randint(1,self._mdp._height-2))
+			    if (self._mdp._walls[start_state[1], start_state[0]] == 0):
+				    break
 			#start_state = random.sample(self._mdp.states(),1)[0]
 			demon_traj = self._valueIteration.add_demonstration_step(start_state,max_steps)
-			demonstrations.append(demon_traj)
+			if len(demon_traj) > 0:
+			    demonstrations.append(demon_traj)
 		return demonstrations
 
 	def _add_demonstration_loop_local(self, max_steps, max_loops, policy):
@@ -236,7 +241,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
-		old_values[self._mdp.goal_state()] = 1
+		#old_values[self._mdp.goal_state()] = 1
 		new_values = old_values
 
 		qvals = dict()
@@ -254,8 +259,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 				(x,y) = state
 				for action in mdp.actions(state):
 					# Fear not: this massive line is just a Bellman-ish update
-					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-					qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 
 				## Softmax to get value
 				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
@@ -319,10 +324,10 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		rand_state = random.sample(mdp.states(),1)
 		a_feature = features[rand_state[0]]
 		# testing with a smaller range of initial theata
-		theta = np.random.uniform( 0.5, 0.8, (1,a_feature.size))
-		theta[0,0] *= -1
-		theta[0,2] *= -1
-		theta[0,3] *= -1
+		theta = np.random.uniform( 0.0, 0.8, (1,a_feature.size))
+		#theta[0,0] *= -1
+		#theta[0,2] *= -1
+		#theta[0,3] *= -1
 		return theta
 		
 
@@ -378,38 +383,29 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		feat_exp /= self._max_loops
 
 
-		maxIter = 1000
+		maxIter = 100
 		lr = self._lr
 		decay = self._decay
 		policy  = self._policy
+		old_grad = np.zeros((self._features[:,0].shape))
 
-		#print (self._theta)
-		#print (feat_exp)
 		for i in range(maxIter):
 			lr = lr*decay
 			grad = np.zeros((self._features[:,0].shape))
-			#new_demonstrations = self._add_demonstration_loop_local(self._max_steps, self._max_loops, policy)
-			#newFeat = self._visitation_frequency(new_demonstrations)
 			newFeat_mult = self._visitation_trajectory_frequency(self._demonstrations, policy)
 			grad = feat_exp - np.dot(self._features, newFeat_mult)
 			grad_avg  = sum(abs(grad))/grad.size
-			grad = np.dot(grad,lr)
-			#grad_exp = np.exp(grad)
-			#self._theta *= grad_exp
 			self._theta += np.dot(grad, lr)
-			#self._theta /= self._theta.sum()
 			reward = self._get_reward(self._features, self._theta)
 			policy = self._do_value_iter(reward)
-			if (grad_avg < 10**-6):
-				break
 			self.plot_reward_policy(reward,policy,i)
-			#print (grad)
-			
-			print ('grad_avg: ', grad_avg)
+			print ('grad_diff: ', LA.norm(grad-old_grad))
+			print ('grad: ', grad)
 			print ('theta: ', self._theta)
-			#print (np.dot(self._features, newFeat_mult))
+			#if (LA.norm(grad - old_grad) < 10**-6):
+			#	break
+			old_grad = grad
 
-		print (max([max(reward[state].values()) for state in self._mdp.states()]))
 		return reward
 	
 	def _visitation_trajectory_frequency(self, demonstrations, policy):
@@ -423,18 +419,17 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		for demonstration in demonstrations:
 			(s, a, sx, r) = demonstration[0]
 			(x,y) = s
-			mu[y*height +x , 0] += 1
+			mu[y*height +x , 0] += 1/self._max_loops
 		mu[:,0] = mu[:,0]/T
 
 		for t in range(T-1):
+			mu_old = mu
 			for s in mdp.states():
 				(x,y) = s
 				#mu[y*height + x,t+1] = sum([mu[y*height + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
-				mu[y*height + x,t+1] = sum([sum([mu[y*height + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
+				mu[y*height + x,t+1] = sum([sum([mu_old[y*height + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
 		p = np.sum(mu,1)
 		
-		#for state in mdp.states():
-		#	visited[state] = p[states[state]]
 		return p
 
 

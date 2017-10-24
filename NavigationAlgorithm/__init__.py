@@ -18,3 +18,4 @@ from .MultiLevelNavAlgo import MultiLevelNavigationAlgorithm
 from .SamplingNavAlgo import SamplingNavigationAlgorithm
 from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
 from .InverseRLNavAlgo import InverseRLNavigationAlgorithm
+from .DeepIRL import DeepIRLAlgorithm
