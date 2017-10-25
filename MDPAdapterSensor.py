@@ -200,13 +200,13 @@ class MDPAdapterSensor(MDP):
 			return reachGoalProb
 		return -0.5
 
-
 	def _get_features(self, states, walls, goal):
+		
 		features = dict()
 		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
 		for state in states:
 			(x,y) = state
-			
+			"""		
 			feature = np.zeros(5)
 			if walls[y,x] == 1:
 				feature[0:4] = max_dist
@@ -229,7 +229,7 @@ class MDPAdapterSensor(MDP):
 				feature[3] = i
 			feature[4] = math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
 			features[state] = feature
-			"""
+				
 			# testing with a simpler feature vector
 			# f_1 is a negative number if state is wall
 			# f_2 is max_dist - dist to goal
@@ -237,7 +237,7 @@ class MDPAdapterSensor(MDP):
 			if walls[y,x] == 1:
 				feature[0] = -max_dist
 			feature[1] = max_dist - math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
-			
+			"""
 			feature = np.zeros(2)
 			temp = np.zeros(2)
 			if walls[y,x] == 1:
@@ -268,8 +268,54 @@ class MDPAdapterSensor(MDP):
 				#feature[2] = 1
 			else:
 				feature[1] = 0
-			"""
 			features[state] = feature
+		return features
+
+	def _get_features2(self, states, walls, goal):
+		nodes = list()
+		nodes.append( (1 ,18) )
+		nodes.append( (13,16) )
+		nodes.append( (20,13) )
+		nodes.append( (25,18) )
+		nodes.append( (25,7 ) )
+		nodes.append( (13,19) )
+		nodes.append( (1 ,15) )
+		nodes.append( (5 ,5 ) )
+		nodes.append( (1 ,1 ) )
+		nodes.append( (13,3 ) )
+		nodes.append( (24,1 ) )
+		successors = dict()
+		successors[nodes[0]]  = list([6,1,5])
+		successors[nodes[1]]  = list([0,2,5])
+		successors[nodes[2]]  = list([1,5,3,4])
+		successors[nodes[3]]  = list([2,4])
+		successors[nodes[4]]  = list([10,2,3])
+		successors[nodes[5]]  = list([9,7,1,2])
+		successors[nodes[6]]  = list([0,7,5])
+		successors[nodes[7]]  = list([6,5,9])
+		successors[nodes[8]]  = list([6,9,7])
+		successors[nodes[9]]  = list([10,7,5])
+		successors[nodes[10]] = list([4,9])
+
+		feat_index = list([3,3,4,2,3,4,3,3,3,3,2])
+		feat_cumu = list([0])
+		for i in range(len(feat_index)-1):
+			feat_cumu.append(feat_cumu[i] + feat_index[i])
+
+		features = dict()
+		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
+		for state in states:
+			feature = np.zeros(sum(feat_index))
+			(x,y) = state
+			dist = list()
+			for k, node in enumerate(nodes):
+				(x_k,y_k) = node
+				dist.append(math.sqrt((x - x_k) ** 2 + (y - y_k) ** 2 ))
+			min_index = dist.index(min(dist))
+			for i, successor in enumerate(successors[nodes[min_index]]):
+				feature[i+feat_cumu[min_index]] = dist[successor]
+			features[state] = feature
+		
 		return features
 
 
