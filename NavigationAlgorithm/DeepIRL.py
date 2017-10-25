@@ -58,12 +58,9 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		self._gps = self._sensors['gps'];
 		self._mdp = self._sensors['mdp'];
 		self._features = self._get_features();
-		self._theta = self._init_theta();
-		#self._reward = self._init_reward();
 
 		self._valueIteration = ValueIterationNavigationAlgorithm(self._sensors, self._target, self._cmdargs);
 		self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
-		#self._demonstrations = self.hand_crafted_demonstrations()
 
 		self._reward = self.IRLloop()
 
@@ -82,81 +79,6 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 	# <br>	-- A control input representing the next action the robot
 	# 	should take.
 	#
-	#def select_next_action(self):
-	#	state = self._get_state();
-	#	action = self._get_action(state);
-
-	#	self._add_demonstration_step(state, action);
-
-	#	return action;
-
-
-	## Gets the state representation for IRL
-	#
-
-	def hand_crafted_demonstrations(self):
-		sequence = []
-		
-		step = ((1,18),0.0,(2,18), 0.0)
-		sequence.append(step)
-		for i in range(2,17):
-			step = ((i,18), 0.0, (i+1,18), 0.0)
-			sequence.append(step)
-		for i in range(18,11, -1):
-			step = ((17,i), 0.0, (17,i-1), 0.0)
-			sequence.append(step)
-		for i in range(17,11, -1):
-			step = ((i,11), 0.0, (i-1,11), 0.0)
-			sequence.append(step)
-		for i in range(11,2, -1):
-			step = ((11,i), 0.0, (11,i-1), 0.0)
-			sequence.append(step)
-		for i in range(11,24):
-			step = ((i,2), 0.0, (i+1,2), 0.0)
-			sequence.append(step)
-		step = ((24,2), 0.0, (24,1), 0.0)
-		sequence.append(step)
-		"""
-		(x,y)= (1,18)
-		flip = 1
-		while (x < 24 or y >1):
-			if flip == 1:
-				step = ((x,y), 0.0, (x+1,y), 0.0)
-				x += 1
-				flip = 0
-			else:
-				step = ((x,y), 0.0, (x,y-1), 0.0)
-				if y == 1:
-					flip = 1
-					continue
-				else:
-					y -= 1
-					flip = 1
-			sequence.append(step)
-		"""
-		demo = []
-		demo.append(sequence)
-		
-		return demo
-
-
-		
-	def _get_state(self):
-		return (self._gps.location(), self._radar.scan(self._gps.location()));
-
-
-	## Gets the action taken by the demonstrator for IRL
-	#
-	def _get_action(self, state):
-		# We won't actually use the "state" parameter here, since the
-
-		# real algo can scan the radar itself to get the state. It is
-		# included because it could be used if we decided to use a
-		# different type of demonstrator
-
-		return self._real_algo.select_next_action();
-
-
 	## Adds a (state, action) pair to the current demonstration for the IRL
 	# algorithm.
 	#
@@ -174,68 +96,12 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 			    demonstrations.append(demon_traj)
 		return demonstrations
 
-	def _add_demonstration_loop_local(self, max_steps, max_loops, policy):
-		demonstrations = []
-		for loop in range(0,max_loops):
-			start_state = (1000,1000)
-			start_state = (random.randint(1,5), random.randint(17,19))
-			#start_state = random.sample(self._mdp.states(),1)[0]
-			demon_traj = self._add_demonstration_step(start_state,max_steps, policy)
-			demonstrations.append(demon_traj)
-		return demonstrations
-
 
 	def has_given_up(self):
 		return False;
-	"""
 	def _do_value_iter(self, reward):
 		mdp = self._mdp
-		height = mdp._height
-		width = mdp._width
-		gamma = 0.97
-		Z = 1.0 - mdp._walls
-		# here we're assuming that 9 successor states do exist
-		# in case less exist, then the value for the one that does not
-		# exist will always be zero
-		# ordered as
-		#(x+1, y+1), (x+1,y), (x+1,y-1), (x, y+1),
-		#(x,y), (x, y-1), (x-1, y+1), (x-1,y), (x-1,y-1)
-		# and that we have 4 actions
-		Z_a = np.zeros((height, width, 4))
-		exp_reward = np.exp(reward)
-
-		max_itertions = 10
-		for i in range(max_itertions):
-			for state in mdp.states():
-				(x,y) = state
-				successors = mdp.successors(state)
-				actions = mdp.actions(state)
-				for i, action in enumerate(actions):
-					for successor in successors:
-						trans = mdp.transition_prob(state, action, successor)
-						(x_1,y_1) = successor
-						Z_a[y,x,i] +=  trans * exp_reward[0,y_1*height + x_1] * Z[y,x]
-			for state in mdp.states():
-				(x,y) = state
-				Z[y,x] = np.sum (Z_a[y,x,:])
-		policy = dict()
-		for state in mdp.states():
-			policy[state] = dict()
-			(x,y) = state
-			for i, action in enumerate(mdp.actions(state)):
-				policy[state][action] = Z_a[y,x,i]/ Z[y,x]
-		#print('policies')
-		#state = (1,18)
-		#print([policy[state][action] for action in mdp.actions(state)])
-		#state = (17,18)
-		#print([policy[state][action] for action in mdp.actions(state)])
-		#state = (17,1)
-		#print([policy[state][action] for action in mdp.actions(state)])
-		return policy
-	"""
-	def _do_value_iter(self, reward):
-		mdp = self._mdp
-		gamma = 0.993
+		gamma = 0.98
 
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
@@ -284,18 +150,6 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		return policy
 
 
-	def _init_reward(self):
-		# the reward function is a 1D numpy array corresponding to
-		# states
-		# accessed as (y-1) * width + x
-		# where {x,y} are the coordinates of the state
-		mdp = self._mdp
-		reward = np.zeros((mdp._height * mdp._width))
-		num_states = reward.size
-		reward[:] = -1.0/num_states
-		return reward
-	
-
 	def _get_features(self):
 		# in this method we retrieve the features from the mdp
 		# and we transform the from a dictionary of column vectors
@@ -311,28 +165,12 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 			(x,y) = state
 			feature_mat[:, y * mdp._width + x] = features[state]
 			#print(feature_mat[:,(19-1) * mdp._width + 15])
+		# Uncomment the following to normalize features
 		#for i in range(feature_mat.shape[0]):
 		#	feature_mat[i,:] = np.divide(feature_mat[i,:],abs(feature_mat[i,:]).max())
 
 		return feature_mat
 	
-	def _init_theta(self):
-		mdp = self._mdp
-		features = mdp._features
-		rand_state = random.sample(mdp.states(),1)
-		a_feature = features[rand_state[0]]
-		# testing with a smaller range of initial theata
-		theta = np.random.uniform( 0.0, 0.8, (1,a_feature.size))
-		#theta[0,0] *= -1
-		#theta[0,2] *= -1
-		#theta[0,3] *= -1
-		return theta
-		
-
-	def _get_reward(self, features, theta):
-		reward = np.dot(theta,features)
-		reward -= 0.1
-		return reward
 	
 	def _get_action(self, state, policy):
 		total = 0.0
@@ -342,30 +180,6 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 			if rand < total:
 				return action
 		return list(policy[state].keys())[random.randint(0,3)]
-
-
-	## Adds a (state, action) pair to the current demonstration for the IRL
-	# algorithm.
-	#
-	def _add_demonstration_step(self, state, max_steps, policy):
-		# returns sequence of (state, action, next_state, reward)
-		# until goal is reached, or max number of steps taken
-		sequence = []
-		steps = 0
-		while state != self._mdp.goal_state() and steps < max_steps:
-			# return (s, a, s', r)
-			action = self._get_action(state, policy)
-			next_state = self._mdp.get_successor_state(state, action)
-			# the reward here is set to a trivial zero to decrease
-			# redundant runtie because it is
-			# not required later
-			step = (state, action, next_state, 0.0)
-			sequence.append(step)
-			state = next_state
-			steps += 1
-		return sequence
-
-
 
 	def IRLloop(self):
 		mdp = self._mdp
@@ -434,26 +248,6 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		p = np.sum(mu,1)
 		
 		return p
-
-
-
-	def plot_reward(self, rewards, figsize=(7,7)):
-		sns.set(style="white")
-		#max_x = max([x for x,y in self._mdp.states()])
-		#max_y = max([y for x,y in self._mdp.states()])
-		#reward = np.zeros((max_x, max_y))
-
-		#for state in self._mdp.states():
-		#	x,y = state
-		#	reward[x-1,y-1] = rewards[state]
-		reward = rewards.reshape(self._mdp._height, self._mdp._width)
-
-		plt.imshow(reward, cmap='hot', interpolation='nearest')
-		ax = plt.axes()
-		ax.arrow(0, 0, 0.5, 0.5, head_width=0.05, head_length=0.1, fc='k', ec='k')
-
-		plt.savefig('../output_data/reward_states_test3.png')
-
 
 	def plot_reward_policy(self, reward_map, policy, iteration, dpi=196.0):
 		# Set up the figure

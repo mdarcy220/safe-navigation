@@ -43,7 +43,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._cmdargs = cmdargs;
 		self._max_steps = 10;
 		self._max_loops = 500;
-		self._lr = 0.1;
+		self._lr = 0.5;
 		self._decay = 0.99
 
 		if real_algo_init is None:
@@ -146,17 +146,6 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _get_state(self):
 		return (self._gps.location(), self._radar.scan(self._gps.location()));
 
-
-	## Gets the action taken by the demonstrator for IRL
-	#
-	def _get_action(self, state):
-		# We won't actually use the "state" parameter here, since the
-
-		# real algo can scan the radar itself to get the state. It is
-		# included because it could be used if we decided to use a
-		# different type of demonstrator
-
-		return self._real_algo.select_next_action();
 
 
 	## Adds a (state, action) pair to the current demonstration for the IRL
