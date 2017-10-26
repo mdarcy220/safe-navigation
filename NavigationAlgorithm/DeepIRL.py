@@ -237,7 +237,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		mdp = self._mdp
 		height = mdp._height
 		width = mdp._width
-		network = the_network(self._features[:,0].shape,self._lr, hidden_layers = [400,200,100])
+		network = the_network(self._features[:,0].shape,self._lr, hidden_layers = [1000,200,10])
 
 		states, rewards = network.forward_one_step(np.vstack(self._features.T))
 		reward = list(rewards.values())[0].T
@@ -254,6 +254,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		lr = self._lr
 		decay = self._decay
 
+		self.show_reward(feat_exp,0)
 		for i in range(maxIter):
 			if i%7 == 0:
 				lr = lr * decay 
@@ -262,12 +263,14 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 			newFeat_mult = self._visitation_trajectory_frequency(self._demonstrations, policy)
 			grad = feat_exp - newFeat_mult
 			grad = np.dot(grad,lr)
+			self.show_reward(grad,i+1)
 			network.backward_one_step(states, rewards, np.vstack(grad.T))
 			
 			states, rewards = network.forward_one_step(np.vstack(self._features.T))
 			reward = list(rewards.values())[0].T
 			
 			self.plot_reward_policy(reward,policy,i)
+			self.plot_reward(reward)
 			print('grad_norm: ', LA.norm(grad))
 			if i==0:
 				old_grad = grad
@@ -310,8 +313,26 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		plt.imshow(reward_map, cmap='hot', interpolation='nearest')
 
 		plt.savefig('../output_data/gra{:02d}.png'.format(iteration))
+		plt.close()
 	
 	
+	def plot_reward(self, rewards, figsize=(7,7)):
+		sns.set(style="white")
+		#max_x = max([x for x,y in self._mdp.states()])
+		#max_y = max([y for x,y in self._mdp.states()])
+		#reward = np.zeros((max_x, max_y))
+
+		#for state in self._mdp.states():
+		#	x,y = state
+		#	reward[x-1,y-1] = rewards[state]
+		reward = rewards.reshape(self._mdp._height, self._mdp._width)
+
+		plt.imshow(reward, cmap='hot', interpolation='nearest')
+
+		plt.savefig('../output_data/reward.png')
+		plt.close()
+
+
 	def plot_reward_policy(self, reward_map, policy, iteration, dpi=196.0):
 		# Set up the figure
 		plt.gcf().set_dpi(dpi)
@@ -342,6 +363,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 
 		# Output the figure to the image file
 		plt.savefig('../output_data/r_p{:02d}.png'.format(iteration))
+		plt.close()
 
 class the_network:
 	

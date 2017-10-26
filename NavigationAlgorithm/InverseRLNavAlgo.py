@@ -63,8 +63,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self.plot_reward(self._reward)
 
 		self._valueIteration = ValueIterationNavigationAlgorithm(self._sensors, self._target, self._cmdargs);
-		self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
-		#self._demonstrations = self.hand_crafted_demonstrations()
+		#self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
+		self._demonstrations = self.hand_crafted_demonstrations()
 		self._policy = self._do_value_iter(self._reward)
 
 		self._reward = self.IRLloop()
@@ -249,7 +249,9 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 				(x,y) = state
 				for action in mdp.actions(state):
 					# Fear not: this massive line is just a Bellman-ish update
-					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					old_qvals = (mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*softmax(old_qvals)
+					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 
 				## Softmax to get value
@@ -323,7 +325,6 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _get_reward(self, features, theta):
 		reward = np.dot(theta,features)
-		reward -= 0.1
 		return reward
 	
 	def _get_action(self, state, policy):
@@ -379,16 +380,19 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		policy  = self._policy
 		old_grad = np.zeros((self._features[:,0].shape))
 
+		self.show_reward(feat_exp,0)
 		for i in range(maxIter):
 			lr = lr*decay
 			grad = np.zeros((self._features[:,0].shape))
 			newFeat_mult = self._visitation_trajectory_frequency(self._demonstrations, policy)
 			grad = feat_exp - np.dot(self._features, newFeat_mult)
+			self.show_reward(grad,i+1)
 			grad_avg  = sum(abs(grad))/grad.size
 			self._theta += np.dot(grad, lr)
 			reward = self._get_reward(self._features, self._theta)
 			policy = self._do_value_iter(reward)
 			self.plot_reward_policy(reward,policy,i)
+			self.plot_reward(reward)
 			print ('grad_diff: ', LA.norm(grad-old_grad))
 			#print ('grad: ', grad)
 			#print ('theta: ', self._theta)
@@ -423,6 +427,16 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		return p
 
 
+	def show_reward(self, reward_map, iteration, dpi=196.0):
+		# Set up the figure
+		plt.gcf().set_dpi(dpi)
+
+		# Note that we're messing with the input args here
+		reward_map = reward_map.reshape(self._mdp._height, self._mdp._width)
+		plt.imshow(reward_map, cmap='hot', interpolation='nearest')
+
+		plt.savefig('../output_data/gra{:02d}.png'.format(iteration))
+		plt.close()
 
 	def plot_reward(self, rewards, figsize=(7,7)):
 		sns.set(style="white")
@@ -436,11 +450,9 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		reward = rewards.reshape(self._mdp._height, self._mdp._width)
 
 		plt.imshow(reward, cmap='hot', interpolation='nearest')
-		ax = plt.axes()
-		ax.arrow(0, 0, 0.5, 0.5, head_width=0.05, head_length=0.1, fc='k', ec='k')
 
-		plt.savefig('../output_data/reward_states_test3.png')
-
+		plt.savefig('../output_data/reward.png')
+		plt.close()
 
 	def plot_reward_policy(self, reward_map, policy, iteration, dpi=196.0):
 		# Set up the figure
@@ -472,4 +484,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		# Output the figure to the image file
 		plt.savefig('../output_data/r_p{:02d}.png'.format(iteration))
+		plt.close()
 
+		
+def softmax(values):
+	return math.log(sum (math.exp(value) for value in values))
