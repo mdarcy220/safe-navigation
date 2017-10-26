@@ -51,7 +51,7 @@ class MDPAdapterSensor(MDP):
 		self._states = self._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
 		self._transition_table = self._init_transition_table()
-		self._features = self._get_features(self._states, self._walls, self._goal_state)
+		self._features = self._get_features3(self._states, self._walls, self._goal_state)
 
 
 	def _init_transition_table(self):
@@ -319,5 +319,15 @@ class MDPAdapterSensor(MDP):
 		return features
 
 
+	def _get_features3(self, states, walls, goal):
+
+		features = dict()
+		for state in states:
+			feature = np.zeros(len(states))
+			(x,y) = state
+			feature[y*self._width + x] = 1
+			features[state] = feature
+		
+		return features
 
 

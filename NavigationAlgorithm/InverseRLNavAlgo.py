@@ -35,14 +35,14 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def __init__(self, sensors, target, cmdargs, real_algo_init=None):
 		# in what follows, we place everything in a numpy array before
 		# proceeding
-		# for states, the array is a 1D array, with entries as (y-1) *
+		# for states, the array is a 1D array, with entries as y *
 		# width + x
 
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
-		self._max_steps = 10;
-		self._max_loops = 500;
+		self._max_steps = 150;
+		self._max_loops = 1;
 		self._lr = 0.5;
 		self._decay = 0.99
 
@@ -156,7 +156,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		for loop in range(0,max_loops):
 			start_state = (1000,1000)
 			while True:
-			    start_state = (random.randint(1,self._mdp._width-2), random.randint(1,self._mdp._height-2))
+			    start_state = (random.randint(1,1), random.randint(1,18))
+			    #start_state = (random.randint(1,self._mdp._width-2), random.randint(1,self._mdp._height-2))
 			    if (self._mdp._walls[start_state[1], start_state[0]] == 0):
 				    break
 			#start_state = random.sample(self._mdp.states(),1)[0]
@@ -226,7 +227,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 	"""
 	def _do_value_iter(self, reward):
 		mdp = self._mdp
-		gamma = 0.993
+		gamma = 0.98
 
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
@@ -302,8 +303,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			(x,y) = state
 			feature_mat[:, y * mdp._width + x] = features[state]
 			#print(feature_mat[:,(19-1) * mdp._width + 15])
-		for i in range(feature_mat.shape[0]):
-			feature_mat[i,:] = np.divide(feature_mat[i,:],abs(feature_mat[i,:]).max())
+		#for i in range(feature_mat.shape[0]):
+		#	feature_mat[i,:] = np.divide(feature_mat[i,:],abs(feature_mat[i,:]).max())
 
 		return feature_mat
 	
@@ -367,7 +368,7 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		for traj in self._demonstrations:
 			for (state, action, next_state, r) in traj:
 				(x,y) = state
-				visit_feat = self._features[:, y*height + x]
+				visit_feat = self._features[:, y*width + x]
 				feat_exp += visit_feat
 		feat_exp /= self._max_loops
 
@@ -389,8 +390,8 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 			policy = self._do_value_iter(reward)
 			self.plot_reward_policy(reward,policy,i)
 			print ('grad_diff: ', LA.norm(grad-old_grad))
-			print ('grad: ', grad)
-			print ('theta: ', self._theta)
+			#print ('grad: ', grad)
+			#print ('theta: ', self._theta)
 			#if (LA.norm(grad - old_grad) < 10**-6):
 			#	break
 			old_grad = grad
@@ -408,15 +409,15 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		for demonstration in demonstrations:
 			(s, a, sx, r) = demonstration[0]
 			(x,y) = s
-			mu[y*height +x , 0] += 1/self._max_loops
+			mu[y*width +x , 0] += 1/self._max_loops
 		mu[:,0] = mu[:,0]/T
 
 		for t in range(T-1):
 			mu_old = mu
 			for s in mdp.states():
 				(x,y) = s
-				#mu[y*height + x,t+1] = sum([mu[y*height + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
-				mu[y*height + x,t+1] = sum([sum([mu_old[y*height + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
+				#mu[y*width + x,t+1] = sum([mu[y*width + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
+				mu[y*width + x,t+1] = sum([sum([mu_old[y*width + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
 		p = np.sum(mu,1)
 		
 		return p

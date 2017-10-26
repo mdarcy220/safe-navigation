@@ -36,14 +36,14 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 	def __init__(self, sensors, target, cmdargs, real_algo_init=None):
 		# in what follows, we place everything in a numpy array before
 		# proceeding
-		# for states, the array is a 1D array, with entries as (y-1) *
+		# for states, the array is a 1D array, with entries as y *
 		# width + x
 
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
-		self._max_steps = 10;
-		self._max_loops = 500;
+		self._max_steps = 300;
+		self._max_loops = 1;
 		self._lr = 1.11;
 		self._decay = 0.9
 
@@ -60,7 +60,8 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		self._features = self._get_features();
 
 		self._valueIteration = ValueIterationNavigationAlgorithm(self._sensors, self._target, self._cmdargs);
-		self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
+		#self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
+		self._demonstrations = self.hand_crafted_demonstrations()
 
 		self._reward = self.IRLloop()
 
@@ -82,12 +83,61 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 	## Adds a (state, action) pair to the current demonstration for the IRL
 	# algorithm.
 	#
+
+
+
+	def hand_crafted_demonstrations(self):
+		sequence = []
+		
+		step = ((1,18),0.0,(2,18), 0.0)
+		sequence.append(step)
+		for i in range(2,17):
+			step = ((i,18), 0.0, (i+1,18), 0.0)
+			sequence.append(step)
+		for i in range(18,11, -1):
+			step = ((17,i), 0.0, (17,i-1), 0.0)
+			sequence.append(step)
+		for i in range(17,11, -1):
+			step = ((i,11), 0.0, (i-1,11), 0.0)
+			sequence.append(step)
+		for i in range(11,2, -1):
+			step = ((11,i), 0.0, (11,i-1), 0.0)
+			sequence.append(step)
+		for i in range(11,24):
+			step = ((i,2), 0.0, (i+1,2), 0.0)
+			sequence.append(step)
+		step = ((24,2), 0.0, (24,1), 0.0)
+		sequence.append(step)
+		"""
+		(x,y)= (1,18)
+		flip = 1
+		while (x < 24 or y >1):
+			if flip == 1:
+				step = ((x,y), 0.0, (x+1,y), 0.0)
+				x += 1
+				flip = 0
+			else:
+				step = ((x,y), 0.0, (x,y-1), 0.0)
+				if y == 1:
+					flip = 1
+					continue
+				else:
+					y -= 1
+					flip = 1
+			sequence.append(step)
+		"""
+		demo = []
+		demo.append(sequence)
+		
+		return demo
+
 	def _add_demonstration_loop(self, max_steps, max_loops):
 		demonstrations = []
 		for loop in range(0,max_loops):
 			start_state = (1000,1000)
 			while True:
 			    start_state = (random.randint(1,self._mdp._width-2), random.randint(1,self._mdp._height-2))
+			    #start_state = (random.randint(1,1), random.randint(18,18))
 			    if (self._mdp._walls[start_state[1], start_state[0]] == 0):
 				    break
 			#start_state = random.sample(self._mdp.states(),1)[0]
@@ -123,7 +173,9 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 				(x,y) = state
 				for action in mdp.actions(state):
 					# Fear not: this massive line is just a Bellman-ish update
-					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					old_qvals = (mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*softmax(old_qvals)
+					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 
 				## Softmax to get value
@@ -185,7 +237,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		mdp = self._mdp
 		height = mdp._height
 		width = mdp._width
-		network = the_network(self._features[:,0].shape,self._lr, hidden_layers = [200,400,500,600,600,1000])
+		network = the_network(self._features[:,0].shape,self._lr, hidden_layers = [400,200,100])
 
 		states, rewards = network.forward_one_step(np.vstack(self._features.T))
 		reward = list(rewards.values())[0].T
@@ -193,7 +245,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		for traj in self._demonstrations:
 			for (state, action, next_state, r) in traj:
 				(x,y) = state
-				feat_exp[0,y*height + x] += 1
+				feat_exp[0,y*width + x] += 1
 		feat_exp /= self._max_loops
 
 
@@ -236,19 +288,30 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		for demonstration in demonstrations:
 			(s, a, sx, r) = demonstration[0]
 			(x,y) = s
-			mu[y*height +x , 0] += 1/self._max_loops
+			mu[y*width +x , 0] += 1/self._max_loops
 		mu[:,0] = mu[:,0]/T
 
 		for t in range(T-1):
 			mu_old = mu
 			for s in mdp.states():
 				(x,y) = s
-				#mu[y*height + x,t+1] = sum([mu[y*height + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
-				mu[y*height + x,t+1] = sum([sum([mu_old[y*height + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
+				#mu[y*width + x,t+1] = sum([mu[y*width + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
+				mu[y*width + x,t+1] = sum([sum([mu_old[y*width + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
 		p = np.sum(mu,1)
 		
 		return p
 
+	def show_reward(self, reward_map, iteration, dpi=196.0):
+		# Set up the figure
+		plt.gcf().set_dpi(dpi)
+
+		# Note that we're messing with the input args here
+		reward_map = reward_map.reshape(self._mdp._height, self._mdp._width)
+		plt.imshow(reward_map, cmap='hot', interpolation='nearest')
+
+		plt.savefig('../output_data/gra{:02d}.png'.format(iteration))
+	
+	
 	def plot_reward_policy(self, reward_map, policy, iteration, dpi=196.0):
 		# Set up the figure
 		plt.gcf().set_dpi(dpi)
@@ -319,3 +382,5 @@ class the_network:
 			grads[var] = grad
 		updated = self._learner.update(grads,len(rewards))
 		
+def softmax(values):
+	return math.log(sum (math.exp(value) for value in values))
