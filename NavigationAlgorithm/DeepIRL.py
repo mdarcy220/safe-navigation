@@ -4,6 +4,7 @@ from Robot import RobotControlInput
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from .LinearNavAlgo import LinearNavigationAlgorithm  
 from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
+from .DIRLTest_Scenario import TestCases 
 
 import numpy as np
 from numpy import linalg as LA
@@ -42,8 +43,8 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
-		self._max_steps = 300;
-		self._max_loops = 1;
+		self._max_steps = 150;
+		self._max_loops = 200;
 		self._lr = 1.11;
 		self._decay = 0.9
 
@@ -60,8 +61,8 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		self._features = self._get_features();
 
 		self._valueIteration = ValueIterationNavigationAlgorithm(self._sensors, self._target, self._cmdargs);
-		#self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
-		self._demonstrations = self.hand_crafted_demonstrations()
+		self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
+		#self._demonstrations = self.hand_crafted_demonstrations()
 
 		self._reward = self.IRLloop()
 
@@ -136,7 +137,8 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		for loop in range(0,max_loops):
 			start_state = (1000,1000)
 			while True:
-			    start_state = (random.randint(1,self._mdp._width-2), random.randint(1,self._mdp._height-2))
+			    start_state = (random.randint(1,math.ceil(self._mdp._width/2)), random.randint(math.ceil(self._mdp._height/2),math.ceil(self._mdp._height)-1))
+			    #start_state = (random.randint(1,math.ceil(self._mdp._width/2)), random.randint(math.ceil(self._mdp._height/2),math.ceil(self._mdp._height)-3))
 			    #start_state = (random.randint(1,1), random.randint(18,18))
 			    if (self._mdp._walls[start_state[1], start_state[0]] == 0):
 				    break
@@ -151,7 +153,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		return False;
 	def _do_value_iter(self, reward):
 		mdp = self._mdp
-		gamma = 0.98
+		gamma = 0.95
 
 
 		old_values = {state: 0.0 for state in self._mdp.states()}
@@ -173,9 +175,9 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 				(x,y) = state
 				for action in mdp.actions(state):
 					# Fear not: this massive line is just a Bellman-ish update
-					old_qvals = (mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*softmax(old_qvals)
-					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+					#old_qvals = [mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state)]
+					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*softmax(old_qvals)
+					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
 
 				## Softmax to get value
@@ -193,7 +195,8 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		policy = dict()
 		for state in mdp.states():
 			policy[state] = dict()
-			exp_qvals = {action: np.exp(qval)*10 for action, qval in qvals[state].items()}
+			#exp_qvals = {action: np.exp(qval)*10 for action, qval in qvals[state].items()}
+			exp_qvals = {action: qval for action, qval in qvals[state].items()}
 			sum_exp_qvals = sum(exp_qvals.values())
 			for action in mdp.actions(state):
 				#print(policy[state], exp_qvals, qvals[state])
@@ -241,6 +244,9 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 
 		states, rewards = network.forward_one_step(np.vstack(self._features.T))
 		reward = list(rewards.values())[0].T
+		#max_reward = max(reward)
+		#max_reward = [max_reward[i] if max_reward[i] != 0 else 1 for i in range(len(max_reward))]		
+		reward -= max(reward)/2
 		feat_exp = np.zeros((1,len(mdp.states())))
 		for traj in self._demonstrations:
 			for (state, action, next_state, r) in traj:
@@ -249,26 +255,35 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		feat_exp /= self._max_loops
 
 
-		maxIter = 200
+		maxIter = 22
 		old_grad = np.zeros((self._features[:,0].shape))
 		lr = self._lr
 		decay = self._decay
 
 		self.show_reward(feat_exp,0)
+		# tests contains test scenarios with different maps, start and
+		# goal positions
+		tests = TestCases(self._cmdargs)
+		count =0
 		for i in range(maxIter):
-			if i%7 == 0:
-				lr = lr * decay 
 			grad = np.zeros((self._features[:,0].shape))
 			policy = self._do_value_iter(reward)
 			newFeat_mult = self._visitation_trajectory_frequency(self._demonstrations, policy)
 			grad = feat_exp - newFeat_mult
 			grad = np.dot(grad,lr)
 			self.show_reward(grad,i+1)
-			network.backward_one_step(states, rewards, np.vstack(grad.T))
 			
+			network.backward_one_step(states, rewards, np.vstack(-grad.T))
+			
+			if i%7 == 0:
+				lr = lr * decay
+				tests.solve_mdps(network,count)
+				count += 1
+
 			states, rewards = network.forward_one_step(np.vstack(self._features.T))
 			reward = list(rewards.values())[0].T
-			
+			#reward /= max(reward)
+			#reward *= 1000
 			self.plot_reward_policy(reward,policy,i)
 			self.plot_reward(reward)
 			print('grad_norm: ', LA.norm(grad))
@@ -301,7 +316,6 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 				#mu[y*width + x,t+1] = sum([mu[y*width + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
 				mu[y*width + x,t+1] = sum([sum([mu_old[y*width + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
 		p = np.sum(mu,1)
-		
 		return p
 
 	def show_reward(self, reward_map, iteration, dpi=196.0):
@@ -405,4 +419,5 @@ class the_network:
 		updated = self._learner.update(grads,len(rewards))
 		
 def softmax(values):
+	print (values)
 	return math.log(sum (math.exp(value) for value in values))

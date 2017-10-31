@@ -40,7 +40,7 @@ class MDPAdapterSensor(MDP):
 	# <br>	The number of actions that should be available (i.e., possible
 	# 	directions; the default of 4 would be NESW for example)
 	# 
-	def __init__(self, env, start_state, goal_state, cell_size=30, num_actions=4, robot_speed=10):
+	def __init__(self, env, start_state, goal_state, cell_size=20, num_actions=4, robot_speed=10):
 		self._env = env
 		self._cell_size = cell_size
 		self._start_state = self.discretize(start_state)
@@ -51,7 +51,7 @@ class MDPAdapterSensor(MDP):
 		self._states = self._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
 		self._transition_table = self._init_transition_table()
-		self._features = self._get_features3(self._states, self._walls, self._goal_state)
+		self._features = self._get_features(self._states, self._walls, self._goal_state)
 
 
 	def _init_transition_table(self):
@@ -206,7 +206,7 @@ class MDPAdapterSensor(MDP):
 		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
 		for state in states:
 			(x,y) = state
-			"""		
+				
 			feature = np.zeros(5)
 			if walls[y,x] == 1:
 				feature[0:4] = max_dist
@@ -268,6 +268,7 @@ class MDPAdapterSensor(MDP):
 				#feature[2] = 1
 			else:
 				feature[1] = 0
+			"""
 			features[state] = feature
 		return features
 
@@ -313,7 +314,7 @@ class MDPAdapterSensor(MDP):
 				dist.append(math.sqrt((x - x_k) ** 2 + (y - y_k) ** 2 ))
 			min_index = dist.index(min(dist))
 			for i, successor in enumerate(successors[nodes[min_index]]):
-				feature[i+feat_cumu[min_index]] = dist[successor]
+				feature[i+feat_cumu[min_index]] = dist[successor]/50000
 			features[state] = feature
 		
 		return features
