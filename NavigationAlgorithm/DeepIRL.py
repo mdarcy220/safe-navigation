@@ -215,7 +215,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		features = mdp._features
 		rand_state = random.sample(mdp.states(),1)
 		a_feature = features[rand_state[0]]
-		feature_mat = np.zeros((a_feature.size, mdp._height* mdp._width), dtype = np.float64)
+		feature_mat = np.zeros((a_feature.size, mdp._height* mdp._width), dtype = np.float32)
 		for state in mdp.states():
 			(x,y) = state
 			feature_mat[:, y * mdp._width + x] = features[state]
@@ -405,7 +405,7 @@ class the_network:
 			return model, loss, learner, trainer
 	def forward_one_step(self, inputs):
 		loss = self._loss
-		outputs = np.vstack(np.ones((inputs.shape[0],1), dtype = np.float64))
+		outputs = np.vstack(np.ones((inputs.shape[0],1), dtype = np.float32))
 		arguments = {self._input: inputs, self._output: outputs}
 		return loss.forward(arguments, outputs = loss.outputs, keep_for_backward = loss.outputs)
 

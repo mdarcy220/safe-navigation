@@ -2,6 +2,8 @@
 
 import numpy as np
 import math
+import os
+import pickle
 
 class MDP:
 	def __init__(self):
@@ -40,7 +42,7 @@ class MDPAdapterSensor(MDP):
 	# <br>	The number of actions that should be available (i.e., possible
 	# 	directions; the default of 4 would be NESW for example)
 	# 
-	def __init__(self, env, start_state, goal_state, cell_size=20, num_actions=4, robot_speed=10):
+	def __init__(self, env, start_state, goal_state, cell_size=20, num_actions=4, robot_speed=10, unique_id=''):
 		self._env = env
 		self._cell_size = cell_size
 		self._start_state = self.discretize(start_state)
@@ -50,7 +52,17 @@ class MDPAdapterSensor(MDP):
 		self._walls = self._init_walls(self._env, self._cell_size)
 		self._states = self._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
-		self._transition_table = self._init_transition_table()
+
+		trans_table_filename = '{}_{:d}_{:d}.pickle'.format(unique_id, cell_size, num_actions)
+		if os.path.isfile(trans_table_filename):
+			with open(trans_table_filename, 'rb') as f:
+				self._transition_table = pickle.load(f)
+		else:
+			self._transition_table = self._init_transition_table()
+			if unique_id != '':
+				with open(trans_table_filename, 'wb') as f:
+					pickle.dump(self._transition_table, f)
+
 		self._features = self._get_features(self._states, self._walls, self._goal_state)
 
 
