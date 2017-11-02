@@ -179,103 +179,12 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def has_given_up(self):
 		return False;
-	"""
+
+
 	def _do_value_iter(self, reward):
-		mdp = self._mdp
-		height = mdp._height
-		width = mdp._width
-		gamma = 0.97
-		Z = 1.0 - mdp._walls
-		# here we're assuming that 9 successor states do exist
-		# in case less exist, then the value for the one that does not
-		# exist will always be zero
-		# ordered as
-		#(x+1, y+1), (x+1,y), (x+1,y-1), (x, y+1),
-		#(x,y), (x, y-1), (x-1, y+1), (x-1,y), (x-1,y-1)
-		# and that we have 4 actions
-		Z_a = np.zeros((height, width, 4))
-		exp_reward = np.exp(reward)
-
-		max_itertions = 10
-		for i in range(max_itertions):
-			for state in mdp.states():
-				(x,y) = state
-				successors = mdp.successors(state)
-				actions = mdp.actions(state)
-				for i, action in enumerate(actions):
-					for successor in successors:
-						trans = mdp.transition_prob(state, action, successor)
-						(x_1,y_1) = successor
-						Z_a[y,x,i] +=  trans * exp_reward[0,y_1*height + x_1] * Z[y,x]
-			for state in mdp.states():
-				(x,y) = state
-				Z[y,x] = np.sum (Z_a[y,x,:])
-		policy = dict()
-		for state in mdp.states():
-			policy[state] = dict()
-			(x,y) = state
-			for i, action in enumerate(mdp.actions(state)):
-				policy[state][action] = Z_a[y,x,i]/ Z[y,x]
-		#print('policies')
-		#state = (1,18)
-		#print([policy[state][action] for action in mdp.actions(state)])
-		#state = (17,18)
-		#print([policy[state][action] for action in mdp.actions(state)])
-		#state = (17,1)
-		#print([policy[state][action] for action in mdp.actions(state)])
-		return policy
-	"""
-	def _do_value_iter(self, reward):
-		mdp = self._mdp
-		gamma = 0.98
-
-
-		old_values = {state: 0.0 for state in self._mdp.states()}
-		#old_values[self._mdp.goal_state()] = 1
-		new_values = old_values
-
-		qvals = dict()
-		for state in mdp.states():
-			qvals[state] = dict()
-			for action in mdp.actions(state):
-				qvals[state][action] = 0.0
-
-		iteration = 0
-		max_iter = 1000
-		while (iteration < max_iter):
-			old_values = new_values
-			new_values = dict()
-			for state in mdp.states():
-				(x,y) = state
-				for action in mdp.actions(state):
-					# Fear not: this massive line is just a Bellman-ish update
-					old_qvals = (mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*softmax(old_qvals)
-					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-
-				## Softmax to get value
-				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
-				#new_values[state] = max(exp_qvals.values())/sum(exp_qvals.values())
-
-				# Just take the max to get values
-				new_values[state] = max(qvals[state].values())
-
-			# Quit if we have converged
-			if max({abs(old_values[s] - new_values[s]) for s in mdp.states()}) < 0.01:
-				break
-			iteration += 1
-
-		policy = dict()
-		for state in mdp.states():
-			policy[state] = dict()
-			exp_qvals = {action: np.exp(qval)*10 for action, qval in qvals[state].items()}
-			sum_exp_qvals = sum(exp_qvals.values())
-			for action in mdp.actions(state):
-				#print(policy[state], exp_qvals, qvals[state])
-				policy[state][action] = exp_qvals[action]/sum_exp_qvals
-
-		return policy
+		def reward_func(state, action):
+			return reward[0,state[1]*self._mdp._width+state[0]]
+		return generic_value_iteration(self._mdp, reward_func, gamma=0.98, max_iter=1000, threshold=0.01)
 
 
 	def _init_reward(self):

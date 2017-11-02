@@ -9,7 +9,7 @@ from MDPAdapterSensor import MDPAdapterSensor
 from Robot import RobotControlInput
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from .LinearNavAlgo import LinearNavigationAlgorithm  
-from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
+from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm, generic_value_iteration
 
 import numpy as np
 from numpy import linalg as LA
@@ -55,11 +55,7 @@ class TestCases():
 			target = Target(targets[1])
 
 			# Init robots
-<<<<<<< HEAD
-			mdp = MDPAdapterSensor(env, start_point.position, target.position, cell_size = 30)
-=======
 			mdp = MDPAdapterSensor(env, start_point.position, target.position, cell_size = 20, unique_id=os.path.basename(maps[i]))
->>>>>>> 92fd634737a73a8f88eded01222384135162164d
 			feature = self._get_features(mdp)
 			mdps.append(mdp)
 			features[mdp] = feature
@@ -106,57 +102,12 @@ class TestCases():
 		plt.savefig('../output_data/var_{:02d}_{:02d}.png'.format(iteration, count))
 		plt.close()
 
+
 	def _do_value_iter(self, mdp, reward):
-		gamma = 0.98
+		def reward_func(state, action):
+			return reward[0, state[1]*mdp._width + state[0]]
+		return generic_value_iteration(mdp, reward_func, gamma=0.97, max_iter=1000, threshold=0.05)
 
-
-		old_values = {state: 0.0 for state in mdp.states()}
-		old_values[mdp.goal_state()] = 1
-		new_values = old_values
-
-		qvals = dict()
-		for state in mdp.states():
-			qvals[state] = dict()
-			for action in mdp.actions(state):
-				qvals[state][action] = 0.0
-
-		iteration = 0
-		max_iter = 1000
-		while (iteration < max_iter):
-			old_values = new_values
-			new_values = dict()
-			for state in mdp.states():
-				(x,y) = state
-				for action in mdp.actions(state):
-					# Fear not: this massive line is just a Bellman-ish update
-					#old_qvals = [mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state)]
-					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*softmax(old_qvals)
-					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-
-				## Softmax to get value
-				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
-				#new_values[state] = max(exp_qvals.values())/sum(exp_qvals.values())
-
-				# Just take the max to get values
-				new_values[state] = max(qvals[state].values())
-
-			# Quit if we have converged
-			if max({abs(old_values[s] - new_values[s]) for s in mdp.states()}) < 0.1:
-				break
-			iteration += 1
-
-		policy = dict()
-		for state in mdp.states():
-			policy[state] = dict()
-			#exp_qvals = {action: np.exp(qval)*10 for action, qval in qvals[state].items()}
-			exp_qvals = {action: qval for action, qval in qvals[state].items()}
-			sum_exp_qvals = sum(exp_qvals.values())
-			for action in mdp.actions(state):
-				#print(policy[state], exp_qvals, qvals[state])
-				policy[state][action] = exp_qvals[action]/sum_exp_qvals
-
-		return policy
 
 	def _get_features(self, mdp):
 		# in this method we retrieve the features from the mdp

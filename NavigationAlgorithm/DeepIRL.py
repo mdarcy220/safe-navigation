@@ -3,7 +3,7 @@
 from Robot import RobotControlInput
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from .LinearNavAlgo import LinearNavigationAlgorithm  
-from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
+from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm, generic_value_iteration
 from .DIRLTest_Scenario import TestCases 
 
 import numpy as np
@@ -151,58 +151,12 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 
 	def has_given_up(self):
 		return False;
+
+
 	def _do_value_iter(self, reward):
-		mdp = self._mdp
-		gamma = 0.95
-
-
-		old_values = {state: 0.0 for state in self._mdp.states()}
-		old_values[self._mdp.goal_state()] = 1
-		new_values = old_values
-
-		qvals = dict()
-		for state in mdp.states():
-			qvals[state] = dict()
-			for action in mdp.actions(state):
-				qvals[state][action] = 0.0
-
-		iteration = 0
-		max_iter = 1000
-		while (iteration < max_iter):
-			old_values = new_values
-			new_values = dict()
-			for state in mdp.states():
-				(x,y) = state
-				for action in mdp.actions(state):
-					# Fear not: this massive line is just a Bellman-ish update
-					#old_qvals = [mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state)]
-					#qvals[state][action] = reward[0,y*mdp._width+x] + gamma*softmax(old_qvals)
-					qvals[state][action] = reward[0,y*mdp._width+x] + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-					#qvals[state][action] = mdp.reward(state,action,None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-
-				## Softmax to get value
-				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
-				#new_values[state] = max(exp_qvals.values())/sum(exp_qvals.values())
-
-				# Just take the max to get values
-				new_values[state] = max(qvals[state].values())
-
-			# Quit if we have converged
-			if max({abs(old_values[s] - new_values[s]) for s in mdp.states()}) < 0.01:
-				break
-			iteration += 1
-
-		policy = dict()
-		for state in mdp.states():
-			policy[state] = dict()
-			#exp_qvals = {action: np.exp(qval)*10 for action, qval in qvals[state].items()}
-			exp_qvals = {action: qval for action, qval in qvals[state].items()}
-			sum_exp_qvals = sum(exp_qvals.values())
-			for action in mdp.actions(state):
-				#print(policy[state], exp_qvals, qvals[state])
-				policy[state][action] = exp_qvals[action]/sum_exp_qvals
-
-		return policy
+		def reward_func(state, action):
+			return reward[0,state[1]*self._mdp._width+state[0]]
+		return generic_value_iteration(self._mdp, reward_func, gamma=0.97, max_iter=1000, threshold=0.05)
 
 
 	def _get_features(self):
@@ -311,6 +265,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 
 		for t in range(T-1):
 			mu_old = mu
+			mu[mdp.goal_state(), t] = 0
 			for s in mdp.states():
 				(x,y) = s
 				#mu[y*width + x,t+1] = sum([mu[y*width + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])

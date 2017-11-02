@@ -42,11 +42,7 @@ class MDPAdapterSensor(MDP):
 	# <br>	The number of actions that should be available (i.e., possible
 	# 	directions; the default of 4 would be NESW for example)
 	# 
-<<<<<<< HEAD
-	def __init__(self, env, start_state, goal_state, cell_size=30, num_actions=4, robot_speed=10):
-=======
 	def __init__(self, env, start_state, goal_state, cell_size=20, num_actions=4, robot_speed=10, unique_id=''):
->>>>>>> 92fd634737a73a8f88eded01222384135162164d
 		self._env = env
 		self._cell_size = cell_size
 		self._start_state = self.discretize(start_state)
@@ -127,20 +123,10 @@ class MDPAdapterSensor(MDP):
 	## Returns successors for the given state
 	#
 	def successors(self, state):
-		x = state[0]
-		y = state[1]
-		possible_successors = {(x+1, y+1),
-		        (x+1, y),
-		        (x+1, y-1),
-		        (x, y+1),
-		        (x, y),
-		        (x, y-1),
-		        (x-1, y+1),
-		        (x-1, y),
-		        (x-1, y-1)
-		       }
-		#return {state for state in possible_successors if state in self._states }
-		return {state for state in possible_successors if state in self._states and self._walls[state[1],state[0]] <1}
+		all_successors = set()
+		for action in self._transition_table[state].keys():
+			all_successors |= {successor for successor in self._transition_table[state][action].keys() if self._walls[successor[1],successor[0]] < 1}
+		return all_successors
 
 
 	def get_successor_state(self, state, action):
@@ -173,7 +159,7 @@ class MDPAdapterSensor(MDP):
 		direction = action[0]
 		# Scaled-down speed
 		#scaled_speed = action[1]/self._cell_size
-		scaled_speed = 3*action[1]/self._cell_size
+		scaled_speed = 1.0
 
 		next_x = next_state[0]
 		next_y = next_state[1]
@@ -214,7 +200,7 @@ class MDPAdapterSensor(MDP):
 		reachGoalProb = self.transition_prob(state, action, self._goal_state)
 		if reachGoalProb > 0:
 			return reachGoalProb
-		return -0.5
+		return 0.0
 
 	def _get_features(self, states, walls, goal):
 		

@@ -6,6 +6,63 @@ import numpy as np
 import copy
 import Vector
 
+def generic_value_iteration(mdp, reward, gamma=0.98, max_iter=1000, min_iter=0, threshold=0.01):
+
+	def softmax_qvals(q_values):
+		max_qval = max(q_values[action] for action in q_values)
+		exp_qvals = {action: np.exp(qval - max_qval) for action, qval in q_values.items()}
+		return max(exp_qvals.values())/sum(exp_qvals.values())
+		
+
+	# Basic placeholder reward function
+	if reward is None:
+		reward = lambda state, action: mdp.reward(state, action, None)
+
+	old_values = {state: 0.0 for state in mdp.states()}
+	old_values[mdp.goal_state()] = 1
+	new_values = old_values
+
+	qvals = dict()
+	for state in mdp.states():
+		qvals[state] = dict()
+		for action in mdp.actions(state):
+			qvals[state][action] = 0.0
+
+	iteration = 0
+	while (iteration < max_iter):
+		old_values = new_values
+		new_values = dict()
+		for state in mdp.states():
+			for action in mdp.actions(state):
+				# Fear not: this massive line is just a Bellman-ish update
+				qvals[state][action] = reward(state, action) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
+
+			## Softmax to get value
+			max_qval = max(qvals[state][action] for action in qvals[state])
+			exp_qvals = {action: np.exp(qval - max_qval) for action, qval in qvals[state].items()}
+			new_values[state] = sum(qvals[state][action]*exp_qvals[action]/sum(exp_qvals.values()) for action in exp_qvals)
+
+			# Just take the max to get values
+			#new_values[state] = max(qvals[state].values())
+
+		if max(abs(old_values[s] - new_values[s]) for s in mdp.states()) < threshold and min_iter <= iteration:
+			break
+
+		iteration += 1
+
+	policy = dict()
+	for state in mdp.states():
+		policy[state] = dict()
+		max_qval = max(qvals[state].values())
+		exp_qvals = {action: np.exp(qval-max_qval) for action, qval in qvals[state].items()}
+		#exp_qvals = {action: qval for action, qval in qvals[state].items()}
+		sum_exp_qvals = sum(exp_qvals.values())
+		for action in mdp.actions(state):
+			#print(policy[state], exp_qvals, qvals[state])
+			policy[state][action] = exp_qvals[action]/sum_exp_qvals if sum_exp_qvals != 0 else 1.0/len(mdp.actions(state))
+
+	return policy
+
 
 ## Value Iteration navigation algorithm
 # This initially runs value iteration to get an optimal policy, then it
@@ -40,48 +97,9 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 
 	def _do_value_iter(self):
-		mdp = self._mdp
-		gamma = 0.993
-
-		old_values = {state: 0.0 for state in self._mdp.states()}
-		old_values[self._mdp.goal_state()] = 1
-		new_values = old_values
-
-		qvals = dict()
-		for state in mdp.states():
-			qvals[state] = dict()
-			for action in mdp.actions(state):
-				qvals[state][action] = 0.0
-
-		while True:
-			old_values = new_values
-			new_values = dict()
-			for state in mdp.states():
-				for action in mdp.actions(state):
-					# Fear not: this massive line is just a Bellman-ish update
-					qvals[state][action] = mdp.reward(state, action, None) + gamma*sum(mdp.transition_prob(state, action, next_state)*old_values[next_state] for next_state in mdp.successors(state))
-
-				## Softmax to get value
-				#exp_qvals = {action: np.exp(qval) for action, qval in qvals[state].items()}
-				#new_values[state] = max(exp_qvals.values())/sum(exp_qvals.values())
-
-				# Just take the max to get values
-				new_values[state] = max(qvals[state].values())
-
-			# Quit if we have converged
-			if max(abs(old_values[s] - new_values[s]) for s in mdp.states()) < 0.01:
-				break
-
-		policy = dict()
-		for state in mdp.states():
-			policy[state] = dict()
-			exp_qvals = {action: np.exp(qval)*10 for action, qval in qvals[state].items()}
-			sum_exp_qvals = sum(exp_qvals.values())
-			for action in mdp.actions(state):
-				#print(policy[state], exp_qvals, qvals[state])
-				policy[state][action] = exp_qvals[action]/sum_exp_qvals
-
-		return policy
+		def reward_func(state, action):
+			return self._mdp.reward(state, action, None)
+		return generic_value_iteration(self._mdp, reward_func, gamma=0.97, threshold=0.05, min_iter=300, max_iter=5000)
 
 
 	## Select the next action for the robot
