@@ -16,6 +16,7 @@ from Target import Target
 import time
 import Vector
 from MDPAdapterSensor import MDPAdapterSensor
+import os
 
 from NavigationAlgorithm import DeepQNavigationAlgorithm
 from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
@@ -83,7 +84,7 @@ class Game:
 		self._normal_robot  = Robot(initial_position, cmdargs, path_color=(0,0,255),   name="NormalRobot");
 		self._normal_robot.put_sensor('radar', radar);
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
-		self._normal_robot.put_sensor('mdp', MDPAdapterSensor(self._env, self._start_point.position, self._target.position));
+		self._normal_robot.put_sensor('mdp', MDPAdapterSensor(self._env, self._start_point.position, self._target.position, unique_id=os.path.basename(cmdargs.map_name)));
 		self._normal_robot.put_sensor('debug', {'name': 'normal'});
 		self._normal_robot.set_nav_algo(DeepIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(InverseRLNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));

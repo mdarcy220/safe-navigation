@@ -17,10 +17,10 @@ import random
 import matplotlib.pyplot as plt
 from matplotlib import style
 import pandas as pd
-import seaborn as sns
 import math
 import Vector
 import cntk as C
+import os
 
 ## Maximum Entropy Deep Inverse Reinforcement Learning navigation algorithm.
 # This is actually just a wrapper around another navigation algorithm, and this
@@ -55,7 +55,11 @@ class TestCases():
 			target = Target(targets[1])
 
 			# Init robots
+<<<<<<< HEAD
 			mdp = MDPAdapterSensor(env, start_point.position, target.position, cell_size = 30)
+=======
+			mdp = MDPAdapterSensor(env, start_point.position, target.position, cell_size = 20, unique_id=os.path.basename(maps[i]))
+>>>>>>> 92fd634737a73a8f88eded01222384135162164d
 			feature = self._get_features(mdp)
 			mdps.append(mdp)
 			features[mdp] = feature
@@ -138,7 +142,7 @@ class TestCases():
 				new_values[state] = max(qvals[state].values())
 
 			# Quit if we have converged
-			if max({abs(old_values[s] - new_values[s]) for s in mdp.states()}) < 0.01:
+			if max({abs(old_values[s] - new_values[s]) for s in mdp.states()}) < 0.1:
 				break
 			iteration += 1
 
@@ -163,7 +167,7 @@ class TestCases():
 		features = mdp._features
 		rand_state = random.sample(mdp.states(),1)
 		a_feature = features[rand_state[0]]
-		feature_mat = np.zeros((a_feature.size, mdp._height* mdp._width), dtype = np.float64)
+		feature_mat = np.zeros((a_feature.size, mdp._height* mdp._width), dtype = np.float32)
 		for state in mdp.states():
 			(x,y) = state
 			feature_mat[:, y * mdp._width + x] = features[state]
