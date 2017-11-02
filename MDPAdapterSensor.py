@@ -40,7 +40,7 @@ class MDPAdapterSensor(MDP):
 	# <br>	The number of actions that should be available (i.e., possible
 	# 	directions; the default of 4 would be NESW for example)
 	# 
-	def __init__(self, env, start_state, goal_state, cell_size=20, num_actions=4, robot_speed=10):
+	def __init__(self, env, start_state, goal_state, cell_size=30, num_actions=4, robot_speed=10):
 		self._env = env
 		self._cell_size = cell_size
 		self._start_state = self.discretize(start_state)

@@ -314,7 +314,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 			for s in mdp.states():
 				(x,y) = s
 				#mu[y*width + x,t+1] = sum([mu[y*width + x,t] * mdp.transition_prob(s,self._get_action(s_x, policy),s_x) for s_x in mdp.successors(s)])
-				mu[y*width + x,t+1] = sum([sum([mu_old[y*width + x,t] * mdp.transition_prob(s,action,s_x)*policy[s][action] for s_x in mdp.successors(s)]) for action in mdp.actions(s)])
+				mu[y*width + x,t+1] = sum([sum([mu_old[y_*width + x_,t] * mdp.transition_prob((x_,y_),action,s)*policy[(x_,y_)][action]  for action in mdp.actions((x_,y_))]) for (x_,y_) in mdp.successors(s)])
 		p = np.sum(mu,1)
 		return p
 

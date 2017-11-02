@@ -55,7 +55,7 @@ class TestCases():
 			target = Target(targets[1])
 
 			# Init robots
-			mdp = MDPAdapterSensor(env, start_point.position, target.position, cell_size = 20)
+			mdp = MDPAdapterSensor(env, start_point.position, target.position, cell_size = 30)
 			feature = self._get_features(mdp)
 			mdps.append(mdp)
 			features[mdp] = feature
