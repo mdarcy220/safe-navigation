@@ -1,6 +1,8 @@
 #!/bin/bash
 # Robot Simulator
 
+# Try this command line: result_file_prefix="../results/csv/" base_args="--debug-level 1 --robot-speed 10 --radar-resolution 4 --batch-mode --max-steps=5000 --robot-movement-momentum=0.0" num_trials=5 max_processes=6 bash run_batch.sh
+
 
 num_cores=$(lscpu -p | egrep -v '^#' | sort -u -t, -k 2,4 | wc -l)
 [[ -z "$result_file_prefix" ]] && result_file_prefix="."
