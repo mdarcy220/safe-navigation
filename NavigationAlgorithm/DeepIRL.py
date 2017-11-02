@@ -201,7 +201,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		#max_reward = max(reward)
 		#max_reward = [max_reward[i] if max_reward[i] != 0 else 1 for i in range(len(max_reward))]		
 		reward -= max(reward)/2
-		feat_exp = np.zeros((1,len(mdp.states())))
+		feat_exp = np.zeros((1,len(mdp.states())), dtype=np.float32)
 		for traj in self._demonstrations:
 			for (state, action, next_state, r) in traj:
 				(x,y) = state
@@ -220,12 +220,10 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		tests = TestCases(self._cmdargs)
 		count =0
 		for i in range(maxIter):
-			grad = np.zeros((self._features[:,0].shape))
 			policy = self._do_value_iter(reward)
 			newFeat_mult = self._visitation_trajectory_frequency(self._demonstrations, policy)
 			grad = feat_exp - newFeat_mult
-			grad = np.dot(grad,lr)
-			self.show_reward(grad,i+1)
+			grad = np.dot(grad, np.float32(lr))
 			
 			network.backward_one_step(states, rewards, np.vstack(-grad.T))
 			
@@ -255,7 +253,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		width = mdp._width
 		T = self._max_steps
 		N = height * width
-		mu = np.zeros([N, T])
+		mu = np.zeros([N, T], dtype=np.float32)
 
 		for demonstration in demonstrations:
 			(s, a, sx, r) = demonstration[0]
