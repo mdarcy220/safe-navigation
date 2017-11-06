@@ -43,9 +43,9 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
-		self._max_steps = 150;
-		self._max_loops = 200;
-		self._lr = 1.11;
+		self._max_steps = 600;
+		self._max_loops = 300;
+		self._lr = 0.8;
 		self._decay = 0.9
 
 		if real_algo_init is None:
@@ -134,10 +134,13 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 
 	def _add_demonstration_loop(self, max_steps, max_loops):
 		demonstrations = []
+		mdp = self._mdp
+		height = mdp._height
+		width = mdp._width
 		for loop in range(0,max_loops):
 			start_state = (1000,1000)
 			while True:
-			    start_state = (random.randint(1,math.ceil(self._mdp._width/2)), random.randint(math.ceil(self._mdp._height/2),math.ceil(self._mdp._height)-1))
+			    start_state = (random.randint(1,math.ceil(self._mdp._width)-1), random.randint(math.ceil(self._mdp._height/8),math.ceil(self._mdp._height)-1))
 			    #start_state = (random.randint(1,math.ceil(self._mdp._width/2)), random.randint(math.ceil(self._mdp._height/2),math.ceil(self._mdp._height)-3))
 			    #start_state = (random.randint(1,1), random.randint(18,18))
 			    if (self._mdp._walls[start_state[1], start_state[0]] == 0):
@@ -146,6 +149,12 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 			demon_traj = self._valueIteration.add_demonstration_step(start_state,max_steps)
 			if len(demon_traj) > 0:
 			    demonstrations.append(demon_traj)
+			#feat_exp = np.zeros((1,len(mdp.states())), dtype=np.float32)
+			#for (state, action, next_state, r) in demon_traj:
+			#	(x,y) = state
+			#	feat_exp[0,y*width + x] += 1
+			
+			#self.show_reward(feat_exp,loop)
 		return demonstrations
 
 
@@ -156,7 +165,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 	def _do_value_iter(self, reward):
 		def reward_func(state, action):
 			return reward[0,state[1]*self._mdp._width+state[0]]
-		return generic_value_iteration(self._mdp, reward_func, gamma=0.97, max_iter=1000, threshold=0.05)
+		return generic_value_iteration(self._mdp, reward_func, gamma=0.995, max_iter=1000, threshold=0.05)
 
 
 	def _get_features(self):
@@ -194,7 +203,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		mdp = self._mdp
 		height = mdp._height
 		width = mdp._width
-		network = the_network(self._features[:,0].shape,self._lr, hidden_layers = [1000,200,10])
+		network = the_network(self._features[:,0].shape,self._lr, hidden_layers = [1000,800,600,400,200,100,10])
 
 		states, rewards = network.forward_one_step(np.vstack(self._features.T))
 		reward = list(rewards.values())[0].T
@@ -209,7 +218,7 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		feat_exp /= self._max_loops
 
 
-		maxIter = 22
+		maxIter = 1000
 		old_grad = np.zeros((self._features[:,0].shape))
 		lr = self._lr
 		decay = self._decay
@@ -219,11 +228,21 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 		# goal positions
 		tests = TestCases(self._cmdargs)
 		count =0
+		sample_size = 30
 		for i in range(maxIter):
 			policy = self._do_value_iter(reward)
+			demon_traj = random.sample(self._demonstrations,sample_size)
+			feat_exp = np.zeros((1,len(mdp.states())), dtype=np.float32)
+			for traj in demon_traj:
+				for (state, action, next_state, r) in traj:
+					(x,y) = state
+					feat_exp[0,y*width + x] += 1
+			feat_exp /= sample_size
+			
 			newFeat_mult = self._visitation_trajectory_frequency(self._demonstrations, policy)
 			grad = feat_exp - newFeat_mult
 			grad = np.dot(grad, np.float32(lr))
+			self.show_reward(grad,i)
 			
 			network.backward_one_step(states, rewards, np.vstack(-grad.T))
 			

@@ -31,6 +31,7 @@ from NavigationAlgorithm import SamplingNavigationAlgorithm
 from NavigationAlgorithm import ValueIterationNavigationAlgorithm
 from NavigationAlgorithm import InverseRLNavigationAlgorithm
 from NavigationAlgorithm import DeepIRLAlgorithm
+from NavigationAlgorithm import DeepQIRLAlgorithm
 
 ## Handles the main game loop
 #
@@ -86,7 +87,8 @@ class Game:
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
 		self._normal_robot.put_sensor('mdp', MDPAdapterSensor(self._env, self._start_point.position, self._target.position, unique_id=os.path.basename(cmdargs.map_name)));
 		self._normal_robot.put_sensor('debug', {'name': 'normal'});
-		self._normal_robot.set_nav_algo(DeepIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(DeepIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		self._normal_robot.set_nav_algo(DeepQIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(InverseRLNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(DeepQNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(ValueIterationNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));

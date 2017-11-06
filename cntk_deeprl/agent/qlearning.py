@@ -250,8 +250,8 @@ class QLearning(AgentBaseClass):
 		"""
 		if self.step_count < self._parameters.replay_start_size or \
 				np.random.uniform(0, 1) < self._epsilon:
-			if np.random.uniform(0, 1) < 0.32:
-				return int(np.round(np.argmax(state[1])/45.0)) % 8, 'RANDOM'
+			#if np.random.uniform(0, 1) < 0.32:
+			#	return int(np.round(np.argmax(state[1])/45.0)) % 8, 'RANDOM'
 			return np.random.randint(self._num_actions), 'RANDOM'
 		else:
 			return np.argmax(self._evaluate_q(self._q, state)), 'GREEDY'

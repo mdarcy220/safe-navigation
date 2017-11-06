@@ -6,7 +6,7 @@ import numpy as np
 import copy
 import Vector
 
-def generic_value_iteration(mdp, reward, gamma=0.98, max_iter=1000, min_iter=0, threshold=0.01):
+def generic_value_iteration(mdp, reward, gamma=0.995, max_iter=1000, min_iter=0, threshold=0.01):
 
 	def softmax_qvals(q_values):
 		max_qval = max(q_values[action] for action in q_values)
@@ -99,7 +99,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _do_value_iter(self):
 		def reward_func(state, action):
 			return self._mdp.reward(state, action, None)
-		return generic_value_iteration(self._mdp, reward_func, gamma=0.97, threshold=0.05, min_iter=300, max_iter=5000)
+		return generic_value_iteration(self._mdp, reward_func, gamma=0.995, threshold=0.05, min_iter=300, max_iter=5000)
 
 
 	## Select the next action for the robot

@@ -59,7 +59,7 @@ def custom_network(shape_of_inputs,
 		C.layers.Dense(120, activation=C.ops.relu),
 		C.layers.Dense(100, activation=C.ops.relu),
 		C.layers.Dense(50, activation=C.ops.relu),
-	    C.layers.Dense(number_of_outputs, activation=None)
+	    C.layers.Dense(number_of_outputs, activation=C.ops.softmax)
 	])(inputs)
 
 	if loss_function is None:
