@@ -63,7 +63,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		self._ravg = [0] * 50
 		self._epsilon = 0.0
 		self.maxIter = 10000
-		self.get_policy();
+		self._policy = self.get_policy();
 
 
 	## Next action selector method.
@@ -131,6 +131,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		return features
 	
 	def _get_action(self, state, policy):
+		policy = self._policy
 		total = 0.0
 		rand = np.random.random()
 		for action in policy[state]:
@@ -159,23 +160,57 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				updates += 1 
 				current_state = random.choice(mdp.states())
 				observation = np.vstack(self._features[current_state]).T
-				for _ in range(1000):
-					self._qlearner._adjust_exploration_rate()
+				#for _ in range(1000):
+				#	self._qlearner._adjust_exploration_rate()
 
 				self._qlearner.start()
 			else:
 				current_action = self._qlearner.step(reward,observation)
 				print (current_action[1])
 				current_state = next_state
-		qvals = dict()
+		policy = dict()
 		for state in mdp.states():
 			observation = np.vstack(self._features[state]).T
 			qvals_actions = self._qlearner._evaluate_q(self._qlearner._q,observation)
-			print (qvals_actions)
+			sum_qvals = sum(qvals_actions)
+			#print (qvals_actions)
 			#break
-			#qvals[state] = dict()
-			#for i,action in enumerate(actions):
-				#qvals[state][action] = 
+			policy[state] = dict()
+			for i,action in enumerate(actions):
+				policy[state][action] = qvals_actions[i]/sum_qvals
+		return policy
+
+	def plot_reward_policy(self, rewar, policy, iteration=0, dpi=196.0):
+		# Set up the figure
+		plt.gcf().set_dpi(dpi)
+		ax = plt.axes()
+
+		# Note that we're messing with the input args here
+		reward_map = reward_map.reshape(self._mdp._height, self._mdp._width)
+		plt.imshow(reward_map, cmap='hot', interpolation='nearest')
+
+		# The scale controls the size of the arrows
+		scale = 0.8
+
+		for state in self._mdp.states():
+			# Init a dict of the values for each action
+			action_values = {action:policy[state][action] for action in self._mdp.actions(state)}
+
+			# avgarrow points in the average direction the robot
+			# will travel based on the stochastic policy
+			avgarrow_vec = np.sum(item[1]*Vector.unit_vec_from_degrees(item[0][0]) for item in action_values.items())
+			avgarrow_mag = Vector.magnitudeOf(avgarrow_vec)
+			avgarrow_vec = avgarrow_vec/avgarrow_mag
+			ax.arrow(state[0], state[1], avgarrow_vec[0]*0.1, avgarrow_vec[1]*0.1, head_width = scale * avgarrow_mag, head_length = scale * avgarrow_mag)
+
+			# maxarrow points in the single most likely direction
+			max_action = max((item for item in action_values.items()), key=lambda item: item[1])
+			maxarrow_vec = Vector.unit_vec_from_degrees(max_action[0][0])
+			ax.arrow(state[0], state[1], 0.1*maxarrow_vec[0], 0.1*maxarrow_vec[1], head_width= scale * max_action[1], head_length = scale * max_action[1], color='g')
+
+		# Output the figure to the image file
+		plt.savefig('../output_data/r_p{:02d}.png'.format(iteration))
+		plt.close()
 
 
 
