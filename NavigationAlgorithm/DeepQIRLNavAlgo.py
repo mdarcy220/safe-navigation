@@ -9,6 +9,9 @@ import Vector
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from RobotControlInput import RobotControlInput
 import random
+import math
+import matplotlib.pyplot as plt
+from matplotlib import style
 
 ## A navigation algorithm to be used with robots, based on deep q-learning.
 #
@@ -62,7 +65,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		#self._last_badness = self._get_badness();
 		self._ravg = [0] * 50
 		self._epsilon = 0.0
-		self.maxIter = 10000
+		self.maxIter = 1000000
 		self._policy = self.get_policy();
 
 
@@ -142,8 +145,12 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 
 	def get_policy(self):
 		mdp = self._mdp
+		goal_state = mdp._goal_state
+		max_dist = math.sqrt(mdp._width ** 2 + mdp._height ** 2)
 		updates = 0
-		current_state = mdp._start_state
+		counter = 0
+		current_state = (mdp._goal_state[0]-1,mdp._goal_state[1]-1)
+		start_position = current_state
 		actions_set = mdp.actions(current_state)
 		actions = list([action for action in actions_set])
 		current_observation = np.vstack(self._features[current_state]).T
@@ -152,24 +159,52 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			action = actions[current_action[0]]
 			next_state = mdp.get_successor_state(current_state,action)
 
-			reward = mdp.reward(next_state, action, None)
+			reward_temp = mdp.reward(next_state, action, None)
+			reward = max_dist - math.sqrt((next_state[0] - goal_state[0]) ** 2 + (next_state[1] - goal_state[1]) ** 2)
+			reward = reward / max_dist
+			reward += reward_temp
 			observation = np.vstack(self._features[next_state]).T
-			if next_state == mdp._goal_state:
+			counter += 1
+			if next_state == mdp._goal_state or counter > math.sqrt(updates) * 30:
+				counter =0
 				self._qlearner.end(reward,observation)
 				self._qlearner._replay_and_update()
 				updates += 1 
-				current_state = random.choice(mdp.states())
+				#current_state = random.choice(mdp.states())
+				current_state = self.start_position(updates)
+				start_position = current_state
 				observation = np.vstack(self._features[current_state]).T
 				#for _ in range(1000):
 				#	self._qlearner._adjust_exploration_rate()
+				policy = self.calc_policy(iteration,actions,start_position)
 
-				self._qlearner.start()
+				self._qlearner.start(observation)
 			else:
 				current_action = self._qlearner.step(reward,observation)
 				print (current_action[1])
 				current_state = next_state
+
+		return self.calc_policy(0,actions,start_position)
+	
+	def start_position(self, iteration):
+		dispersion_factor = 0.3
+		dispersion = iteration * dispersion_factor
+		goal = self._mdp._goal_state
+		x_range = (max(0,int(goal[0] - dispersion)), min (self._mdp._width-1,int( goal[0]+dispersion)))
+		y_range = (max(0,int(goal[1] - dispersion)), min (self._mdp._height-1,int( goal[1]+dispersion)))
+		while True:
+			newPos = (random.randint(x_range[0],x_range[1]), random.randint(y_range[0],y_range[1]))
+			if self._mdp._walls[newPos[1],newPos[0]] == 0:
+				return newPos
+
+	def calc_policy(self, iteration, actions, start_position):
+		mdp = self._mdp
 		policy = dict()
+		rewards = np.zeros((1,mdp._height * mdp._width))
 		for state in mdp.states():
+			(x,y) = state
+			rewards[0,y*mdp._width + x] = 1 if state == mdp._goal_state else 0
+			rewards[0,y*mdp._width + x] += 0.5 if state == start_position else 0
 			observation = np.vstack(self._features[state]).T
 			qvals_actions = self._qlearner._evaluate_q(self._qlearner._q,observation)
 			sum_qvals = sum(qvals_actions)
@@ -178,9 +213,11 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			policy[state] = dict()
 			for i,action in enumerate(actions):
 				policy[state][action] = qvals_actions[i]/sum_qvals
-		return policy
 
-	def plot_reward_policy(self, rewar, policy, iteration=0, dpi=196.0):
+		self.plot_reward_policy(rewards, policy, iteration)
+		return policy
+		
+	def plot_reward_policy(self, reward_map, policy, iteration=0, dpi=196.0):
 		# Set up the figure
 		plt.gcf().set_dpi(dpi)
 		ax = plt.axes()

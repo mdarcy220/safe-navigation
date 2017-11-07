@@ -181,7 +181,7 @@ class QLearning(AgentBaseClass):
 		# Update Q every self._parameters.q_update_frequency
 		self._update_q_periodically()
 
-		self._adjust_exploration_rate()
+		#self._adjust_exploration_rate()
 		self._last_state = next_encoded_state
 		self._last_action, action_behavior = self._choose_action(
 			self._last_state)
@@ -206,6 +206,7 @@ class QLearning(AgentBaseClass):
 			None,
 			priority)
 		self.step_count += 1
+		self._adjust_exploration_rate()
 
 		# Update Q every self._parameters.q_update_frequency
 		self._update_q_periodically()

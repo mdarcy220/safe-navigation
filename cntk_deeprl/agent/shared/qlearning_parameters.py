@@ -26,7 +26,7 @@ class QLearningParameters:
 
         # Discount factor
         self.gamma = self.config.getfloat(
-            'General', 'Gamma', fallback=0.95)
+            'General', 'Gamma', fallback=0.999)
 
         # Name of class that does preprocessing.
         self.preprocessing = self.config.get(
@@ -90,7 +90,7 @@ class QLearningParameters:
         # Number of actions chosen between successive
         # target network updates.
         self.target_q_update_frequency = self.config.getint(
-            'QLearningAlgo', 'TargetQUpdateFrequency', fallback=80)
+            'QLearningAlgo', 'TargetQUpdateFrequency', fallback=100)
 
         # Sample size of each minibatch.
         self.minibatch_size = self.config.getint(
