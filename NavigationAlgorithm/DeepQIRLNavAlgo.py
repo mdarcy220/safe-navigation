@@ -188,7 +188,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				reward -= 0.2
 			counter += 1
 			#print(action, next_state, reward)
-			if next_state == mdp._goal_state or counter > min(math.sqrt(updates) * 60,1000):
+			dist_goal = (next_state[0] - mdp._goal_state[0], next_state[1] - mdp._goal_state[1])
+			goal_diff = True if dist_goal[0]<2 or dist_goal[1]<2 else False
+			if goal_diff or next_state == mdp._goal_state or counter > min(math.sqrt(updates) * 60,1000):
 				counter =0
 				#print (iteration, updates)
 				self._qlearner.end(reward,observation)
