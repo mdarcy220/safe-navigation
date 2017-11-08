@@ -65,7 +65,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		#self._last_badness = self._get_badness();
 		self._ravg = [0] * 50
 		self._epsilon = 0.0
-		self.maxIter = 1000000
+		self.maxIter = 100000
 		self._policy = self.get_policy();
 
 
@@ -156,6 +156,18 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		current_observation = np.vstack(self._features[current_state]).T
 		current_action = self._qlearner.start(current_observation)
 		for iteration in range(self.maxIter):
+			self._qlearner._parameters.minibatch_size = 30
+			self._qlearner._parameters.q_update_frequency = 10
+			if iteration > 20000:
+				self._qlearner._parameters.minibatch_size = 400
+				self._qlearner._replay_and_update()
+				counter += 1
+				if (counter > 20):
+					counter = 0
+					self.calc_policy(iteration,actions,(1,1))
+				continue
+
+			print(iteration)
 			action = actions[current_action[0]]
 			next_state = mdp.get_successor_state(current_state,action)
 
@@ -163,10 +175,18 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			reward = max_dist - math.sqrt((next_state[0] - goal_state[0]) ** 2 + (next_state[1] - goal_state[1]) ** 2)
 			reward = reward / max_dist
 			reward += reward_temp
+			if mdp._walls [next_state[1],next_state[0]] == 1 :
+				reward = -1
+			
 			observation = np.vstack(self._features[next_state]).T
+			#print (observation[0,0:4], observation[0,6:10])
+			if (any(i>97 for i in observation[0,0:4]) or any(i>97 for i in observation[0,6:10])):
+				reward -= 0.2
 			counter += 1
-			if next_state == mdp._goal_state or counter > math.sqrt(updates) * 30:
+			#print(action, next_state, reward)
+			if next_state == mdp._goal_state or counter > min(math.sqrt(updates) * 60,1000):
 				counter =0
+				#print (iteration, updates)
 				self._qlearner.end(reward,observation)
 				self._qlearner._replay_and_update()
 				updates += 1 
@@ -176,14 +196,15 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				observation = np.vstack(self._features[current_state]).T
 				#for _ in range(1000):
 				#	self._qlearner._adjust_exploration_rate()
-				policy = self.calc_policy(iteration,actions,start_position)
+				#policy = self.calc_policy(iteration,actions,start_position)
 
 				self._qlearner.start(observation)
 			else:
 				current_action = self._qlearner.step(reward,observation)
-				print (current_action[1])
+				#print (current_action[1])
 				current_state = next_state
-
+			if iteration%1000 == 0 and iteration>0:
+				self.calc_policy(iteration,actions,start_position)
 		return self.calc_policy(0,actions,start_position)
 	
 	def start_position(self, iteration):
@@ -212,7 +233,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			#break
 			policy[state] = dict()
 			for i,action in enumerate(actions):
-				policy[state][action] = qvals_actions[i]/sum_qvals
+				policy[state][action] = math.exp(qvals_actions[i] - sum_qvals)
 
 		self.plot_reward_policy(rewards, policy, iteration)
 		return policy
@@ -238,12 +259,12 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			avgarrow_vec = np.sum(item[1]*Vector.unit_vec_from_degrees(item[0][0]) for item in action_values.items())
 			avgarrow_mag = Vector.magnitudeOf(avgarrow_vec)
 			avgarrow_vec = avgarrow_vec/avgarrow_mag
-			ax.arrow(state[0], state[1], avgarrow_vec[0]*0.1, avgarrow_vec[1]*0.1, head_width = scale * avgarrow_mag, head_length = scale * avgarrow_mag)
+			ax.arrow(state[0], state[1], avgarrow_vec[0]*0.1, avgarrow_vec[1]*0.1, head_width = scale * max(min(1,avgarrow_mag),0.3), head_length = scale * max(min(1,avgarrow_mag),0.3), color='r')
 
 			# maxarrow points in the single most likely direction
 			max_action = max((item for item in action_values.items()), key=lambda item: item[1])
 			maxarrow_vec = Vector.unit_vec_from_degrees(max_action[0][0])
-			ax.arrow(state[0], state[1], 0.1*maxarrow_vec[0], 0.1*maxarrow_vec[1], head_width= scale * max_action[1], head_length = scale * max_action[1], color='g')
+			ax.arrow(state[0], state[1], 0.1*maxarrow_vec[0], 0.1*maxarrow_vec[1], head_width= scale * max(min(1,max_action[1]),0.3), head_length = scale *max(min(1,max_action[1]),0.3), color='g')
 
 		# Output the figure to the image file
 		plt.savefig('../output_data/r_p{:02d}.png'.format(iteration))

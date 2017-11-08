@@ -26,7 +26,7 @@ class QLearningParameters:
 
         # Discount factor
         self.gamma = self.config.getfloat(
-            'General', 'Gamma', fallback=0.999)
+            'General', 'Gamma', fallback=0.999)#0.9
 
         # Name of class that does preprocessing.
         self.preprocessing = self.config.get(
@@ -48,7 +48,7 @@ class QLearningParameters:
 
         # Number of steps before epsilon reaches minimum value.
         self.epsilon_decay_step_count = self.config.getint(
-            'QLearningAlgo', 'EpsilonDecayStepCount', fallback=40000)
+            'QLearningAlgo', 'EpsilonDecayStepCount', fallback=10000)#40000
 
         # Minimum value of epsilon.
         self.epsilon_minimum = self.config.getfloat(
@@ -94,7 +94,7 @@ class QLearningParameters:
 
         # Sample size of each minibatch.
         self.minibatch_size = self.config.getint(
-            'QLearningAlgo', 'MinibatchSize', fallback=32)
+            'QLearningAlgo', 'MinibatchSize', fallback=60)#30
 
         # Number of replays per update.
         self.replays_per_update = self.config.getint(
@@ -102,7 +102,7 @@ class QLearningParameters:
 
         # Number of actions chosen between successive SGD updates of Q.
         self.q_update_frequency = self.config.getint(
-            'QLearningAlgo', 'QUpdateFrequency', fallback=1)
+            'QLearningAlgo', 'QUpdateFrequency', fallback=50)
 
         # Use Huber loss with \delta=1 when True. Otherwise, use least square
         # loss.
