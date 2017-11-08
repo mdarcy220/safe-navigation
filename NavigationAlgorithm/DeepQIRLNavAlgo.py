@@ -156,20 +156,21 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		current_observation = np.vstack(self._features[current_state]).T
 		current_action = self._qlearner.start(current_observation)
 		for iteration in range(self.maxIter):
-			self._qlearner._parameters.minibatch_size = 30
-			self._qlearner._parameters.q_update_frequency = 1
-			"""
+			self._qlearner._parameters.minibatch_size = 60
+			self._qlearner._parameters.q_update_frequency = 5
+			
 			if iteration > 20000:
 				self._qlearner._parameters.minibatch_size = 400
 				self._qlearner._replay_and_update()
 				counter += 1
-				if (counter > 20):
+				if (counter > 40):
 					counter = 0
 					self.calc_policy(iteration,actions,(1,1))
 				continue
 
+			
 			print(iteration)
-			"""
+			
 			action = actions[current_action[0]]
 			next_state = mdp.get_successor_state(current_state,action)
 
@@ -236,7 +237,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			#break
 			policy[state] = dict()
 			for i,action in enumerate(actions):
-				policy[state][action] = qvals[i]/sum_qvals#math.exp(qvals_actions[i] - sum_qvals)
+				policy[state][action] = qvals_actions[i]/sum_qvals#math.exp(qvals_actions[i] - sum_qvals)
 
 		self.plot_reward_policy(rewards, policy, iteration)
 		return policy
