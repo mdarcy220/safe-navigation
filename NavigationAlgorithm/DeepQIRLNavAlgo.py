@@ -213,6 +213,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			policy[state] = dict()
 			for i,action in enumerate(actions):
 				policy[state][action] = qvals_actions[i]/sum_qvals
+			#print(state, qvals_actions, policy[state], sum_qvals, qvals_actions)
 
 		self.plot_reward_policy(rewards, policy, iteration)
 		return policy
