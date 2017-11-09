@@ -156,7 +156,12 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		current_observation = np.vstack(self._features[current_state]).T
 		current_action = self._qlearner.start(current_observation)
 		self._qlearner._parameters.minibatch_size = 200
-		self._qlearner._parameters.q_update_frequency = 5
+		self._qlearner._parameters.q_update_frequency = 100
+		self._qlearner._parameters.eta_minimum = 0.00001
+		self._qlearner._parameters.initial_eta = 0.0005
+		self._qlearner._parameters.momentum = 0.99
+		self._qlearner._parameters.eta_decay_step_count = 100000
+
 		for iteration in range(self.maxIter):
 			
 			if iteration > 20000:
