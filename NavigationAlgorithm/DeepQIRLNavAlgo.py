@@ -60,7 +60,10 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 
 		self._o_space = gs.Box(low=0, high=100, shape=self._o_space_shape);
 		self._a_space = gs.Discrete(4);
-		self._qlearner = cntk_deeprl.agent.qlearning.QLearning('', self._o_space, self._a_space);
+		self.learner = cntk_deeprl.agent.policy_gradient.ActorCritic # actor critic trainer
+		#self.learner = cntk_deeprl.agent.qlearner.QLearning # qlearning trainer
+		self._qlearner = self.learner('', self._o_space, self._a_space);
+
 		#self._get_observation();
 		#self._last_badness = self._get_badness();
 		self._ravg = [0] * 50
@@ -156,25 +159,15 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		current_observation = np.vstack(self._features[current_state]).T
 		current_action = self._qlearner.start(current_observation)
 		self._qlearner._parameters.minibatch_size = 200
-		self._qlearner._parameters.q_update_frequency = 100
-		self._qlearner._parameters.eta_minimum = 0.000005
-		self._qlearner._parameters.initial_eta = 0.0005
-		self._qlearner._parameters.momentum = 0.9
-		self._qlearner._parameters.eta_decay_step_count = 100000
+		#self._qlearner._parameters.q_update_frequency = 5
+		self._qlearner._parameters.update_frequency = 1
+		self._qlearner._parameters.eta_minimum = 0.0001
+		self._qlearner._parameters.initial_eta = 0.5
+		self._qlearner._parameters.momentum = 0.5
+		self._qlearner._parameters.eta_decay_step_count = 1000000
 
 		for iteration in range(self.maxIter):
-			
-			if iteration > 20000:
-				self._qlearner._parameters.minibatch_size = 400
-				self._qlearner._replay_and_update()
-				counter += 1
-				if (counter > 40):
-					counter = 0
-					self.calc_policy(iteration,actions,(1,1))
-				continue
-
-			
-			print(iteration)
+			#print(iteration)
 			
 			action = actions[current_action[0]]
 			next_state = mdp.get_successor_state(current_state,action)
@@ -199,7 +192,6 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				counter =0
 				#print (iteration, updates)
 				self._qlearner.end(reward,observation)
-				self._qlearner._replay_and_update()
 				updates += 1 
 				#current_state = random.choice(mdp.states())
 				current_state = self.start_position(updates)
@@ -238,10 +230,14 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			rewards[0,y*mdp._width + x] = 1 if state == mdp._goal_state else 0
 			rewards[0,y*mdp._width + x] += 0.5 if state == start_position else 0
 			observation = np.vstack(self._features[state]).T
-			qvals_actions = self._qlearner._evaluate_q(self._qlearner._q,observation)
+			if self.learner == cntk_deeprl.agent.policy_gradient.ActorCritic: # actor critic trainer
+				qvals_actions = self._qlearner._evaluate_model(self._qlearner._policy_network, observation)
+			elif self.learner == cntk_deeprl.agent.qlearner.QLearning: # qlearning trainer
+				qvals_actions = self._qlearner._evaluate_q(self._qlearner._q,observation)
 			sum_qvals = sum(qvals_actions)
 			#print (qvals_actions)
 			#break
+			
 			policy[state] = dict()
 			for i,action in enumerate(actions):
 				policy[state][action] = qvals_actions[i]/sum_qvals#math.exp(qvals_actions[i] - sum_qvals)
