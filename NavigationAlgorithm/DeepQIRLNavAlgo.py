@@ -64,7 +64,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		self.learner = cntk_deeprl.agent.qlearning.QLearning # qlearning trainer
 		if self.learner == cntk_deeprl.agent.qlearning.QLearning:
 			self._qlearner = self.learner('local_configs/deepq_1.ini', self._o_space, self._a_space);
-		elif: self.learner == cntk_deeprl.agent.policy_gradient.ActorCritic:
+		elif self.learner == cntk_deeprl.agent.policy_gradient.ActorCritic:
 			self._qlearner = self.learner('local_configs/polify_gradient_1.ini', self._o_space, self._a_space);
 		else:
 			raise TypeError("Invalid type for _qlearner")
