@@ -57,7 +57,7 @@ class QLearningParameters:
         # Initial value of eta, which is the learning rate for gradient
         # descent.
         self.initial_eta = self.config.getfloat(
-            'Optimization', 'InitialEta', fallback=0.003)
+            'Optimization', 'InitialEta', fallback=0.001)
 
         # Number of steps before eta reaches minimum value.
         self.eta_decay_step_count = self.config.getint(
@@ -67,11 +67,11 @@ class QLearningParameters:
         # starting point is to set EtaMinimum equal to InitialEta, which is
         # equivalent to using a constant learning rate.
         self.eta_minimum = self.config.getfloat(
-            'Optimization', 'EtaMinimum', fallback=0.001)
+            'Optimization', 'EtaMinimum', fallback=0.0005)
 
         # Momentum used by RMSProp.
         self.momentum = self.config.getfloat(
-            'Optimization', 'Momentum', fallback=0.99)
+            'Optimization', 'Momentum', fallback=0.98)
 
         # Initial value for table entries.
         # TODO(maoyi): allow DQN initialization through config file.
@@ -94,7 +94,7 @@ class QLearningParameters:
 
         # Sample size of each minibatch.
         self.minibatch_size = self.config.getint(
-            'QLearningAlgo', 'MinibatchSize', fallback=60)#30
+            'QLearningAlgo', 'MinibatchSize', fallback=64)
 
         # Number of replays per update.
         self.replays_per_update = self.config.getint(
