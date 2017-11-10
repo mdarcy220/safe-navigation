@@ -60,9 +60,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 
 		self._o_space = gs.Box(low=0, high=100, shape=self._o_space_shape);
 		self._a_space = gs.Discrete(4);
-		self.learner = cntk_deeprl.agent.policy_gradient.ActorCritic # actor critic trainer
-		#self.learner = cntk_deeprl.agent.qlearner.QLearning # qlearning trainer
-		self._qlearner = self.learner('', self._o_space, self._a_space);
+		#self.learner = cntk_deeprl.agent.policy_gradient.ActorCritic # actor critic trainer
+		self.learner = cntk_deeprl.agent.qlearning.QLearning # qlearning trainer
+		self._qlearner = self.learner('local_configs/deepq_1.ini', self._o_space, self._a_space);
 
 		#self._get_observation();
 		#self._last_badness = self._get_badness();
@@ -158,13 +158,6 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		actions = list([action for action in actions_set])
 		current_observation = np.vstack(self._features[current_state]).T
 		current_action = self._qlearner.start(current_observation)
-		self._qlearner._parameters.minibatch_size = 200
-		#self._qlearner._parameters.q_update_frequency = 5
-		self._qlearner._parameters.update_frequency = 1
-		self._qlearner._parameters.eta_minimum = 0.0001
-		self._qlearner._parameters.initial_eta = 0.5
-		self._qlearner._parameters.momentum = 0.5
-		self._qlearner._parameters.eta_decay_step_count = 1000000
 
 		for iteration in range(self.maxIter):
 			#print(iteration)
@@ -232,7 +225,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			observation = np.vstack(self._features[state]).T
 			if self.learner == cntk_deeprl.agent.policy_gradient.ActorCritic: # actor critic trainer
 				qvals_actions = self._qlearner._evaluate_model(self._qlearner._policy_network, observation)
-			elif self.learner == cntk_deeprl.agent.qlearner.QLearning: # qlearning trainer
+			elif self.learner == cntk_deeprl.agent.qlearning.QLearning: # qlearning trainer
 				qvals_actions = self._qlearner._evaluate_q(self._qlearner._q,observation)
 			sum_qvals = sum(qvals_actions)
 			#print (qvals_actions)
@@ -276,10 +269,5 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		# Output the figure to the image file
 		plt.savefig('../output_data/r_p{:02d}.png'.format(iteration))
 		plt.close()
-
-
-
-			
-			
 
 

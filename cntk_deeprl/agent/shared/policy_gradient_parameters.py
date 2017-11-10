@@ -16,6 +16,10 @@ class PolicyGradientParameters:
 
         Use default value if the parameter is not present.
         """
+
+        if not os.path.isfile(config_file):
+            raise FileNotFoundError("No config file found at {}".format(str(config_file)))
+
         self.config = configparser.ConfigParser()
         self.config.optionxform = str
         self.config.read(config_file)

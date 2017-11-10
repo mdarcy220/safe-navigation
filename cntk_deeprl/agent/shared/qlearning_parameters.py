@@ -9,6 +9,7 @@ import numpy as np
 
 import ast
 import configparser
+import os
 
 
 class QLearningParameters:
@@ -19,6 +20,10 @@ class QLearningParameters:
 
         Use default value if the value is not present.
         """
+
+        if not os.path.isfile(config_file):
+            raise FileNotFoundError("No config file found at {}".format(str(config_file)))
+
         # TODO: validate parameter values.
         self.config = configparser.ConfigParser()
         self.config.optionxform = str
