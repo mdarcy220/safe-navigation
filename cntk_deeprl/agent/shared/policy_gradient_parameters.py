@@ -22,7 +22,7 @@ class PolicyGradientParameters:
 
         # Discount factor.
         self.gamma = self.config.getfloat(
-            'General', 'Gamma', fallback=0.95)
+            'General', 'Gamma', fallback=0.995)
 
         # Name of class that does preprocessing.
         self.preprocessing = self.config.get(
@@ -66,7 +66,7 @@ class PolicyGradientParameters:
 
         # Number of nodes in each hidden layer of policy network.
         self.policy_network_hidden_layers = self.config.get(
-            'NetworkModel', 'PolicyNetworkHiddenLayerNodes', fallback='[10]')
+            'NetworkModel', 'PolicyNetworkHiddenLayerNodes', fallback='[180,140,120,100,50,10]')#'[10]'
 
         # Representation of value function.
         self.value_function_representation = self.config.get(
@@ -74,11 +74,11 @@ class PolicyGradientParameters:
 
         # Number of nodes in each hidden layer of value network.
         self.value_network_hidden_layers = self.config.get(
-            'NetworkModel', 'ValueNetworkHiddenLayerNodes', fallback='[10]')
+            'NetworkModel', 'ValueNetworkHiddenLayerNodes', fallback='[]')#'[10]'
 
         # Initial value of eta, which is the learning rate for gradient descent.
         self.initial_eta = self.config.getfloat(
-            'Optimization', 'InitialEta', fallback=0.001)
+            'Optimization', 'InitialEta', fallback=0.5)
 
         # Number of steps before eta reaches minimum value.
         self.eta_decay_step_count = self.config.getint(
@@ -98,7 +98,7 @@ class PolicyGradientParameters:
         # Update frequency for policy network and value network, in the number
         # of time steps.
         self.update_frequency = self.config.getint(
-            'PolicyGradient', 'UpdateFrequency', fallback=64)
+            'PolicyGradient', 'UpdateFrequency', fallback=5)#64
 
         # Name of a file containing model of the same structure as policy
         # network (unnormalized log of policy pi), where model is obtained
