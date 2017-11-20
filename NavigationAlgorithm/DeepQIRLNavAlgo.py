@@ -86,6 +86,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			raise TypeError("Invalid type for _qlearner")
 
 		self.maxIter = self._config['max_iters']
+		self._reward, self._reward_map = self.get_reward();
 		self._policy = self.get_policy();
 
 

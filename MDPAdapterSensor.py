@@ -222,7 +222,9 @@ class MDPAdapterSensor(MDP):
 
 		extractor = MdpFeatureExtractor(feature_names)
 		features = extractor.extract_feature_dict(self)
-		
+		################################################
+		## NOTE:I am overriding the above feature map ##
+		################################################
 		features = dict()
 		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
 		for state in states:
@@ -232,7 +234,6 @@ class MDPAdapterSensor(MDP):
 			feature[0] = x
 			feature[1] = y
 			"""
-
 			feature = np.zeros(4)
 			
 			if walls[y,x] == 1:
@@ -372,7 +373,6 @@ class MDPAdapterSensor(MDP):
 		#	"""
 		#	
 		#	features[state] = feature
->>>>>>> 81a00763b3e15ee82b6e32b96b5d45235bee2a88
 		return features
 
 	def _get_features2(self, states, walls, goal):
