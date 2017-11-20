@@ -19,5 +19,5 @@ simulator_args+=( --display-every-frame );
 
 time python3 ${python_args[@]} Main.py ${simulator_args[@]};
 
-gprof2dot -f pstats /tmp/safenav_profile1.profile -o /tmp/safenav_profile1.dot
+gprof2dot -f pstats /tmp/safenav_profile1.profile -o /tmp/safenav_profile1.dot | dot -Tsvg -o callgraph.svg
 

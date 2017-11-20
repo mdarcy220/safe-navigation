@@ -58,7 +58,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		# needs at least 7 features for qlearning to work
 		self._o_space_shape= (1,self._features[random.sample(self._mdp.states(),1)[0]].size)
 
-		self._o_space = gs.Box(low=0, high=100, shape=self._o_space_shape);
+		self._o_space = gs.Box(low=0, high=1, shape=self._o_space_shape);
 		self._a_space = gs.Discrete(4);
 		#self.learner = cntk_deeprl.agent.policy_gradient.ActorCritic # actor critic trainer
 		self.learner = cntk_deeprl.agent.qlearning.QLearning # qlearning trainer
@@ -73,7 +73,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		#self._last_badness = self._get_badness();
 		self._ravg = [0] * 50
 		self._epsilon = 0.0
-		self.maxIter = 100000
+		self.maxIter = 50000000
+		self._reward, self._reward_mat = self.get_reward();
+		#self.show_reward(self._reward_mat)
 		self._policy = self.get_policy();
 
 
@@ -150,6 +152,41 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			if rand < total:
 				return action
 		return list(policy[state].keys())[random.randint(0,3)]
+	def get_reward(self):
+		mdp = self._mdp
+		width = mdp._width
+		height = mdp._height
+		max_dist = math.sqrt(height ** 2 + width ** 2)
+		features = self._features
+
+		rewards = dict()
+		reward_mat = np.zeros((1,width*height))
+		th = 5
+		for state in mdp.states():
+			feature = features[state]
+			#x_m = max_dist - feature[3] * max_dist
+			#x_p = max_dist - feature[2] * max_dist
+			#y_m = max_dist - feature[1] * max_dist
+			#y_p = max_dist - feature[0] * max_dist
+			#goal = max_dist - feature[4] * max_dist
+			(x,y) =state
+			if mdp._walls[y,x] == 1:
+				rewards[state] = -10
+			#elif (x>=14 and x<=25 and y>=1 and y<=4):
+			#	rewards[state] = feature[4]*0.1
+			#elif((x_p<th or x_m<th) and (y_p<th or y_m<th)):
+			#	rewards[state] = -th + (min(x_m,x_p) + min (y_m,y_p))/2
+			#else:
+			#	rewards[state] = feature[4]*0.1
+			elif state == mdp._goal_state:
+				rewards[state] = 50
+			else:
+				rewards[state] = 0
+			
+			reward_mat[0,y*width+x] = rewards[state]
+
+
+		return rewards, reward_mat
 
 	def get_policy(self):
 		mdp = self._mdp
@@ -170,24 +207,27 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			action = actions[current_action[0]]
 			next_state = mdp.get_successor_state(current_state,action)
 
-			reward_temp = mdp.reward(next_state, action, None)
-			reward = max_dist - math.sqrt((next_state[0] - goal_state[0]) ** 2 + (next_state[1] - goal_state[1]) ** 2)
-			reward = reward / max_dist
-			reward += reward_temp
+			#reward_temp = mdp.reward(next_state, action, None)
+			#reward = max_dist - math.sqrt((next_state[0] - goal_state[0]) ** 2 + (next_state[1] - goal_state[1]) ** 2)
+			#reward = reward / max_dist
+			#reward = reward_temp
 
 			#if mdp._walls [next_state[1],next_state[0]] == 1 :
 			#	reward = -1
-			
+			reward = self._reward[next_state]
 			observation = np.vstack(self._features[next_state]).T
 			#print (observation[0,0:4], observation[0,6:10])
-			if (any(i>97 for i in observation[0,0:4]) or any(i>97 for i in observation[0,6:10])):
-				reward -= 0.2
+			#if (any(i>97 for i in observation[0,0:4]) or any(i>97 for i in observation[0,6:10])):
+			#	reward -= 0.2
 			counter += 1
 			#print(action, next_state, reward)
-			dist_goal = (next_state[0] - mdp._goal_state[0], next_state[1] - mdp._goal_state[1])
-			goal_diff = True if dist_goal[0]<2 or dist_goal[1]<2 else False
-			if goal_diff or next_state == mdp._goal_state or counter > min(math.sqrt(updates) * 60,1000):
+			#dist_goal = (next_state[0] - mdp._goal_state[0], next_state[1] - mdp._goal_state[1])
+			#goal_diff = False #True if dist_goal[0]<2 or dist_goal[1]<1 else False
+			(x,y) = next_state
+			wall = mdp._walls[y,x]
+			if next_state == mdp._goal_state or wall == 1 or counter > 1000:
 				counter =0
+				print (next_state,reward,self._qlearner._evaluate_q(self._qlearner._q,observation),start_position)
 				#print (iteration, updates)
 				self._qlearner.end(reward,observation)
 				updates += 1 
@@ -202,14 +242,14 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				self._qlearner.start(observation)
 			else:
 				current_action = self._qlearner.step(reward,observation)
-				#print (current_action[1])
+				#print ('step', reward)
 				current_state = next_state
-			if iteration%1000 == 0 and iteration>0:
+			if iteration%20000 == 0 and iteration>0:
 				self.calc_policy(iteration,actions,start_position)
 		return self.calc_policy(0,actions,start_position)
 	
 	def start_position(self, iteration):
-		dispersion_factor = 0.3
+		dispersion_factor = 0.5
 		dispersion = iteration * dispersion_factor
 		goal = self._mdp._goal_state
 		x_range = (max(0,int(goal[0] - dispersion)), min (self._mdp._width-1,int( goal[0]+dispersion)))
@@ -276,3 +316,13 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		plt.close()
 
 
+	def show_reward(self, reward_map, dpi=196.0):
+		# Set up the figure
+		plt.gcf().set_dpi(dpi)
+
+		# Note that we're messing with the input args here
+		reward_map = reward_map.reshape(self._mdp._height, self._mdp._width)
+		plt.imshow(reward_map, cmap='hot', interpolation='nearest')
+
+		plt.show()
+		plt.close()

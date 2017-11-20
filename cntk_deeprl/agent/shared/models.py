@@ -45,7 +45,7 @@ def custom_network(shape_of_inputs,
 	#])(inputs)
 	f = C.layers.Sequential([
 	    #C.layers.Convolution2D((1,5), num_filters=16, pad=True, reduction_rank=0, activation=C.ops.tanh),
-	    #C.layers.Convolution2D((1,5), num_filters=24, pad=True, reduction_rank=1, activation=C.ops.tanh),
+	    #C.layers.Convolution2D((1,3), num_filters=24, pad=True, reduction_rank=1, activation=C.ops.tanh),
 	    #C.layers.Convolution2D((1,5), num_filters=32, pad=False, reduction_rank=1, activation=C.ops.tanh),
 	    #C.layers.Convolution2D((2,5), num_filters=32, pad=False, reduction_rank=1, activation=C.ops.relu),
 	    #C.layers.MaxPooling((1,3), pad=False),
@@ -56,17 +56,20 @@ def custom_network(shape_of_inputs,
 		#C.layers.Activation(activation=C.ops.relu),#relu
 		#C.layers.Activation(activation=C.ops.relu),
 		#C.layers.Dropout(0.2),
-		#C.layers.Dense(140, activation=C.ops.relu),
-		C.layers.Dense(128, activation=C.ops.relu),
-		C.layers.Dense(128, activation=C.ops.relu),
-		C.layers.Dense(64, activation=C.ops.relu),
-		C.layers.Dense(32, activation=C.ops.relu),
+		#C.layers.Dense(20, activation=C.ops.relu),
+		#C.layers.Dense(1, activation=None),
+		C.layers.Dense(20, activation=C.ops.relu),
+		C.layers.Dense(20, activation=C.ops.relu),
+		C.layers.Dense(20, activation=C.ops.relu),
+		C.layers.Dense(20, activation=C.ops.relu),
+		C.layers.Dense(20, activation=C.ops.relu),
+		C.layers.Dense(10, activation=C.ops.relu),
 	    C.layers.Dense(number_of_outputs, activation=None)
 	])(inputs)
 
 	if loss_function is None:
-	    loss = C.losses.squared_error(f, outputs)
-	    #loss = C.losses.cross_entropy_with_softmax(f, outputs)
+	    #loss = C.losses.squared_error(f, outputs)
+	    loss = C.losses.cross_entropy_with_softmax(f, outputs)
 	else:
 	    loss = loss_function(f, outputs)
 
