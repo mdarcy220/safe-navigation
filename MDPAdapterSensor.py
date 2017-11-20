@@ -4,6 +4,7 @@ import numpy as np
 import math
 import os
 import pickle
+import sys
 
 class MDP:
 	def __init__(self):
@@ -203,6 +204,24 @@ class MDPAdapterSensor(MDP):
 		return 0.0
 
 	def _get_features(self, states, walls, goal):
+		feature_names = [
+			'nearest_wall_dist_90deg',
+			'nearest_wall_dist_270deg',
+			'nearest_wall_dist_0deg',
+			'nearest_wall_dist_180deg',
+			'goal_dist',
+			'iswall',
+			'nearest_wall_dist_45deg',
+			'nearest_wall_dist_225deg',
+			'nearest_wall_dist_135deg',
+			'nearest_wall_dist_315deg',
+		]
+		feature_params = dict()
+		for name in feature_names:
+			feature_params[name] = {'scale': 1}
+
+		extractor = MdpFeatureExtractor(feature_names)
+		features = extractor.extract_feature_dict(self)
 		
 		features = dict()
 		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
@@ -303,6 +322,57 @@ class MDPAdapterSensor(MDP):
 			"""
 			
 			features[state] = feature
+		# TODO: Convert the rest of these commented-out hardcoded
+		# feature representations to MdpFeatureExtractor functions
+
+		#features = dict()
+		#max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
+		#for state in states:
+		#	(x,y) = state
+		#	"""
+		#	features[state] = feature
+		#	# testing with a simpler feature vector
+		#	# f_1 is a negative number if state is wall
+		#	# f_2 is max_dist - dist to goal
+		#	feature = np.zeros(2)
+		#	if walls[y,x] == 1:
+		#		feature[0] = -max_dist
+		#	feature[1] = max_dist - math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
+		#	
+		#	feature = np.zeros(2)
+		#	temp = np.zeros(2)
+		#	if walls[y,x] == 1:
+		#		#feature[0:1] = 0
+		#		feature[0] = 1
+		#		#feature[2] = 0
+		#	else:
+		#		#temp[0] = abs(self._height/2 - y)/self._height
+		#		#temp[1] = abs(self._width/2 -  x)/self._width
+		#		#feature[0] = 1 if temp[0] > temp[1] else 0
+		#		#feature[1] = 1 - feature[0]
+		#		feature[0] = 0
+		#		#if (walls[y+1,x] ==1 or walls[y-1,x] ==1 or walls[y,x+1] ==1 or walls[y,x-1] ==1):
+		#		#	feature[0] = 1
+		#		#	feature[2] = 1
+		#		#	feature[3] = 0
+		#		#elif (walls[y+2,x] ==1 or walls[y-2,x] ==1 or walls[y,x+2] ==1 or walls[y,x-2] ==1):
+		#		#	feature[0] = 1
+		#		#	feature[2] = 1
+		#		#	feature[3] = 1
+		#		#else:
+		#		#	feature[2] = 0
+		#		#	feature[3] = 0
+
+		#	dist = math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 )
+		#	if(dist < 5.0 and walls[y,x] == 0):
+		#		feature[1] = 1
+		#		#feature[2] = 1
+		#	else:
+		#		feature[1] = 0
+		#	"""
+		#	
+		#	features[state] = feature
+>>>>>>> 81a00763b3e15ee82b6e32b96b5d45235bee2a88
 		return features
 
 	def _get_features2(self, states, walls, goal):
@@ -364,4 +434,180 @@ class MDPAdapterSensor(MDP):
 		
 		return features
 
+
+## Class to get features from MDP states
+#
+class MdpFeatureExtractor:
+	## Constructor
+	#
+	# @param feature_names (list-like)
+	# <br>	Format: `[name1, name2, ...]`
+	# <br>	A list of names of features to include in the feature vector
+	# 
+	# @param feature_params (dict)
+	# <br>	Format: `{name1: {param1: value1, ...}, name2: ...}`
+	# <br>	A dict with keys being the feature names from the
+	# 	`feature_names` parameter, and values being dicts of specific
+	# 	parameters to configure the extraction of those features.
+	#
+	def __init__(self, feature_names, feature_params=dict()):
+		self._feature_names = feature_names
+		self._feature_params = feature_params
+
+		# This extractor cache allows feature extractors to store
+		# information between calls for different states. This can be
+		# useful when it is easiest to compute the value of a feature
+		# for all states in one pass and cache the result so all later
+		# calls can complete in O(1) time
+		self._extractor_cache = {name: dict() for name in feature_names}
+
+		# Functions to map feature names to the functions used to
+		# extract them
+		self._feature_extractor_funcs = self._init_feature_extractor_funcs()
+
+
+	def _init_feature_extractor_funcs(self):
+		return {
+			'nearest_wall_dist_0deg': MdpFeatureExtractor._feature_nearest_wall_dist_0deg,
+			'nearest_wall_dist_45deg': MdpFeatureExtractor._feature_nearest_wall_dist_45deg,
+			'nearest_wall_dist_90deg': MdpFeatureExtractor._feature_nearest_wall_dist_90deg,
+			'nearest_wall_dist_135deg': MdpFeatureExtractor._feature_nearest_wall_dist_135deg,
+			'nearest_wall_dist_180deg': MdpFeatureExtractor._feature_nearest_wall_dist_180deg,
+			'nearest_wall_dist_225deg': MdpFeatureExtractor._feature_nearest_wall_dist_225deg,
+			'nearest_wall_dist_270deg': MdpFeatureExtractor._feature_nearest_wall_dist_270deg,
+			'nearest_wall_dist_315deg': MdpFeatureExtractor._feature_nearest_wall_dist_315deg,
+			'goal_dist': MdpFeatureExtractor._feature_goal_dist,
+			'inverse_goal_dist': MdpFeatureExtractor._feature_inverse_goal_dist,
+			'iswall': MdpFeatureExtractor._feature_iswall,
+		}
+		
+
+	def extract_feature_dict(self, mdp):
+		features = dict()
+		for state in mdp.states():
+			features[state] = []
+			for feature_name in self._feature_names:
+				feature_params = self._feature_params[feature_name] if feature_name in self._feature_params else dict()
+				features[state].append(self._feature_extractor_funcs[feature_name](state, mdp, feature_params, self._extractor_cache[feature_name]))
+			features[state] = np.array(features[state], dtype=np.float32)
+		return features
+
+
+	def _feature_iswall(state, mdp, params, cache):
+		if 'scale' not in cache:
+			if 'scale' in params:
+				cache['scale'] = params['scale']
+			else:
+				cache['scale'] = 100
+		scale = cache['scale']
+
+		x, y = state
+
+		return (scale if mdp._walls[y, x] == 1 else 0)
+
+
+	def _nearest_wall_dist_extractor_generic(angle_degrees, state, mdp, params, cache):
+		angle_radians = angle_degrees * np.pi / 180
+
+		# These selectors will control the direction in which the wall
+		# is searched for
+		x_component = np.cos(angle_radians)
+		y_component = np.sin(angle_radians)
+
+		# To move square by square in the grid, we need to make the
+		# step size the distance to the edge of a unit square in the
+		# direction of the unit vector (x_component, y_component).
+		# For example, this is 1 when the vector points a direction
+		# like (0, 1) but is sqrt(2) if the vector is pointing a 45
+		# degrees.
+		step_dist = 1.0 / max(abs(x_component), abs(y_component))
+
+		if 'max_dist' not in cache:
+			cache['max_dist'] = math.sqrt(mdp._height ** 2 + mdp._width ** 2)
+		max_dist = cache['max_dist']
+
+		if 'scale' not in cache:
+			if 'scale' in params:
+				cache['scale'] = params['scale']
+			else:
+				cache['scale'] = 100
+		scale = cache['scale']
+
+		x, y = state
+
+		if mdp._walls[y, x] == 1:
+			return 0
+
+		dist = step_dist
+		while (mdp._walls[int(round(y + y_component*dist)), int(round(x + x_component*dist))] == 0):
+			dist += step_dist
+		return scale * (max_dist - dist)/max_dist
+
+
+	def _feature_nearest_wall_dist_0deg(state, mdp, params, cache):
+		return MdpFeatureExtractor._nearest_wall_dist_extractor_generic(0, state, mdp, params, cache)
+
+
+	def _feature_nearest_wall_dist_45deg(state, mdp, params, cache):
+		return MdpFeatureExtractor._nearest_wall_dist_extractor_generic(45, state, mdp, params, cache)
+
+
+	def _feature_nearest_wall_dist_90deg(state, mdp, params, cache):
+		return MdpFeatureExtractor._nearest_wall_dist_extractor_generic(90, state, mdp, params, cache)
+
+
+	def _feature_nearest_wall_dist_135deg(state, mdp, params, cache):
+		return MdpFeatureExtractor._nearest_wall_dist_extractor_generic(135, state, mdp, params, cache)
+
+
+	def _feature_nearest_wall_dist_180deg(state, mdp, params, cache):
+		return MdpFeatureExtractor._nearest_wall_dist_extractor_generic(180, state, mdp, params, cache)
+
+
+	def _feature_nearest_wall_dist_225deg(state, mdp, params, cache):
+		return MdpFeatureExtractor._nearest_wall_dist_extractor_generic(225, state, mdp, params, cache)
+
+
+	def _feature_nearest_wall_dist_270deg(state, mdp, params, cache):
+		return MdpFeatureExtractor._nearest_wall_dist_extractor_generic(270, state, mdp, params, cache)
+
+
+	def _feature_nearest_wall_dist_315deg(state, mdp, params, cache):
+		return MdpFeatureExtractor._nearest_wall_dist_extractor_generic(315, state, mdp, params, cache)
+
+
+	def _feature_goal_dist(state, mdp, params, cache):
+		if 'max_dist' not in cache:
+			cache['max_dist'] = math.sqrt(mdp._height ** 2 + mdp._width ** 2)
+		max_dist = cache['max_dist']
+
+		if 'scale' not in cache:
+			if 'scale' in params:
+				cache['scale'] = params['scale']
+			else:
+				cache['scale'] = 100
+		scale = cache['scale']
+
+		goal = mdp._goal_state
+		x, y = state
+
+		return scale * (max_dist - math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2))/max_dist
+
+
+	def _feature_inverse_goal_dist(state, mdp, params, cache):
+		if 'max_dist' not in cache:
+			cache['max_dist'] = math.sqrt(mdp._height ** 2 + mdp._width ** 2)
+		max_dist = cache['max_dist']
+
+		if 'scale' not in cache:
+			if 'scale' in params:
+				cache['scale'] = params['scale']
+			else:
+				cache['scale'] = 100
+		scale = cache['scale']
+
+		goal = mdp._goal_state
+		x, y = state
+
+		return scale * max_dist/(max_dist - math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2))
 
