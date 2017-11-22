@@ -184,12 +184,6 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			#self.show_reward(feat_exp,loop)
 		return demonstrations
 
-
-	def _do_value_iter(self, reward):
-		def reward_func(state, action):
-			return reward[0,state[1]*self._mdp._width+state[0]]
-		return generic_value_iteration(self._mdp, reward_func, gamma=0.995, max_iter=1000, threshold=0.05)
-
 	def get_reward(self, network, policy):
 		mdp = self._mdp
 		width = mdp._width
