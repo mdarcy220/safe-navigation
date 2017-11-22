@@ -19,4 +19,7 @@ see which flags are available, just run:
 python3 Main.py --help
 ```
 
+## Contributing
+
+Use tabs, never spaces. Spaces break the Cython compilation. Also, use Unix line endings.
 
