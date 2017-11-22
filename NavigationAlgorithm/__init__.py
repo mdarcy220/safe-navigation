@@ -19,4 +19,5 @@ from .SamplingNavAlgo import SamplingNavigationAlgorithm
 from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
 from .InverseRLNavAlgo import InverseRLNavigationAlgorithm
 from .DeepIRL import DeepIRLAlgorithm
-from .DeepQIRLNavAlgo import DeepQIRLAlgorithm
+#from .DeepQIRLNavAlgo import DeepQIRLAlgorithm # this file is kept as a reference
+from .DQNIRLNavAlgo import DeepQIRLAlgorithm

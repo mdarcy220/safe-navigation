@@ -234,20 +234,20 @@ class MDPAdapterSensor(MDP):
 			feature[0] = x
 			feature[1] = y
 			"""
-			feature = np.zeros(4)
+			feature = np.zeros(7)
 			
 			if walls[y,x] == 1:
-				feature[0] = 0
-				#feature[0:5] = 0
+				feature[6] = 1
+				feature[0:6] = 0
 				#feature[5] = 1
 				#feature[0:4] = 0
 				#feature[5] = 100
 			else:
 				#feature[5] = 0
-				#i=1
-				#while(walls[y+i,x] == 0):
-				#	i += 1
-				#feature[0] = i/max_dist
+				i=1
+				while(walls[y+i,x] == 0):
+					i += 1
+				feature[0] = i/max_dist
 				i=1
 				while(walls[y-i,x] == 0):
 					i += 1
@@ -255,11 +255,11 @@ class MDPAdapterSensor(MDP):
 				i=1
 				while(walls[y,x+i] == 0):
 					i += 1
-				feature[0] = i/max_dist
-				#i=1
-				#while(walls[y,x-i] == 0):
-				#	i += 1
-				#feature[3] = i/max_dist
+				feature[2] = i/max_dist
+				i=1
+				while(walls[y,x-i] == 0):
+					i += 1
+				feature[3] = i/max_dist
 				#i=1
 				#while(walls[y+i,x+i] == 0):
 				#	i += 1
@@ -278,8 +278,8 @@ class MDPAdapterSensor(MDP):
 				#feature[9] = 100 * (max_dist - i*math.sqrt(2))/max_dist
 			#feature[4] =  (max_dist -  math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 ))/max_dist
 			#feature = np.zeros(2)
-			feature[2] = abs(x-goal[0])/max_dist
-			feature[3] = abs(y-goal[1])/max_dist
+				feature[4] = abs(x-goal[0])/max_dist
+				feature[5] = abs(y-goal[1])/max_dist
 			"""
 			features[state] = feature
 			# testing with a simpler feature vector
