@@ -148,14 +148,14 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 		sequence = []
 		steps = 0
 		while state != self._mdp.goal_state() and steps < max_steps:
-		    # return (s, a, s', r)
-		    action = self._get_action(state)
-		    next_state = self._mdp.get_successor_state(state, action)
-		    reward = self._mdp.reward(state, action, next_state)
-		    step = (state, action, next_state, reward)
-		    sequence.append(step)
-		    state = next_state
-		    steps += 1
+			# return (s, a, s', r)
+			action = self._get_action(state)
+			next_state = self._mdp.get_successor_state(state, action)
+			reward = self._mdp.reward(state, action, next_state)
+			step = (state, action, next_state, reward)
+			sequence.append(step)
+			state = next_state
+			steps += 1
 		return sequence
 
 
