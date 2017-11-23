@@ -60,14 +60,6 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		except:
 			cntk.try_set_default_device(cntk.device.cpu())
 
-		#self._radar   = self._sensors['radar'];
-		#self._radar_data = None
-		#self._dynamic_radar_data = None
-
-		#self._gps     = self._sensors['gps'];
-
-		self._normal_speed = float(cmdargs.robot_speed);
-
 		self.debug_info = {};
 
 		##########################
