@@ -72,9 +72,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 
 		##########################
 		# ### IRL parameters ### #
-		self._max_steps = 200;
-		self._max_loops = 300;
-		self._lr = 0.8;
+		self._max_steps = 200;#200
+		self._max_loops = 300;#300
+		self._lr = 0.3;
 		self._decay = 0.9
 		self._IRLmaxIter = 1;
 		# ### IRL parameters ### #
@@ -105,7 +105,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		# states have the same action set
 		actions_set = self._mdp.actions(self._mdp._goal_state)
 		self._actions = list([action for action in actions_set])
-		self.IRL_network = IRL_network(self._features_IRL[:,0].shape,self._lr, hidden_layers = [50,50,20,20,10])
+		self.IRL_network = IRL_network(self._features_IRL[:,0].shape,self._lr, hidden_layers = [50,50,50,20,20,10])
 		#self.IRL_network = IRL_network(self._features_IRL[:,0].shape,self._lr, hidden_layers = [1000,800,600,400,200,100,10])
 		self.main_loop()
 
@@ -215,7 +215,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		#tests = TestCases(self._cmdargs)
 		count =0
 		# sample size to take a batch of demonstrations each time
-		sample_size = 100
+		sample_size = self._max_loops
 		for i in range(maxIter):
 			demon_traj = random.sample(self._demonstrations,sample_size)
 			feat_exp = np.zeros((1,len(mdp.states())), dtype=np.float32)

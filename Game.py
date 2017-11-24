@@ -75,7 +75,7 @@ class Game:
 		# Init environment
 		self._env = Environment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
 		self._start_point = Target((50,550), color=0x00FF00)
-		self._target = Target((760, 50))
+		self._target = Target((730, 70))#(760,50)
 
 		# Init robots
 		radar = Radar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);

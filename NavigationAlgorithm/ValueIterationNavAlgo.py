@@ -99,7 +99,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _do_value_iter(self):
 		def reward_func(state, action):
 			return self._mdp.reward(state, action, None)
-		return generic_value_iteration(self._mdp, reward_func, gamma=0.995, threshold=0.05, min_iter=300, max_iter=5000)
+		return generic_value_iteration(self._mdp, reward_func, gamma=0.997, threshold=0.05, min_iter=300, max_iter=5000)
 
 
 	## Select the next action for the robot
@@ -156,6 +156,11 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    sequence.append(step)
 		    state = next_state
 		    steps += 1
+		    (x,y) = state
+		    if walla[y,x] == 1:
+		      print (state, 'is wall')
+		    if state == self._mdp._goal_state:
+		      break
 		return sequence
 
 

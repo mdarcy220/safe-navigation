@@ -51,6 +51,7 @@ class MDPAdapterSensor(MDP):
 		self._height = int(np.ceil(env.height/cell_size))
 		self._width = int(np.ceil(env.width/cell_size))
 		self._walls = self._init_walls(self._env, self._cell_size)
+		print (self._goal_state, self._walls[self._goal_state[1],self._goal_state[0]])
 		self._states = self._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
 
