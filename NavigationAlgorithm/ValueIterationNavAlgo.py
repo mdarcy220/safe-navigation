@@ -157,10 +157,16 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    state = next_state
 		    steps += 1
 		    (x,y) = state
-		    if self._mdp._walls[y,x] == 1:
-		      print (state, 'is wall')
 		    if state == self._mdp._goal_state:
-		      break
+		        break
+			# return (s, a, s', r)
+			action = self._get_action(state)
+			next_state = self._mdp.get_successor_state(state, action)
+			reward = self._mdp.reward(state, action, next_state)
+			step = (state, action, next_state, reward)
+			sequence.append(step)
+			state = next_state
+			steps += 1
 		return sequence
 
 

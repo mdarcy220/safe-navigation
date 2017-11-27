@@ -54,9 +54,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 					self._config[key] = tmp_config[key]
 
 		try:
-		    cntk.try_set_default_device(cntk.device.gpu(self._config['gpu_id']));
+			cntk.try_set_default_device(cntk.device.gpu(self._config['gpu_id']));
 		except:
-		    cntk.try_set_default_device(cntk.device.cpu())
+			cntk.try_set_default_device(cntk.device.cpu())
 
 		#self._radar   = self._sensors['radar'];
 		#self._radar_data = None

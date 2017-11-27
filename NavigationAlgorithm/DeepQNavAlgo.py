@@ -31,9 +31,9 @@ class DeepQNavigationAlgorithm(AbstractNavigationAlgorithm):
 	# 
 	def __init__(self, sensors, target, cmdargs):
 		try:
-		    cntk.try_set_default_device(cntk.device.gpu(1));
+			cntk.try_set_default_device(cntk.device.gpu(1));
 		except:
-		    cntk.try_set_default_device(cntk.device.cpu())
+			cntk.try_set_default_device(cntk.device.cpu())
 		self._sensors = sensors;
 		self._cmdargs = cmdargs;
 		self._target = target;

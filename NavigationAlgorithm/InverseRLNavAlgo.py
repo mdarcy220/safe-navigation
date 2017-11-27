@@ -3,7 +3,7 @@
 from Robot import RobotControlInput
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from .LinearNavAlgo import LinearNavigationAlgorithm  
-from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
+from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm, generic_value_iteration
 
 import numpy as np
 from numpy import linalg as LA
@@ -156,14 +156,14 @@ class InverseRLNavigationAlgorithm(AbstractNavigationAlgorithm):
 		for loop in range(0,max_loops):
 			start_state = (1000,1000)
 			while True:
-			    start_state = (random.randint(1,1), random.randint(1,18))
-			    #start_state = (random.randint(1,self._mdp._width-2), random.randint(1,self._mdp._height-2))
-			    if (self._mdp._walls[start_state[1], start_state[0]] == 0):
-				    break
+				start_state = (random.randint(1,1), random.randint(1,18))
+				#start_state = (random.randint(1,self._mdp._width-2), random.randint(1,self._mdp._height-2))
+				if (self._mdp._walls[start_state[1], start_state[0]] == 0):
+					break
 			#start_state = random.sample(self._mdp.states(),1)[0]
 			demon_traj = self._valueIteration.add_demonstration_step(start_state,max_steps)
 			if len(demon_traj) > 0:
-			    demonstrations.append(demon_traj)
+				demonstrations.append(demon_traj)
 		return demonstrations
 
 	def _add_demonstration_loop_local(self, max_steps, max_loops, policy):

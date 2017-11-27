@@ -57,17 +57,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 					self._config[key] = tmp_config[key]
 
 		try:
-		    cntk.try_set_default_device(cntk.device.gpu(self._config['gpu_id']));
+			cntk.try_set_default_device(cntk.device.gpu(self._config['gpu_id']));
 		except:
-		    cntk.try_set_default_device(cntk.device.cpu())
-
-		#self._radar   = self._sensors['radar'];
-		#self._radar_data = None
-		#self._dynamic_radar_data = None
-
-		#self._gps     = self._sensors['gps'];
-
-		self._normal_speed = float(cmdargs.robot_speed);
+			cntk.try_set_default_device(cntk.device.cpu())
 
 		self.debug_info = {};
 
@@ -168,15 +160,15 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		for loop in range(0,max_loops):
 			start_state = (1000,1000)
 			while True:
-			    start_state = (random.randint(1,math.ceil(self._mdp._width)-1), random.randint(math.ceil(self._mdp._height/8),math.ceil(self._mdp._height)-1))
-			    #start_state = (random.randint(1,math.ceil(self._mdp._width/2)), random.randint(math.ceil(self._mdp._height/2),math.ceil(self._mdp._height)-3))
-			    #start_state = (random.randint(1,1), random.randint(18,18))
-			    if (self._mdp._walls[start_state[1], start_state[0]] == 0):
-				    break
+				start_state = (random.randint(1,math.ceil(self._mdp._width)-1), random.randint(math.ceil(self._mdp._height/8),math.ceil(self._mdp._height)-1))
+				#start_state = (random.randint(1,math.ceil(self._mdp._width/2)), random.randint(math.ceil(self._mdp._height/2),math.ceil(self._mdp._height)-3))
+				#start_state = (random.randint(1,1), random.randint(18,18))
+				if (self._mdp._walls[start_state[1], start_state[0]] == 0):
+					break
 			#start_state = random.sample(self._mdp.states(),1)[0]
 			demon_traj = self._valueIteration.add_demonstration_step(start_state,max_steps)
 			if len(demon_traj) > 0:
-			    demonstrations.append(demon_traj)
+				demonstrations.append(demon_traj)
 			#feat_exp = np.zeros((1,len(mdp.states())), dtype=np.float32)
 			#for (state, action, next_state, r) in demon_traj:
 			#	(x,y) = state
@@ -184,12 +176,6 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			
 			#self.show_reward(feat_exp,loop)
 		return demonstrations
-
-
-	def _do_value_iter(self, reward):
-		def reward_func(state, action):
-			return reward[0,state[1]*self._mdp._width+state[0]]
-		return generic_value_iteration(self._mdp, reward_func, gamma=0.995, max_iter=1000, threshold=0.05)
 
 	def get_reward(self, network, policy):
 		mdp = self._mdp
