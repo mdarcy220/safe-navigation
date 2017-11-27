@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import json
+import time
 
 ## A navigation algorithm to be used with robots, based on deep q-learning.
 #
@@ -198,7 +199,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 
 		states, rewards = network.forward_one_step(np.vstack(features.T))
 		reward = list(rewards.values())[0].T
-		
+		reward_eval = self.assess_reward(reward,self._demonstrations)
+		best_network = network._model.clone('clone')
+		best_reward = reward
 		#############################################
 		# #### maxIter is placed for future use ### #
 		# currently it can only take the value of 1 #
@@ -251,6 +254,10 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		### Here rewards is the state based dictionary of rewards ###
 		### and reward is the N-D array, where N is the number of ###
 		### ############### per state (so far 1) ################ ###
+		reward_eval_final = self.assess_reward(reward,self._demonstrations)
+		if reward_eval_final < reward_eval:
+			network._model = best_network.clone('clone')
+			reward = best_reward
 
 		rewards = dict()	
 		for state in mdp.states():
@@ -277,7 +284,17 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		# rewards is a dictionary,while reward is a ND matrix
 		return rewards, reward
 	
-	
+	def assess_reward(self, reward, demonstrations):
+		width = self._mdp._width
+		gamma = self._qlearner._parameters.gamma
+		samples = len(demonstrations)
+		r_avg = [0] * samples
+		for traj in demonstrations:
+			for i,(state, action, next_state, r) in enumerate(traj):
+				(x,y) = state
+				r_avg[i] += reward[0,y*width+x]
+		return sum(r_avg)/samples
+				
 	def get_policy(self, rewards):
 		mdp = self._mdp
 		goal_state = mdp._goal_state
@@ -313,7 +330,24 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				    reward,
 				    next_state,
 				    0)
+		
+				
+		eval_iter = 0
 
+		####################################################
+		## registering old best policy as best ########## ##
+		## to have an update on the policy each ######### ##
+		## time this method is executed irrespective #### ##
+		## if it's the best or not, comment the following ##
+		max_reward = max([abs(i) for i in rewards.values()])
+		scaled_rewards = {k:v /max_reward for k,v in rewards.items()}
+		policy, policy_eval = self.calc_policy(-1,actions,scaled_rewards)
+		best_policy_eval = policy_eval
+		best_network = self._qlearner._q.clone('clone')
+		best_policy = policy.copy()
+		eval_iter += 1
+		####################################################
+		
 		#################################################
 		# ## then start normal exploration exploitation #
 		# ## and calculate the new policy accordingly ###
@@ -367,11 +401,40 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 
 				#print ('step', reward)
 				current_state = next_state
+		"""
 			if iteration % self._config['png_output_interval'] == 0 and iteration>0:
 				##TODO: assess policy, and save the one with the highest reward #
-				self.calc_policy(iteration,actions)
-				#print (self.assess_policy(self._qlearner,rewards,actions))
-		return self.calc_policy(0,actions)
+				max_reward = max([abs(i) for i in rewards.values()])
+				scaled_rewards = {k:v /max_reward for k,v in rewards.items()}
+				policy, policy_eval = self.calc_policy(iteration,actions,scaled_rewards)
+				if eval_iter == 0:
+					best_policy_eval = policy_eval
+					best_network = self._qlearner._q.clone('clone')
+					best_policy = policy.copy()
+				elif best_policy_eval <= policy_eval:
+					print ('policy has been updated')
+					best_policy_eval = policy_eval
+					best_network = self._qlearner._q.clone('clone')
+					best_policy = policy.copy()
+				eval_iter += 1
+		max_reward = max([abs(i) for i in rewards.values()])
+		scaled_rewards = {k:v /max_reward for k,v in rewards.items()}
+		policy, policy_eval = self.calc_policy(iteration,actions,scaled_rewards)
+		if eval_iter == 0:
+			best_policy_eval = policy_eval
+			best_network = self._qlearner._q.clone('clone')
+			best_policy = policy.copy()
+		elif best_policy_eval <= policy_eval:
+			print ('policy has been updated')
+			best_policy_eval = policy_eval
+			best_network = self._qlearner._q.clone('clone')
+			best_policy = policy.copy()
+		self._qlearner._q = best_network.clone('clone')
+		self._qlearner._target_q = best_network.clone('clone')
+		self._qlearner.step_count = 0
+		self._qlearner.episode_count = 0
+		"""
+		return policy #best_policy
 	
 	def start_position(self, iteration):
 		dispersion_factor = 0.5
@@ -384,10 +447,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			if self._mdp._walls[newPos[1],newPos[0]] == 0:
 				return newPos
 
-	def calc_policy(self, iteration, actions):
+	def calc_policy(self, iteration, actions, rewards):
 		mdp = self._mdp
 		policy = dict()
-		rewards = np.zeros((1,mdp._height * mdp._width))
 		features = self._features_DQN
 		for state in mdp.states():
 			(x,y) = state
@@ -405,27 +467,30 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				policy[state][action] = qvals_actions[i]/sum_qvals#math.exp(qvals_actions[i] - sum_qvals)
 
 		#self.plot_reward_policy(rewards, policy, iteration)
-		return policy
+		policy_eval = (self.assess_policy(self._qlearner, policy, rewards))
+		return policy, policy_eval
 	
-	def assess_policy(self, network, reward, actions):
+	def assess_policy(self, network, policy, rewards):
 		# return the average reward over a number of paths
 		# all starting from a random location
 		# and following the generated policy
+		#start_time = time.time()
 		gamma = network._parameters.gamma
-		features = self._features_DQN
-		samples = 20
+		samples = 50
 		r_avg = [0] * samples
 		for i in range(samples):
 			starting_position = self.random_start_position()
-			r_avg[i] += reward[starting_position]
+			r_avg[i] += rewards[starting_position]
 			current_step = starting_position
 			for step in range(self._max_steps):
-				q_values = network._evaluate_q(network._q,np.vstack(features[current_step]).T)
-				max_index = np.argmax(q_values)
-				action = actions[max_index]
+				#q_values = policy[current_step]
+				#max_index = np.argmax(q_values)
+				actions = policy[current_step]
+				action = max(actions, key=actions.get)
 				next_step = self._mdp.get_successor_state(current_step,action)
-				r_avg[i] += reward[next_step] * gamma ** step
+				r_avg[i] += rewards[next_step] * (gamma ** step)
 				current_step = next_step
+		#print (time.time() - start_time)
 
 		return sum (r_avg)/samples
 

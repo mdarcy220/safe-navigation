@@ -157,7 +157,7 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    state = next_state
 		    steps += 1
 		    (x,y) = state
-		    if walla[y,x] == 1:
+		    if self._mdp._walls[y,x] == 1:
 		      print (state, 'is wall')
 		    if state == self._mdp._goal_state:
 		      break
