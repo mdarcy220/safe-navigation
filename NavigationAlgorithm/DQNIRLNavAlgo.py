@@ -57,9 +57,17 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 					self._config[key] = tmp_config[key]
 
 		try:
-			cntk.try_set_default_device(cntk.device.gpu(self._config['gpu_id']));
+		    cntk.try_set_default_device(cntk.device.gpu(self._config['gpu_id']));
 		except:
-			cntk.try_set_default_device(cntk.device.cpu())
+		    cntk.try_set_default_device(cntk.device.cpu())
+
+		#self._radar   = self._sensors['radar'];
+		#self._radar_data = None
+		#self._dynamic_radar_data = None
+
+		#self._gps     = self._sensors['gps'];
+
+		self._normal_speed = float(cmdargs.robot_speed);
 
 		self.debug_info = {};
 
@@ -100,6 +108,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		self._actions = list([action for action in actions_set])
 		self.IRL_network = IRL_network(self._features_IRL[:,0].shape,self._lr, hidden_layers = [50,50,50,20,20,10])
 		#self.IRL_network = IRL_network(self._features_IRL[:,0].shape,self._lr, hidden_layers = [1000,800,600,400,200,100,10])
+		self._qlearner.set_as_best_model()
 		self.main_loop()
 
 
@@ -116,7 +125,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		reward, reward_map = self.forward_reward(self.IRL_network)
 		for k in range(1,max_k):
 			# get_policy requires state based dictionary of rewards
-			policy = self.get_policy(reward)
+			policy = self.get_policy(reward,k)
 
 			reward, reward_map = self.get_reward(self.IRL_network,policy)
 
@@ -160,15 +169,15 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		for loop in range(0,max_loops):
 			start_state = (1000,1000)
 			while True:
-				start_state = (random.randint(1,math.ceil(self._mdp._width)-1), random.randint(math.ceil(self._mdp._height/8),math.ceil(self._mdp._height)-1))
-				#start_state = (random.randint(1,math.ceil(self._mdp._width/2)), random.randint(math.ceil(self._mdp._height/2),math.ceil(self._mdp._height)-3))
-				#start_state = (random.randint(1,1), random.randint(18,18))
-				if (self._mdp._walls[start_state[1], start_state[0]] == 0):
-					break
+			    start_state = (random.randint(1,math.ceil(self._mdp._width)-1), random.randint(math.ceil(self._mdp._height/8),math.ceil(self._mdp._height)-1))
+			    #start_state = (random.randint(1,math.ceil(self._mdp._width/2)), random.randint(math.ceil(self._mdp._height/2),math.ceil(self._mdp._height)-3))
+			    #start_state = (random.randint(1,1), random.randint(18,18))
+			    if (self._mdp._walls[start_state[1], start_state[0]] == 0):
+				    break
 			#start_state = random.sample(self._mdp.states(),1)[0]
 			demon_traj = self._valueIteration.add_demonstration_step(start_state,max_steps)
 			if len(demon_traj) > 0:
-				demonstrations.append(demon_traj)
+			    demonstrations.append(demon_traj)
 			#feat_exp = np.zeros((1,len(mdp.states())), dtype=np.float32)
 			#for (state, action, next_state, r) in demon_traj:
 			#	(x,y) = state
@@ -176,6 +185,12 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			
 			#self.show_reward(feat_exp,loop)
 		return demonstrations
+
+
+	def _do_value_iter(self, reward):
+		def reward_func(state, action):
+			return reward[0,state[1]*self._mdp._width+state[0]]
+		return generic_value_iteration(self._mdp, reward_func, gamma=0.995, max_iter=1000, threshold=0.05)
 
 	def get_reward(self, network, policy):
 		mdp = self._mdp
@@ -281,7 +296,10 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				r_avg[i] += reward[0,y*width+x]
 		return sum(r_avg)/samples
 				
-	def get_policy(self, rewards):
+	def get_policy(self, rewards, k):
+		update_always = False
+		if k < 5:
+			update_always = True
 		mdp = self._mdp
 		goal_state = mdp._goal_state
 		actions = self._actions
@@ -327,9 +345,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		## if it's the best or not, comment the following ##
 		max_reward = max([abs(i) for i in rewards.values()])
 		scaled_rewards = {k:v /max_reward for k,v in rewards.items()}
-		policy, policy_eval = self.calc_policy(-1,actions,scaled_rewards)
+		policy, policy_eval = self.calc_policy(-1,actions,scaled_rewards, self._qlearner._best_model)
 		best_policy_eval = policy_eval
-		best_network = self._qlearner._q.clone('clone')
+		#best_network = self._qlearner._q
 		best_policy = policy.copy()
 		eval_iter += 1
 		####################################################
@@ -387,40 +405,32 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 
 				#print ('step', reward)
 				current_state = next_state
-		"""
 			if iteration % self._config['png_output_interval'] == 0 and iteration>0:
 				##TODO: assess policy, and save the one with the highest reward #
 				max_reward = max([abs(i) for i in rewards.values()])
 				scaled_rewards = {k:v /max_reward for k,v in rewards.items()}
-				policy, policy_eval = self.calc_policy(iteration,actions,scaled_rewards)
-				if eval_iter == 0:
-					best_policy_eval = policy_eval
-					best_network = self._qlearner._q.clone('clone')
-					best_policy = policy.copy()
-				elif best_policy_eval <= policy_eval:
+				policy, policy_eval = self.calc_policy(iteration,actions,scaled_rewards,self._qlearner._q)
+				if update_always :best_policy_eval = -float('inf')
+				if best_policy_eval <= policy_eval:
 					print ('policy has been updated')
 					best_policy_eval = policy_eval
-					best_network = self._qlearner._q.clone('clone')
+					self._qlearner.set_as_best_model()
+					best_policy = {}
 					best_policy = policy.copy()
 				eval_iter += 1
 		max_reward = max([abs(i) for i in rewards.values()])
 		scaled_rewards = {k:v /max_reward for k,v in rewards.items()}
-		policy, policy_eval = self.calc_policy(iteration,actions,scaled_rewards)
-		if eval_iter == 0:
-			best_policy_eval = policy_eval
-			best_network = self._qlearner._q.clone('clone')
-			best_policy = policy.copy()
-		elif best_policy_eval <= policy_eval:
+		policy, policy_eval = self.calc_policy(iteration,actions,scaled_rewards,self._qlearner._q)
+		if update_always: best_policy_eval = -float('inf')
+		if best_policy_eval <= policy_eval:
 			print ('policy has been updated')
 			best_policy_eval = policy_eval
-			best_network = self._qlearner._q.clone('clone')
+			self._qlearner.set_as_best_model()
+			best_policy = {}
 			best_policy = policy.copy()
-		self._qlearner._q = best_network.clone('clone')
-		self._qlearner._target_q = best_network.clone('clone')
-		self._qlearner.step_count = 0
-		self._qlearner.episode_count = 0
-		"""
-		return policy #best_policy
+		#self._qlearner.step_count = 0
+		#self._qlearner.episode_count = 0
+		return best_policy
 	
 	def start_position(self, iteration):
 		dispersion_factor = 0.5
@@ -433,7 +443,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			if self._mdp._walls[newPos[1],newPos[0]] == 0:
 				return newPos
 
-	def calc_policy(self, iteration, actions, rewards):
+	def calc_policy(self, iteration, actions, rewards, model):
 		mdp = self._mdp
 		policy = dict()
 		features = self._features_DQN
@@ -443,7 +453,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			if self.learner == cntk_deeprl.agent.policy_gradient.ActorCritic: # actor critic trainer
 				qvals_actions = self._qlearner._evaluate_model(self._qlearner._policy_network, observation)
 			elif self.learner == cntk_deeprl.agent.qlearning.QLearning: # qlearning trainer
-				qvals_actions = self._qlearner._evaluate_q(self._qlearner._q,observation)
+				qvals_actions = self._qlearner._evaluate_q(model,observation)
 			sum_qvals = sum(qvals_actions)
 			#print (qvals_actions)
 			#break
