@@ -444,6 +444,10 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				return newPos
 
 	def calc_policy(self, iteration, actions, rewards, model):
+		# For qlearning, accelerate using batching
+		if self.learner == cntk_deeprl.agent.qlearning.QLearning: # qlearning trainer
+			return self.calc_policy_qlearning(iteration, actions, rewards, model)
+
 		mdp = self._mdp
 		policy = dict()
 		features = self._features_DQN
@@ -452,8 +456,6 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			observation = np.vstack(features[state]).T
 			if self.learner == cntk_deeprl.agent.policy_gradient.ActorCritic: # actor critic trainer
 				qvals_actions = self._qlearner._evaluate_model(self._qlearner._policy_network, observation)
-			elif self.learner == cntk_deeprl.agent.qlearning.QLearning: # qlearning trainer
-				qvals_actions = self._qlearner._evaluate_q(model,observation)
 			sum_qvals = sum(qvals_actions)
 			#print (qvals_actions)
 			#break
@@ -462,6 +464,27 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			for i,action in enumerate(actions):
 				policy[state][action] = qvals_actions[i]/sum_qvals#math.exp(qvals_actions[i] - sum_qvals)
 
+		#self.plot_reward_policy(rewards, policy, iteration)
+		policy_eval = (self.assess_policy(self._qlearner, policy, rewards))
+		return policy, policy_eval
+
+
+	# Accelerated calc_policy function using batched qlearning
+	def calc_policy_qlearning(self, iteration, actions, rewards, model):
+		policy = dict()
+		features = self._features_DQN
+		allstates = list(self._mdp.states())
+		batch_size = 100
+		for idx in np.arange(0, len(allstates), batch_size):
+			cur_slice = allstates[idx:idx+batch_size]
+			observations = [np.vstack(features[state]).T for state in cur_slice]
+			qvals_actions = np.squeeze(model.eval({model.arguments[0]: observations}))
+			sum_qvals = np.sum(qvals_actions,1)
+			for i in range(len(cur_slice)):
+				state = cur_slice[i]
+				policy[state] = dict()
+				for k,action in enumerate(actions):
+					policy[state][action] = qvals_actions[i][k]/sum_qvals[i]
 		#self.plot_reward_policy(rewards, policy, iteration)
 		policy_eval = (self.assess_policy(self._qlearner, policy, rewards))
 		return policy, policy_eval
