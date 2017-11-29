@@ -17,6 +17,8 @@ import os
 import sys
 import json
 import time
+from joblib import Parallel, delayed
+import multiprocessing
 
 ## A navigation algorithm to be used with robots, based on deep q-learning.
 #
@@ -497,6 +499,14 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		gamma = network._parameters.gamma
 		samples = 50
 		r_avg = [0] * samples
+
+		# trying to parallelize did not work,
+		# might work on it later
+		#num_cores = multiprocessing.cpu_count()
+
+		#r_avg = Parallel(n_jobs=num_cores)(delayed(avg_r)(self,policy,gamma,i) for i  in range(samples))
+		# see global method avg_r for referencing
+		
 		for i in range(samples):
 			starting_position = self.random_start_position()
 			r_avg[i] += rewards[starting_position]
@@ -509,6 +519,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 				next_step = self._mdp.get_successor_state(current_step,action)
 				r_avg[i] += rewards[next_step] * (gamma ** step)
 				current_step = next_step
+    
 		#print (time.time() - start_time)
 
 		return sum (r_avg)/samples
@@ -588,6 +599,20 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		plt.savefig('../output_data/grad.png')
 		plt.close()
 
+def avg_r(DQNIRL,policy,gamma,i):
+	starting_position = DQNIRL.random_start_position()
+	r_avg_i = 0
+	r_avg_i += rewards[starting_position]
+	current_step = starting_position
+	for step in range(DQNIRL._max_steps):
+		#q_values = policy[current_step]
+		#max_index = np.argmax(q_values)
+		actions = policy[current_step]
+		action = max(actions, key=actions.get)
+		next_step = DQNIRL._mdp.get_successor_state(current_step,action)
+		r_avg_i += rewards[next_step] * (gamma ** step)
+		current_step = next_step
+	return r_avg_i
 
 class IRL_network:
 	
