@@ -572,6 +572,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			ax.arrow(state[0], state[1], 0.1*maxarrow_vec[0], 0.1*maxarrow_vec[1], head_width= scale * max(min(1,max_action[1]),0.3), head_length = scale *max(min(1,max_action[1]),0.3), color='g')
 
 		# Output the figure to the image file
+		plt.title('Iteration {}'.format(iteration))
 		plt.savefig('../output_data/r_p{:02d}.png'.format(iteration))
 		plt.close()
 
