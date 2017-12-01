@@ -209,7 +209,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		maxIter = self._IRLmaxIter
 		#############################################
 
-		old_grad = np.zeros((features[:,0].shape))
+		old_grad = np.zeros((features[:,0].shape), dtype=np.float32)
 		lr = self._lr
 		decay = self._decay
 
