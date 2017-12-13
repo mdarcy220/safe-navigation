@@ -86,7 +86,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		self._stepNum = 0;
 		self._mdp = self._sensors['mdp'];
 		self._features_DQN = self._get_features_DQN();
-		self._features_IRL = self._get_featuresi_IRL();
+		self._features_IRL = self._get_features_IRL();
 
 		self._o_space_shape= (1,self._features_DQN[random.sample(self._mdp.states(),1)[0]].size)
 
@@ -104,11 +104,12 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		self.maxIter = self._config['max_iters']
 		self._valueIteration = ValueIterationNavigationAlgorithm(self._sensors, self._target, self._cmdargs);
 		self._demonstrations = self._add_demonstration_loop(self._max_steps, self._max_loops);
+		self._mdp.local = True
 		# the following action set assumes that all
 		# states have the same action set
 		actions_set = self._mdp.actions(self._mdp._goal_state)
 		self._actions = list([action for action in actions_set])
-		self.IRL_network = IRL_network(self._features_IRL[:,0].shape,self._lr, hidden_layers = [50,50,50,20,20,10])
+		self.IRL_network = IRL_network(self._features_IRL[:,0].shape,self._lr, hidden_layers =[50,40,40,10])# [50,50,50,20,20,10])
 		#self.IRL_network = IRL_network(self._features_IRL[:,0].shape,self._lr, hidden_layers = [1000,800,600,400,200,100,10])
 		self._qlearner.set_as_best_model()
 		self.main_loop()
@@ -142,7 +143,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		features = mdp._features
 		return features
 	
-	def _get_featuresi_IRL(self):
+	def _get_features_IRL(self):
 		# in this method we retrieve the features from the mdp
 		# and we transform the from a dictionary of column vectors
 		# to a 2D matrix
@@ -221,7 +222,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		#tests = TestCases(self._cmdargs)
 		count =0
 		# sample size to take a batch of demonstrations each time
-		sample_size = self._max_loops
+		sample_size = 50#self._max_loops
 		for i in range(maxIter):
 			demon_traj = random.sample(self._demonstrations,sample_size)
 			feat_exp = np.zeros((1,len(mdp.states())), dtype=np.float32)
@@ -236,7 +237,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			grad = np.dot(grad, np.float32(lr))
 			self.show_reward(grad)
 			
-			network.backward_one_step(states, rewards, np.vstack(grad.T))
+			network.backward_one_step(states, rewards, np.vstack(-grad.T))
 			
 			#if i%7 == 0:
 				#lr = lr * decay
@@ -258,9 +259,9 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		### and reward is the N-D array, where N is the number of ###
 		### ############### per state (so far 1) ################ ###
 		reward_eval_final = self.assess_reward(reward,self._demonstrations)
-		if reward_eval_final < reward_eval:
-			network._model = best_network.clone('clone')
-			reward = best_reward
+		#if reward_eval_final < reward_eval:
+		#	network._model = best_network.clone('clone')
+		#	reward = best_reward
 
 		rewards = dict()	
 		for state in mdp.states():
@@ -299,7 +300,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		return sum(r_avg)/samples
 				
 	def get_policy(self, rewards, k):
-		update_always = False
+		update_always = True #False
 		if k < 5:
 			update_always = True
 		mdp = self._mdp
@@ -631,11 +632,11 @@ class IRL_network:
 		with cntk.layers.default_options(init = cntk.layers.glorot_uniform(), activation = cntk.ops.relu):
 			h = self._input
 			for i in range(self._num_hidden_layers):
-				h = cntk.layers.Dense(hidden_layers[i])(h)
+				h = cntk.layers.Dense(hidden_layers[i],activation = cntk.ops.relu)(h)
 			model = cntk.layers.Dense(self._output_size, activation = None)(h)
 			loss = cntk.reduce_mean(cntk.square(model - self._output), axis=0)
 			meas = cntk.reduce_mean(cntk.square(model - self._output), axis=0)
-			learner = cntk.adadelta(model.parameters, self._lr_schedule)
+			learner = cntk.adadelta(model.parameters, self._lr_schedule, l2_regularization_weight=0.01)
 			trainer = cntk.Trainer(model, (loss,meas), learner)
 			return model, loss, learner, trainer
 	def forward_one_step(self, inputs):

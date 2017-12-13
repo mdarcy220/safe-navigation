@@ -43,7 +43,7 @@ class MDPAdapterSensor(MDP):
 	# <br>	The number of actions that should be available (i.e., possible
 	# 	directions; the default of 4 would be NESW for example)
 	# 
-	def __init__(self, env, start_state, goal_state, cell_size=30, num_actions=4, robot_speed=10, unique_id=''):
+	def __init__(self, env, start_state, goal_state, cell_size=30, num_actions=4, robot_speed=10, unique_id='', local = False):
 		self._env = env
 		self._cell_size = cell_size
 		self._start_state = self.discretize(start_state)
@@ -54,6 +54,7 @@ class MDPAdapterSensor(MDP):
 		print (self._goal_state, self._walls[self._goal_state[1],self._goal_state[0]])
 		self._states = self._init_states(env, cell_size)
 		self._actions = MDPAdapterSensor._init_actions(num_actions, robot_speed)
+		self.local = local
 
 		trans_table_filename = '{}_{:d}_{:d}.pickle'.format(unique_id, cell_size, num_actions)
 		if os.path.isfile(trans_table_filename):
@@ -128,6 +129,14 @@ class MDPAdapterSensor(MDP):
 		all_successors = set()
 		for action in self._transition_table[state].keys():
 			all_successors |= {successor for successor in self._transition_table[state][action].keys() if self._walls[successor[1],successor[0]] < 1}
+			if((state[1] == 13 or state[1] == 5) and self.local):
+				successors = set(all_successors)
+				for successor in successors:
+					(x,y) = successor
+					if(y == state[1] - 1 or y == state[1]):
+						all_successors.remove(successor)
+						
+					
 		return all_successors
 
 
@@ -209,37 +218,54 @@ class MDPAdapterSensor(MDP):
 		max_dist = math.sqrt(self._height ** 2 + self._width ** 2)
 		for state in states:
 			(x,y) = state
+			
+			if y>=13:
+				if x<15:
+					local_goal = (14,13)
+				else:
+					local_goal = (x,13)
+			elif(y>=8):
+				local_goal = (12,5)
+			elif(y>=5):
+				if x>11:
+					local_goal = (12,5)
+				else:
+					local_goal = (x,5)
+			else:
+				local_goal = goal
+			#local_goal = goal
 			"""
 			feature = np.zeros(2)
 			feature[0] = x
 			feature[1] = y
 			"""
 			feature = np.zeros(7)
-			
+			feature = np.zeros(3)
 			if walls[y,x] == 1:
-				feature[6] = 1
-				feature[0:6] = 0
+				feature[0:3] = 0
+				#feature[6] = 1
+				#feature[0:6] = 0
 				#feature[5] = 1
 				#feature[0:4] = 0
 				#feature[5] = 100
 			else:
 				#feature[5] = 0
-				i=1
-				while(walls[y+i,x] == 0):
-					i += 1
-				feature[0] = i/max_dist
+				#i=1
+				#while(walls[y+i,x] == 0):
+				#	i += 1
+				#feature[0] = i/max_dist
 				i=1
 				while(walls[y-i,x] == 0):
 					i += 1
-				feature[1] =  i/max_dist
-				i=1
-				while(walls[y,x+i] == 0):
-					i += 1
-				feature[2] = i/max_dist
-				i=1
-				while(walls[y,x-i] == 0):
-					i += 1
-				feature[3] = i/max_dist
+				feature[2] =  i/max_dist
+				#i=1
+				#while(walls[y,x+i] == 0):
+				#	i += 1
+				#feature[2] = i/max_dist
+				#i=1
+				#while(walls[y,x-i] == 0):
+				#	i += 1
+				#feature[3] = i/max_dist
 				#i=1
 				#while(walls[y+i,x+i] == 0):
 				#	i += 1
@@ -258,8 +284,8 @@ class MDPAdapterSensor(MDP):
 				#feature[9] = 100 * (max_dist - i*math.sqrt(2))/max_dist
 			#feature[4] =  (max_dist -  math.sqrt((x - goal[0]) ** 2 + (y - goal[1]) ** 2 ))/max_dist
 			#feature = np.zeros(2)
-				feature[4] = abs(x-goal[0])/max_dist
-				feature[5] = abs(y-goal[1])/max_dist
+				feature[0] = max_dist/(abs(x-local_goal[0]) +0.1*max_dist)
+				feature[1] = max_dist/(abs(y-local_goal[1]) + 0.1*max_dist)
 			"""
 			features[state] = feature
 			# testing with a simpler feature vector
