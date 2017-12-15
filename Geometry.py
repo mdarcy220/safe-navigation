@@ -515,6 +515,156 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 
 	return rectangle_shadow_angle_range(circle_center, rect_pos, rect_dim);
 
+## Rotates points about origin with angle alpha
+# 
+# 
+# @param points (numpy array)
+# <br>	Format: `[[x1, y1],..,[xn,yn]]`
+# <br>  -- list of points to be rotated
+#
+# @param angle (float)
+# <br>	-- rotation angle
+# 
+# 
+# @returns (numpy array)
+# <br>	Format: `[[x1,y1],...,[xn,yn]]`
+# <br>	Desc: Returns a numpy array of the rotate pair of each 
+#             input point.
+#
+def rotate_points_origin(points, angle):
+  rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],[np.sin(angle), np.cos(angle)]])
+  return np.dot(points,rotation_matrix)
+
+## Return points to original origin after being rotated 
+#  about origin with angle alpha
+# 
+# @param points (numpy array)
+# <br>	Format: `[[x1, y1],..,[xn,yn]]`
+# <br>  -- list of points to be rotated
+#
+# @param angle (float)
+# <br>	-- rotation angle
+# 
+# 
+# @returns (numpy array)
+# <br>	Format: `[[x1,y1],...,[xn,yn]]`
+# <br>	Desc: Returns a numpy array of the rotate pair of each 
+#             input point.
+#
+def rotate_points_back_origin(points,angle):
+  rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],[np.sin(angle), np.cos(angle)]])
+  return np.dot(points,rotation_matrix.T)
+
+
+## Returns the point(s) of intersection of the given ellipse
+# object with the given line.
+# 
+# @param ellipse_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of the ellipse
+# 
+# @param ellipse_width (float)
+# <br>	-- the width of the ellipse
+# 
+# @param ellipse_height (float)
+# <br>	-- the height of the ellipse
+# 
+# @param ellipse_angle (float)
+# <br>	-- the angle of the ellipse
+# 
+# @param line (list of numpy array)
+# <br>	Format: `[[x1, y1], [x2, y2]]`
+# <br>	-- the line to check
+# 
+# @returns (list of numpy array)
+# <br>	Format: `[[x1, y1], ..., [xn, yn]]`
+# <br>	-- Returns a list of intersection points. If there are no
+# 	intersection points, an empty list will be returned. If an error
+# 	occurs, `None` is returned.
+#
+def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ellipse_angle, line):
+
+	# Make things easier by shifting the coordinate system so the circle
+	# is centered at the origin (0, 0), then rotate the line points to
+	# have non rotated ellipse
+	adjusted_line = rotate_points_origin(np.subtract(line, ellipse_center),ellipse_angle);
+
+	# Easier to work with half-width and half-height of ellipse
+	a = ellipse_width/2;
+	b = ellipse_height/2;
+
+	# Easier-to-read notation
+	p1, p2 = adjusted_line[0], adjusted_line[1]
+	x1, y1 = p1[0], p1[1];
+	x2, y2 = p2[0], p2[1];
+
+	# Distances
+	dx = x2 - x1;
+	dy = y2 - y1;
+
+	# Check first if the line is either horizontal or vertical
+	if (dx !=0 and dy!=0):
+		# Calculate line slope m
+		m = dy/dx;
+		c = y1 - m*x1;
+		determinant = a**2 * m**2 + b**2 -c**2;
+		if determinant < 0:
+			return [];
+		elif determinant == 0:
+			x = -a**2 * m *c;
+			y = b**2 * c;
+			div = (a*m)**2 + b**2;
+			x1 = x/div;
+			y1 = y/div;
+
+			intersections = [[x1,y1],[x2,y2]];
+			
+		else:
+			determinant = a*b* np.sqrt(determinant);
+			x = -a**2 * m *c;
+			y = b**2 * c;
+			div = (a*m)**2 + b**2;
+			x1 = (x + determinant)/div;
+			x2 = (x - determinant)/div;
+			y1 = (y + m*determinant)/div;
+			y2 = (y - m*determinant)/div;
+
+			intersections = [[x1,y1],[x2,y2]];
+	elif dx == 0:
+		y = y1;
+		if y>b or y<-b:
+			return []
+		elif y == b or y == -b:
+			intersections = [[0,y]];
+		else:
+			x1 = a * np.sqrt(1-(y/b)**2);
+			x2 = -x1;
+			intersections = [[x1,y],[x2,y]];
+	else:
+		x = x1;
+		if x>a or x<-a:
+			return []
+		elif x == a or x == -a:
+			intersections = [[x,0]];
+		else:
+			y1 = a * np.sqrt(1-(x/a)**2);
+			y2 = -y1;
+			intersections = [[x,y1],[x,y2]];
+				
+
+	intersections = rotate_points_back_origin(intersections,ellipse_angle);
+	intersections[:,0] += ellipse_center[0];
+	intersections[:,1] += ellipse_center[1];
+
+	return intersections
+
+					
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
