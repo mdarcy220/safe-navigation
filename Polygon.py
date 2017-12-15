@@ -41,7 +41,7 @@ class Polygon(Shape):
 		for i in range(len(self.Points)):
 			edge = [self.Points[i-1],self.Points[i]];
 			intersection = Geometry.line_line_intersection(line,edge);
-			if intersection!=None:
+			if intersection is not None:
 				intersections.append(list(intersection));
 		return intersections;
 
