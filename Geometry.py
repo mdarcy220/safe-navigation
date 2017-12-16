@@ -584,86 +584,53 @@ def rotate_points_back_origin(points,angle):
 #
 def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ellipse_angle, line):
 
-	# Make things easier by shifting the coordinate system so the circle
-	# is centered at the origin (0, 0), then rotate the line points to
-	# have non rotated ellipse
-	adjusted_line = rotate_points_origin(np.subtract(line, ellipse_center),ellipse_angle);
+	ellipse_rx = ellipse_width / 2.0
+	ellipse_ry = ellipse_height / 2.0
 
-	# Easier to work with half-width and half-height of ellipse
-	a = ellipse_width/2;
-	b = ellipse_height/2;
+	# Transformation matrix to normalize the angle of the ellipse
+	rotation_matrix = np.linalg.inv(np.array([[np.cos(ellipse_angle), -np.sin(ellipse_angle)], [np.sin(ellipse_angle), np.cos(ellipse_angle)]]))
 
-	# Easier-to-read notation
-	p1, p2 = adjusted_line[0], adjusted_line[1]
-	x1, y1 = p1[0], p1[1];
-	x2, y2 = p2[0], p2[1];
+	# Transformation to squeeze/stretch the ellipse back to a perfect circle
+	stretch_matrix = np.linalg.inv(np.array([[ellipse_rx, 0], [0, ellipse_ry]]))
 
-	# Distances
-	dx = x2 - x1;
-	dy = y2 - y1;
+	# Combined transformation to make the ellipse a perfect circle
+	# Note: Matrix multiplication, so order matters
+	transform_matrix = np.dot(stretch_matrix, rotation_matrix)
 
-	# Check first if the line is either horizontal or vertical
-	if (dx !=0 and dy!=0):
-		# Calculate line slope m
-		m = dy/dx;
-		c = y1 - m*x1;
-		determinant = a**2 * m**2 + b**2 -c**2;
-		if determinant < 0:
-			return [];
-		elif determinant == 0:
-			x = -a**2 * m *c;
-			y = b**2 * c;
-			div = (a*m)**2 + b**2;
-			x1 = x/div;
-			y1 = y/div;
+	# Transform both the ellipse and the line
+	# This reduces the problem to a circle-line intersection
+	new_center = np.dot(transform_matrix, ellipse_center)
+	new_line = np.array([np.dot(transform_matrix, line[0]), np.dot(transform_matrix, line[1])])
 
-			intersections = [[x1,y1],[x2,y2]];
-			
-		else:
-			determinant = a*b* np.sqrt(determinant);
-			x = -a**2 * m *c;
-			y = b**2 * c;
-			div = (a*m)**2 + b**2;
-			x1 = (x + determinant)/div;
-			x2 = (x - determinant)/div;
-			y1 = (y + m*determinant)/div;
-			y2 = (y - m*determinant)/div;
+	transformed_intersections = circle_line_intersection(new_center, 1, new_line)
 
-			intersections = [[x1,y1],[x2,y2]];
-	elif dx == 0:
-		y = y1;
-		if y>b or y<-b:
-			return []
-		elif y == b or y == -b:
-			intersections = [[0,y]];
-		else:
-			x1 = a * np.sqrt(1-(y/b)**2);
-			x2 = -x1;
-			intersections = [[x1,y],[x2,y]];
-	else:
-		x = x1;
-		if x>a or x<-a:
-			return []
-		elif x == a or x == -a:
-			intersections = [[x,0]];
-		else:
-			y1 = a * np.sqrt(1-(x/a)**2);
-			y2 = -y1;
-			intersections = [[x,y1],[x,y2]];
-				
+	# Inverse transformation matrix to go back to the original coordinate
+	# system
+	inverse_trans_matrix = np.linalg.inv(transform_matrix)
 
-	intersections = rotate_points_back_origin(intersections,ellipse_angle);
-	intersections[:,0] += ellipse_center[0];
-	intersections[:,1] += ellipse_center[1];
+	if transformed_intersections is None:
+		return None
+
+	intersections = []
+	for trans_inter in transformed_intersections:
+		intersections.append(np.dot(inverse_trans_matrix, trans_inter))
+
+	#print(intersections)
+	#print(transformed_intersections)
+
+
+	#print(transform_matrix)
+	#print(ellipse_center)
+	#print(ellipse_angle)
+	#print(ellipse_width)
+	#print(ellipse_height)
+	#print(new_center)
+	#print('---.')
+	#print(line)
+	#print(new_line)
+	#print('---a')
 
 	return intersections
-
-					
-
-
-
-
-
 
 
 
