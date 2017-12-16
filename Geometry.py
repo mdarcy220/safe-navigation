@@ -515,45 +515,18 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 
 	return rectangle_shadow_angle_range(circle_center, rect_pos, rect_dim);
 
-## Rotates points about origin with angle alpha
-# 
-# 
-# @param points (numpy array)
-# <br>	Format: `[[x1, y1],..,[xn,yn]]`
-# <br>  -- list of points to be rotated
-#
-# @param angle (float)
-# <br>	-- rotation angle
-# 
-# 
-# @returns (numpy array)
-# <br>	Format: `[[x1,y1],...,[xn,yn]]`
-# <br>	Desc: Returns a numpy array of the rotate pair of each 
-#             input point.
-#
-def rotate_points_origin(points, angle):
-  rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],[np.sin(angle), np.cos(angle)]])
-  return np.dot(points,rotation_matrix)
 
-## Return points to original origin after being rotated 
-#  about origin with angle alpha
-# 
-# @param points (numpy array)
-# <br>	Format: `[[x1, y1],..,[xn,yn]]`
-# <br>  -- list of points to be rotated
+## Creates a 2x2 rotation transform matrix
 #
 # @param angle (float)
-# <br>	-- rotation angle
-# 
-# 
-# @returns (numpy array)
-# <br>	Format: `[[x1,y1],...,[xn,yn]]`
-# <br>	Desc: Returns a numpy array of the rotate pair of each 
-#             input point.
+# <br>	-- The angle of rotation (counterclockwise) in radians
 #
-def rotate_points_back_origin(points,angle):
-  rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],[np.sin(angle), np.cos(angle)]])
-  return np.dot(points,rotation_matrix.T)
+# @return (numpy array)
+# <br>	-- A 2x2 matrix `A`, such that `Ax` for a point `x` results in the
+#          rotation of `x` about the origin
+#
+def make_rot_matrix(angle):
+	return np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 
 
 ## Returns the point(s) of intersection of the given ellipse
@@ -584,14 +557,15 @@ def rotate_points_back_origin(points,angle):
 #
 def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ellipse_angle, line):
 
+	# Use radii instead of diameters
 	ellipse_rx = ellipse_width / 2.0
 	ellipse_ry = ellipse_height / 2.0
 
 	# Transformation matrix to normalize the angle of the ellipse
-	rotation_matrix = np.linalg.inv(np.array([[np.cos(ellipse_angle), -np.sin(ellipse_angle)], [np.sin(ellipse_angle), np.cos(ellipse_angle)]]))
+	rotation_matrix = make_rot_matrix(-ellipse_angle)
 
 	# Transformation to squeeze/stretch the ellipse back to a perfect circle
-	stretch_matrix = np.linalg.inv(np.array([[ellipse_rx, 0], [0, ellipse_ry]]))
+	stretch_matrix = np.array([[1.0/ellipse_rx, 0], [0, 1.0/ellipse_ry]])
 
 	# Combined transformation to make the ellipse a perfect circle
 	# Note: Matrix multiplication, so order matters
@@ -604,31 +578,16 @@ def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ell
 
 	transformed_intersections = circle_line_intersection(new_center, 1, new_line)
 
+	if transformed_intersections is None:
+		return None
+
 	# Inverse transformation matrix to go back to the original coordinate
 	# system
 	inverse_trans_matrix = np.linalg.inv(transform_matrix)
 
-	if transformed_intersections is None:
-		return None
-
 	intersections = []
 	for trans_inter in transformed_intersections:
 		intersections.append(np.dot(inverse_trans_matrix, trans_inter))
-
-	#print(intersections)
-	#print(transformed_intersections)
-
-
-	#print(transform_matrix)
-	#print(ellipse_center)
-	#print(ellipse_angle)
-	#print(ellipse_width)
-	#print(ellipse_height)
-	#print(new_center)
-	#print('---.')
-	#print(line)
-	#print(new_line)
-	#print('---a')
 
 	return intersections
 
