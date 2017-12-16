@@ -9,7 +9,7 @@ import Vector
 import Geometry
 import math
 import cython
-from Environment import CellFlag
+from Environment import ObsFlag
 
 ## Produces simulated radar output for the robot
 #
@@ -88,7 +88,7 @@ class Radar:
 	# 	size of the output is then equal to
 	# 	`floor(360/degree_step)`.
 	#
-	def scan(self, center, cell_type = CellFlag.ANY_OBSTACLE):
+	def scan(self, center, cell_type = ObsFlag.ANY_OBSTACLE):
 
 		if cython.compiled:
 			grid_data = self._env.grid_data;
@@ -191,7 +191,7 @@ class Radar:
 	# 	`floor(360/degree_step)`.
 	#
 	def scan_dynamic_obstacles(self, center):
-		return self.scan(center, cell_type = CellFlag.DYNAMIC_OBSTACLE);
+		return self.scan(center, cell_type = ObsFlag.DYNAMIC_OBSTACLE);
 		#nPoints = self._nPoints
 		#beams = self._beams
 		#radar_data = np.full([nPoints], self.radius, dtype=np.float64);

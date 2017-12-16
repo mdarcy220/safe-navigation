@@ -208,7 +208,7 @@ class Game:
 					break;
 				if not (self.check_robot_at_target(robot)):
 					allBotsAtTarget = False
-					robot.NextStep(self._env.grid_data)
+					robot.NextStep(self._env)
 
 			# Step the environment
 			self._env.next_step()

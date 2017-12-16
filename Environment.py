@@ -14,7 +14,7 @@ import Vector
 ## Types of grid cells. Used in Environment grid_data
 #
 #
-class CellFlag:
+class ObsFlag:
 	ANY_OBSTACLE     = 0b0001;
 	DYNAMIC_OBSTACLE = 0b0010;
 	STATIC_OBSTACLE  = 0b0100;
@@ -55,7 +55,7 @@ class Environment:
 		grid_data_height = max(self.height, masked_pix_arr.shape[1]);
 		self.static_overlay = np.zeros((grid_data_width, grid_data_height), dtype=int);
 		obstacle_pixel_val = 0x555555 & pixel_mask # (85, 85, 85) represented as integer
-		self.static_overlay[masked_pix_arr == obstacle_pixel_val] |= (CellFlag.STATIC_OBSTACLE | CellFlag.ANY_OBSTACLE);
+		self.static_overlay[masked_pix_arr == obstacle_pixel_val] |= (ObsFlag.STATIC_OBSTACLE | ObsFlag.ANY_OBSTACLE);
 		del pix_arr
 
 		if (cmdargs):
@@ -461,12 +461,12 @@ class Environment:
 		self.grid_data = np.array(self.static_overlay);
 
 		dynamic_obstacle_pixel_val = 0x44ccee & pixel_mask
-		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] |= (CellFlag.DYNAMIC_OBSTACLE | CellFlag.ANY_OBSTACLE)
+		self.grid_data[masked_pix_arr == dynamic_obstacle_pixel_val] |= (ObsFlag.DYNAMIC_OBSTACLE | ObsFlag.ANY_OBSTACLE)
 		
 		# Uncomment the following lines to see the grid_data directly
 		pix_arr[self.grid_data == 0] = 0xFFFFFF
-		pix_arr[self.grid_data & CellFlag.STATIC_OBSTACLE != 0] = 0x000000
-		pix_arr[self.grid_data & CellFlag.DYNAMIC_OBSTACLE != 0] = 0x44ccee
+		pix_arr[self.grid_data & ObsFlag.STATIC_OBSTACLE != 0] = 0x000000
+		pix_arr[self.grid_data & ObsFlag.DYNAMIC_OBSTACLE != 0] = 0x44ccee
 		del pix_arr
 
 
@@ -477,3 +477,13 @@ class Environment:
 			self._update_grid_data();
 		self._update_dynamic_obstacles();
 		self.needs_grid_data_update = True
+
+
+	## Checks what kind of obstacle the given point is
+	# 
+	# @param location (numpy array)
+	# <br>  Format: `[x, y]`
+	# <br>  -- Location to check
+	#
+	def get_obsflags(self, location):
+		return self.grid_data[int(location[0])][int(location[1])]
