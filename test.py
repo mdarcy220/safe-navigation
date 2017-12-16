@@ -90,10 +90,10 @@ print ('\n')
 
 line_1 = np.array([[0,0],[1,1]]) 
 line_2 = np.array([[0,1],[1,4]]) 
-line_3 = np.array([[0,6],[1,6]]) 
-line_4 = np.array([[0,0],[1,0]]) 
-line_5 = np.array([[0,0],[0,1]]) 
-line_6 = np.array([[4,0],[4,1]]) 
+line_3 = np.array([[0,6],[2,6]]) 
+line_4 = np.array([[0,0],[2,0]]) 
+line_5 = np.array([[0,0],[0,3]]) 
+line_6 = np.array([[4,0],[4,3]]) 
 
 # human 1
 print("defining Human:")

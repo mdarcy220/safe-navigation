@@ -551,7 +551,7 @@ def rotate_points_origin(points, angle):
 # <br>	Desc: Returns a numpy array of the rotate pair of each 
 #             input point.
 #
-def rotate_points_back_origin(points,angle):
+def rotate_points_back_origin(points, angle):
   rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],[np.sin(angle), np.cos(angle)]])
   return np.dot(points,rotation_matrix.T)
 
@@ -586,8 +586,9 @@ def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ell
 
 	# Make things easier by shifting the coordinate system so the circle
 	# is centered at the origin (0, 0), then rotate the line points to
-	# have non rotated ellipse
-	adjusted_line = rotate_points_origin(np.subtract(line, ellipse_center),ellipse_angle);
+	# have non rotated ellipse; the rotation has to be in the opposite
+	# direction of rotation
+	adjusted_line = rotate_points_origin(np.subtract(line, ellipse_center),-ellipse_angle);
 
 	# Easier to work with half-width and half-height of ellipse
 	a = ellipse_width/2;
@@ -630,7 +631,7 @@ def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ell
 			y2 = (y - m*determinant)/div;
 
 			intersections = [[x1,y1],[x2,y2]];
-	elif dx == 0:
+	elif dy == 0:
 		y = y1;
 		if y>b or y<-b:
 			return []
@@ -652,7 +653,7 @@ def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ell
 			intersections = [[x,y1],[x,y2]];
 				
 
-	intersections = rotate_points_back_origin(intersections,ellipse_angle);
+	intersections = rotate_points_back_origin(intersections,-ellipse_angle);
 	intersections[:,0] += ellipse_center[0];
 	intersections[:,1] += ellipse_center[1];
 
