@@ -79,6 +79,7 @@ class GridDataEnvironment(Environment):
 		self.map_modifiers.append(MapModifier._map_mod_10);
 		self.map_modifiers.append(MapModifier._map_mod_11);
 		self.map_modifiers.append(MapModifier._map_mod_12);
+		self.map_modifiers.append(MapModifier._map_mod_obsmat);
 
 
 	def load_map(self, map_filename):

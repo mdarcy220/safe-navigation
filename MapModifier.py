@@ -5,6 +5,10 @@
 
 import numpy  as np
 import Vector
+import Geometry
+import os
+import sys
+import json
 from DynamicObstacles import DynamicObstacle
 
 
@@ -263,3 +267,35 @@ def _map_mod_12(env):
 			dynobs = make_randompath_dynamic_obstacle(env, radius_low=5, radius_high=30, num_path_points=2);
 		dynobs.shape = 1 if i < 10 else 2;
 		env.dynamic_obstacles.append(dynobs);
+
+
+## Load JSON file with obstacle movement data
+#
+def _map_mod_obsmat(env):
+	H_pix2meter = np.array([
+		[2.8128700e-02, 2.0091900e-03, -4.6693600e+00],
+		[8.0625700e-04, 2.5195500e-02, -5.0608800e+00],
+		[3.4555400e-04, 9.2512200e-05,  4.6255300e-01]
+	])
+	H_meter2pix = np.linalg.inv(H_pix2meter)
+
+	with open('obsmat.json', 'r') as f:
+		obsmat = json.load(f)
+		for ped_id in obsmat:
+			dynobs = DynamicObstacle()
+			dynobs.speed = 1000
+			dynobs.shape = 1
+			dynobs.radius = 6
+			dynobs.movement_mode = 3
+			dynobs.path_list = []
+			firstpoint = obsmat[ped_id][0]
+			for i in range(int((firstpoint['time']-750)//6)):
+				dynobs.path_list.append(np.zeros(2))
+			for waypoint in obsmat[ped_id]:
+				pos = Geometry.apply_homography(H_meter2pix, (waypoint['pos_x'], waypoint['pos_y']))
+				# Rotate 90 degrees to match video
+				dynobs.path_list.append(np.array([pos[1], pos[0]]))
+			for i in range(2500):
+				dynobs.path_list.append(np.zeros(2, dtype=np.float32))
+			env.dynamic_obstacles.append(dynobs)
+

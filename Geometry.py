@@ -592,6 +592,36 @@ def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ell
 	return intersections
 
 
+## Transforms a point according to the given homography matrix.
+#
+# Note that this is different than just doing a matrix multiplication as one
+# would with an affine transform.
+#
+# @param homography_matrix (numpy array)
+# <br>  Format: `[[h11, h12, h13], [h21, h22, h23], [h31, h32, h33]]`
+# <br>  -- A 3x3 homography matrix
+#
+# @param point (array-like)
+# <br>  Format: `[x, y]`
+# <br>  -- The point to transform
+#
+# @return (numpy array)
+# <br>  Format: `[xprime, yprime]`
+# <br>  -- The transformed coordinates after apply the homography
+#
+def apply_homography(homography_matrix, point):
+	# Convert point to homogeneous coordinates
+	vec = np.array([point[0], point[1], 1])
+
+	# Dot product, just like affine transform (but next step is different)
+	new_vec = np.dot(homography_matrix, vec)
+
+	# Notice that new_vec[2] is used as a scaling factor. If new_vec[2]
+	# equals 1, then it is equivalent to an affine transform.
+	return (1.0 / new_vec[2]) * np.array([new_vec[0], new_vec[1]])
+
+
+
 
 if __name__ == '__main__':
 	print(circle_line_intersection(np.array([2.46,1.04]), 2.6**0.5, [[3.72,-1.96], [0.9,2.84]]))

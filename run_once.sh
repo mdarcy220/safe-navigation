@@ -9,11 +9,13 @@ simulator_args+=( --radar-range 100 );
 simulator_args+=( --radar-resolution 5 );
 simulator_args+=( --batch-mode );
 simulator_args+=( --max-steps 5000 );
+simulator_args+=( --max-fps 4 );
 simulator_args+=( --robot-movement-momentum 0.0 );
-simulator_args+=( --speed-mode 10 );
-simulator_args+=( --map-modifier-num 0 );
+simulator_args+=( --speed-mode 0 );
+simulator_args+=( --map-modifier-num 13 );
 #simulator_args+=( --map-name "Maps/empty.png" );
-simulator_args+=( --map-name "Maps/double_bars_easy.png" );
+#simulator_args+=( --map-name "Maps/double_bars_easy.png" );
+simulator_args+=( --map-name "Maps/nonstandard_size/ewap_eth_modified.png" );
 simulator_args+=( --display-every-frame );
 
 
