@@ -7,6 +7,7 @@ from RobotControlInput import RobotControlInput
 from ObstaclePredictor import CollisionConeObstaclePredictor, HMMObstaclePredictor
 from queue import Queue, PriorityQueue
 import Distributions
+from Radar import Radar
 
 
 ## A navigation algorithm to be used with robots, based on trajectory 

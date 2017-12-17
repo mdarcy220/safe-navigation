@@ -141,12 +141,12 @@ class MDPAdapterSensor(MDP):
 
 
 	def get_successor_state(self, state, action):
-	  transition_probs = []
-	  next_states = []
-	  for next_state in self.successors(state):
-	    next_states.append(next_state)
-	    transition_probs.append(self.transition_prob(state, action, next_state))
-	  return next_states[transition_probs.index(max(transition_probs))]
+		transition_probs = []
+		next_states = []
+		for next_state in self.successors(state):
+			next_states.append(next_state)
+			transition_probs.append(self.transition_prob(state, action, next_state))
+		return next_states[transition_probs.index(max(transition_probs))]
 
 
 	def transition_prob(self, state, action, next_state):

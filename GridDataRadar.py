@@ -10,6 +10,7 @@ import Geometry
 import math
 import cython
 from Environment import ObsFlag
+from Radar import Radar
 
 ## Produces simulated radar output for the robot
 #
@@ -43,7 +44,7 @@ from Environment import ObsFlag
 # `[95, 99, 100, 90]` would indicate that no obstacle was observed at the
 # angle of 180 degrees.
 #
-class GridDataRadar:
+class GridDataRadar(Radar):
 
 
 	## Constructor
@@ -156,22 +157,6 @@ class GridDataRadar:
 		return self._nPoints;
 
 
-	def _get_dynobs_data_index_range(self, scan_center, dynobs):
-		angle_range = [0, 360];
-		if dynobs.shape == 1:
-			angle_range = Geometry.circle_circle_overlap_angle_range(scan_center, self.radius, dynobs.coordinate, dynobs.radius);
-		elif dynobs.shape == 2:
-			angle_range = Geometry.circle_rectangle_overlap_angle_range(scan_center, self.radius, dynobs.coordinate, np.array(dynobs.size));
-
-		if angle_range is None:
-			return None;
-		index1 = np.ceil(angle_range[0] / self._degree_step);
-		index2 = min(360, np.floor(angle_range[1] / self._degree_step));
-		if index2 < index1:
-			index1 -= self._nPoints;
-		return [int(index1), int(index2)]
-
-
 	## Produces a radar scan, ignoring static obstacles and including
 	# only dynamic obstacles.
 	#
@@ -192,78 +177,4 @@ class GridDataRadar:
 	#
 	def scan_dynamic_obstacles(self, center):
 		return self.scan(center, cell_type = ObsFlag.DYNAMIC_OBSTACLE);
-		#nPoints = self._nPoints
-		#beams = self._beams
-		#radar_data = np.full([nPoints], self.radius, dtype=np.float64);
-		#sub_dynobs_list = [];
-		#for dynobs in self._env.dynamic_obstacles:
-		#	index_range = self._get_dynobs_data_index_range(center, dynobs);
-		#	if index_range is None:
-		#		continue;
-		#	for i in np.arange(index_range[0], index_range[1], 1):
-		#		if dynobs.shape == 1:
-		#			inters = Geometry.circle_line_intersection(dynobs.coordinate, dynobs.radius, [center, center+beams[i]]);
-		#		elif dynobs.shape == 2:
-		#			inters = Geometry.rectangle_line_intersection([dynobs.coordinate, np.array(dynobs.size)], [center, center+beams[i]]);
-		#		if len(inters) == 0:
-		#			continue;
-
-		#		inters_rel = np.array(inters) - center;
-		#		dist = 1
-		#		if len(inters) == 1:
-		#			dist = Vector.magnitudeOf(inters_rel[0]);
-		#		else:
-		#			if np.dot(inters_rel[0], inters_rel[0]) < np.dot(inters_rel[1], inters_rel[1]):
-		#				dist = Vector.magnitudeOf(inters_rel[0]);
-		#			else:
-		#				dist = Vector.magnitudeOf(inters_rel[1]);
-		#		radar_data[i] = np.min([radar_data[i], float(dist)]);
-		#	
-		#return radar_data;
-
-
-	## Gets the `DynamicObstacle` object corresponding to the nearest
-	# dynamic obstacle along the beam at the specified angle.
-	#
-	#
-	# @param center (numpy array)
-	# <br>	Format `[x, y]`
-	# <br>	-- The center point of the scan
-	#
-	# @param angle (float)
-	# <br>	-- The angle (in degrees)
-	#
-	# @returns (float)
-	# <br>	-- The relative distance to the nearest obstacle within the
-	# 	radar's range at the given angle. The value is between 0
-	# 	and 1.
-	#
-	def get_dynobs_at_angle(self, center, angle):
-		ang_in_radians = angle * np.pi / 180.0;
-		endpoint = center + Vector.unitVectorFromAngle(ang_in_radians) * self.radius;
-		min_dist = -1;
-		closest_dynobs = None;
-		for dynobs in self._env.dynamic_obstacles:
-			if dynobs.shape == 1:
-				inters = Geometry.circle_line_intersection(dynobs.coordinate, dynobs.radius, [center, endpoint]);
-			elif dynobs.shape == 2:
-				inters = Geometry.rectangle_line_intersection([dynobs.coordinate, np.array(dynobs.size)], [center, endpoint]);
-			if len(inters) == 0:
-				continue;
-
-			inters_rel = np.array(inters) - center;
-			dist = 1
-			if len(inters) == 1:
-				dist = Vector.magnitudeOf(inters_rel[0]);
-			else:
-				if np.dot(inters_rel[0], inters_rel[0]) < np.dot(inters_rel[1], inters_rel[1]):
-					dist = Vector.magnitudeOf(inters_rel[0]);
-				else:
-					dist = Vector.magnitudeOf(inters_rel[1]);
-
-			if dist < min_dist or min_dist < 0:
-				min_dist = dist;
-				closest_dynobs = dynobs
-
-		return closest_dynobs;
 

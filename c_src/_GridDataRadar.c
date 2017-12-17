@@ -1,6 +1,6 @@
 #include <math.h>
 #include <stdio.h>
-#include "_Radar.h"
+#include "_GridDataRadar.h"
 
 #define MIN_RESOLUTION 0.00001
 

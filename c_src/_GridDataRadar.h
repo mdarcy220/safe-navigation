@@ -1,5 +1,5 @@
-#ifndef _RADAR_H_
-#define _RADAR_H_
+#ifndef _GRID_DATA_RADAR_H_
+#define _GRID_DATA_RADAR_H_
 
 void _c_scan_generic(double centerx,
 		double centery,

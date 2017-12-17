@@ -63,11 +63,10 @@ class Radar:
 	# <br>	-- The increment for the scanning beam. This controls how
 	# 	many different angles are checked for obstacles.
 	#
-	def __init__(self, env, radius = 100, resolution = 4, degree_step = 1):
+	def __init__(self, env, radius = 100, degree_step = 1):
 
 		self._env        = env
 		self.radius	 = radius
-		self.resolution  = resolution
 		self.set_degree_step(degree_step);
 
 
@@ -88,42 +87,9 @@ class Radar:
 	# 	size of the output is then equal to
 	# 	`floor(360/degree_step)`.
 	#
-	def scan(self, center, cell_type = ObsFlag.ANY_OBSTACLE):
-
-		if cython.compiled:
-			grid_data = self._env.grid_data;
-			radar_data = np.full([self._nPoints], self.radius, dtype=np.float64);
-			scan_generic(center[0],
-				center[1],
-				self.radius,
-				grid_data,
-				cell_type,
-				self.resolution,
-				self._degree_step,
-				radar_data);
-			return radar_data;
-
-		grid_data = self._env.grid_data;
-
-		radar_data = np.full([self._nPoints], self.radius, dtype=np.float64)
-		currentStep = 0
-		x_upper_bound = min(799, grid_data.shape[0])
-		y_upper_bound = min(599, grid_data.shape[1])
-		for degree in np.arange(0, 360, self._degree_step):
-			ang_in_radians = degree * np.pi / 180
-			cos_cached = np.cos(ang_in_radians)
-			sin_cached = np.sin(ang_in_radians)
-			for i in np.arange(0, self.radius, self.resolution):
-				x = int(cos_cached * i + center[0])
-				y = int(sin_cached * i + center[1])
-				if ((x < 0) or (y < 0) or (x_upper_bound <= x) or (y_upper_bound <= y)):
-					radar_data[currentStep] = i
-					break
-				if (grid_data[x,y] & cell_type):
-					radar_data[currentStep] = i
-					break
-			currentStep = currentStep + 1
-		return radar_data
+	def scan(self, center):
+		# To be overridden in subclass
+		return None
 
 
 	## Sets the degree step of the `Radar`.
@@ -133,14 +99,6 @@ class Radar:
 	#
 	def set_degree_step(self, newDegreeStep):
 		self._degree_step = newDegreeStep;
-		# Recalculate beams
-		self._nPoints = int(360 / int(self._degree_step)); 
-		self._beams = np.zeros([self._nPoints, 2]);
-		currentStep = 0
-		for angle in np.arange(0, 360, self._degree_step):
-			ang_in_radians = angle * np.pi / 180
-			self._beams[currentStep] = Vector.unit_vec_from_radians(ang_in_radians) * self.radius
-			currentStep += 1
 
 
 	## Gets the degree step
@@ -154,22 +112,6 @@ class Radar:
 	#
 	def get_data_size(self):
 		return self._nPoints;
-
-
-	def _get_dynobs_data_index_range(self, scan_center, dynobs):
-		angle_range = [0, 360];
-		if dynobs.shape == 1:
-			angle_range = Geometry.circle_circle_overlap_angle_range(scan_center, self.radius, dynobs.coordinate, dynobs.radius);
-		elif dynobs.shape == 2:
-			angle_range = Geometry.circle_rectangle_overlap_angle_range(scan_center, self.radius, dynobs.coordinate, np.array(dynobs.size));
-
-		if angle_range is None:
-			return None;
-		index1 = np.ceil(angle_range[0] / self._degree_step);
-		index2 = min(360, np.floor(angle_range[1] / self._degree_step));
-		if index2 < index1:
-			index1 -= self._nPoints;
-		return [int(index1), int(index2)]
 
 
 	## Produces a radar scan, ignoring static obstacles and including
@@ -191,35 +133,8 @@ class Radar:
 	# 	`floor(360/degree_step)`.
 	#
 	def scan_dynamic_obstacles(self, center):
-		return self.scan(center, cell_type = ObsFlag.DYNAMIC_OBSTACLE);
-		#nPoints = self._nPoints
-		#beams = self._beams
-		#radar_data = np.full([nPoints], self.radius, dtype=np.float64);
-		#sub_dynobs_list = [];
-		#for dynobs in self._env.dynamic_obstacles:
-		#	index_range = self._get_dynobs_data_index_range(center, dynobs);
-		#	if index_range is None:
-		#		continue;
-		#	for i in np.arange(index_range[0], index_range[1], 1):
-		#		if dynobs.shape == 1:
-		#			inters = Geometry.circle_line_intersection(dynobs.coordinate, dynobs.radius, [center, center+beams[i]]);
-		#		elif dynobs.shape == 2:
-		#			inters = Geometry.rectangle_line_intersection([dynobs.coordinate, np.array(dynobs.size)], [center, center+beams[i]]);
-		#		if len(inters) == 0:
-		#			continue;
-
-		#		inters_rel = np.array(inters) - center;
-		#		dist = 1
-		#		if len(inters) == 1:
-		#			dist = Vector.magnitudeOf(inters_rel[0]);
-		#		else:
-		#			if np.dot(inters_rel[0], inters_rel[0]) < np.dot(inters_rel[1], inters_rel[1]):
-		#				dist = Vector.magnitudeOf(inters_rel[0]);
-		#			else:
-		#				dist = Vector.magnitudeOf(inters_rel[1]);
-		#		radar_data[i] = np.min([radar_data[i], float(dist)]);
-		#	
-		#return radar_data;
+		# To be overridden by subclass
+		return None
 
 
 	## Gets the `DynamicObstacle` object corresponding to the nearest

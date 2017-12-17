@@ -4,6 +4,7 @@
 #
 
 import numpy  as np
+import Vector
 from DynamicObstacles import DynamicObstacle
 
 
