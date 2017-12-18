@@ -2,6 +2,7 @@
 
 import numpy as np
 import pygame as PG
+import math
 
 
 ## Draws things
@@ -51,6 +52,16 @@ class PygameDrawTool(DrawTool):
 
 	def draw_circle(self, center, radius):
 		PG.draw.circle(self._pg_surface, self._color, center, radius, self._stroke_width);
+
+
+	def draw_ellipse(self, center, width, height, direction):
+		surface = PG.Surface((width, height), PG.SRCALPHA, 32).convert_alpha()
+		PG.draw.ellipse(surface, self._color,(0,0,width,height),0)
+		angle = math.degrees(math.atan2(direction[1],direction[0]))
+		rot_surface = PG.transform.rotate(surface, angle)
+		rcx, rcy = rot_surface.get_rect().center
+		self._pg_surface.blit(rot_surface, center)
+		#PG.draw.circle(self._pg_surface, self._color, center, radius, self._stroke_width);
 
 
 	def draw_poly(self, points):

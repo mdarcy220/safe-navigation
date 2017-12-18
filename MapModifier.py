@@ -284,18 +284,24 @@ def _map_mod_obsmat(env):
 		for ped_id in obsmat:
 			dynobs = DynamicObstacle()
 			dynobs.speed = 1000
-			dynobs.shape = 1
+			dynobs.shape = 3
 			dynobs.radius = 6
+			dynobs.width = 12
+			dynobs.height = 6
 			dynobs.movement_mode = 3
 			dynobs.path_list = []
+			dynobs.vel_list = []
 			firstpoint = obsmat[ped_id][0]
 			for i in range(int((firstpoint['time']-750)//6)):
 				dynobs.path_list.append(np.zeros(2))
 			for waypoint in obsmat[ped_id]:
 				pos = Geometry.apply_homography(H_meter2pix, (waypoint['pos_x'], waypoint['pos_y']))
+				direction = Geometry.apply_homography(H_meter2pix, (waypoint['vel_x'], waypoint['vel_y']))
 				# Rotate 90 degrees to match video
 				dynobs.path_list.append(np.array([pos[1], pos[0]]))
+				dynobs.vel_list.append((np.array([direction[1],direction[0]])))
 			for i in range(2500):
 				dynobs.path_list.append(np.zeros(2, dtype=np.float32))
+				dynobs.vel_list.append(np.zeros(2, dtype=np.float32))
 			env.dynamic_obstacles.append(dynobs)
 

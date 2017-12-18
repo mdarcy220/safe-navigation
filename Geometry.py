@@ -525,7 +525,6 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 # <br>	-- A 2x2 matrix `A`, such that `Ax` for a point `x` results in the
 #          rotation of `x` about the origin
 #
-<<<<<<< HEAD
 def make_rot_matrix(angle):
 	return np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 

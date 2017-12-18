@@ -101,6 +101,8 @@ class GridDataEnvironment(Environment):
 				dtool.draw_circle(np.array(i.coordinate, dtype='int64'), i.radius)
 			if (i.shape == 2):
 				dtool.draw_rect(i.coordinate.tolist(), i.size)
+			if (i.shape == 3):
+				dtool.draw_ellipse(np.array(i.coordinate, dtype='int64'), i.width, i.height, i.direction)
 
 
 	## Update the grid data from the given display.
