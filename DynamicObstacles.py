@@ -98,7 +98,7 @@ class DynamicObstacle:
 			next_waypoint = self.path_list[self.cur_path_ind]
 			dist2waypoint = Vector.distance_between(next_waypoint, self.coordinate)
 			if (dist2waypoint <= 2*self.speed):
-				return np.subtract(next_waypoint, self.coordinace)
+				return np.subtract(next_waypoint, self.coordinate)
 			movement_vec = np.array([next_waypoint[0] - self.coordinate[0], next_waypoint[1] - self.coordinate[1]], dtype='float64')
 			return movement_vec * self.speed / Vector.magnitudeOf(movement_vec)
 		else:

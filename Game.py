@@ -9,9 +9,9 @@ import pickle
 import base64
 
 import DrawTool
-from Environment import Environment
+from GridDataEnvironment import GridDataEnvironment
+from GridDataRadar import GridDataRadar
 from Robot import Robot, RobotStats, GpsSensor
-from Radar import Radar
 from Target import Target
 import time
 import Vector
@@ -70,29 +70,31 @@ class Game:
 
 		# Initialize the game display to 800x600
 		PG.init()
-		self._gameDisplay = PG.display.set_mode((800, 600))
+		#self._gameDisplay = PG.display.set_mode((800, 600))
+		self._gameDisplay = PG.display.set_mode((640, 480))
 
 		# Init environment
-		self._env = Environment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
-		self._start_point = Target((50,550), color=0x00FF00)
-		self._target = Target((730, 70))#(760,50)
+		self._env = GridDataEnvironment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
+		self._start_point = Target((50,450), color=0x00FF00)
+		self._target = Target((530, 70))#(760,50)
 
 		# Init robots
-		radar = Radar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);
+		radar = GridDataRadar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);
 		initial_position = np.array(self._start_point.position);
 		self._robot_list    = [];
 
 		self._normal_robot  = Robot(initial_position, cmdargs, path_color=(0,0,255),   name="NormalRobot");
 		self._normal_robot.put_sensor('radar', radar);
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
-		self._normal_robot.put_sensor('mdp', MDPAdapterSensor(self._env, self._start_point.position, self._target.position, unique_id=os.path.basename(cmdargs.map_name)));
+		#self._normal_robot.put_sensor('mdp', MDPAdapterSensor(self._env, self._start_point.position, self._target.position, unique_id=os.path.basename(cmdargs.map_name)));
 		self._normal_robot.put_sensor('debug', {'name': 'normal'});
 		#self._normal_robot.set_nav_algo(DeepIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
-		self._normal_robot.set_nav_algo(DeepQIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(DeepQIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(InverseRLNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(DeepQNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(ValueIterationNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		self._normal_robot.set_nav_algo(LinearNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		self._robot_list.append(self._normal_robot);
 
 
@@ -208,7 +210,7 @@ class Game:
 					break;
 				if not (self.check_robot_at_target(robot)):
 					allBotsAtTarget = False
-					robot.NextStep(self._env.grid_data)
+					robot.NextStep(self._env)
 
 			# Step the environment
 			self._env.next_step()

@@ -17,8 +17,6 @@ import os
 import sys
 import json
 import time
-from joblib import Parallel, delayed
-import multiprocessing
 
 ## A navigation algorithm to be used with robots, based on deep q-learning.
 #
@@ -212,7 +210,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		maxIter = self._IRLmaxIter
 		#############################################
 
-		old_grad = np.zeros((features[:,0].shape))
+		old_grad = np.zeros((features[:,0].shape), dtype=np.float32)
 		lr = self._lr
 		decay = self._decay
 
@@ -501,13 +499,6 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		samples = 50
 		r_avg = [0] * samples
 
-		# trying to parallelize did not work,
-		# might work on it later
-		#num_cores = multiprocessing.cpu_count()
-
-		#r_avg = Parallel(n_jobs=num_cores)(delayed(avg_r)(self,policy,gamma,i) for i  in range(samples))
-		# see global method avg_r for referencing
-		
 		for i in range(samples):
 			starting_position = self.random_start_position()
 			r_avg[i] += rewards[starting_position]
@@ -584,6 +575,7 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 			ax.arrow(state[0], state[1], 0.1*maxarrow_vec[0], 0.1*maxarrow_vec[1], head_width= scale * max(min(1,max_action[1]),0.3), head_length = scale *max(min(1,max_action[1]),0.3), color='g')
 
 		# Output the figure to the image file
+		plt.title('Iteration {}'.format(iteration))
 		plt.savefig('../output_data/r_p{:02d}.png'.format(iteration))
 		plt.close()
 
@@ -599,21 +591,6 @@ class DeepQIRLAlgorithm(AbstractNavigationAlgorithm):
 		#plt.show()
 		plt.savefig('../output_data/grad.png')
 		plt.close()
-
-def avg_r(DQNIRL,policy,gamma,i):
-	starting_position = DQNIRL.random_start_position()
-	r_avg_i = 0
-	r_avg_i += rewards[starting_position]
-	current_step = starting_position
-	for step in range(DQNIRL._max_steps):
-		#q_values = policy[current_step]
-		#max_index = np.argmax(q_values)
-		actions = policy[current_step]
-		action = max(actions, key=actions.get)
-		next_step = DQNIRL._mdp.get_successor_state(current_step,action)
-		r_avg_i += rewards[next_step] * (gamma ** step)
-		current_step = next_step
-	return r_avg_i
 
 class IRL_network:
 	

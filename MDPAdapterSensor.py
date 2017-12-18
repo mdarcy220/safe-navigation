@@ -98,7 +98,7 @@ class MDPAdapterSensor(MDP):
 		# not free
 		# entries are according to states, y for columns and x for rows
 		grid_data = env.grid_data
-		walls = np.zeros((self._height,self._width))
+		walls = np.zeros((self._height,self._width), dtype=np.float32)
 		for x in range(self._width):
 			for y in range(self._height):
 				temp_wall = grid_data[x*cell_size:(x+1)*cell_size-1,y*cell_size:(y+1)*cell_size-1]
@@ -141,12 +141,12 @@ class MDPAdapterSensor(MDP):
 
 
 	def get_successor_state(self, state, action):
-	  transition_probs = []
-	  next_states = []
-	  for next_state in self.successors(state):
-	    next_states.append(next_state)
-	    transition_probs.append(self.transition_prob(state, action, next_state))
-	  return next_states[transition_probs.index(max(transition_probs))]
+		transition_probs = []
+		next_states = []
+		for next_state in self.successors(state):
+			next_states.append(next_state)
+			transition_probs.append(self.transition_prob(state, action, next_state))
+		return next_states[transition_probs.index(max(transition_probs))]
 
 
 	def transition_prob(self, state, action, next_state):
@@ -239,8 +239,7 @@ class MDPAdapterSensor(MDP):
 			feature[0] = x
 			feature[1] = y
 			"""
-			feature = np.zeros(7)
-			feature = np.zeros(3)
+			feature = np.zeros(3, dtype=np.float32)
 			if walls[y,x] == 1:
 				feature[0:3] = 0
 				#feature[6] = 1

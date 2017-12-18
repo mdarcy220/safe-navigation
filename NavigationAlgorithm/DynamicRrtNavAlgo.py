@@ -7,7 +7,7 @@ from math import *
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from Robot import RobotControlInput
 from StaticMapper import StaticMapper
-from Environment import CellFlag
+from Environment import ObsFlag
 
 
 ## Implementation of the Dynamic Window algorithm for robotic navigation.
@@ -42,7 +42,6 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._data_size = self._radar.get_data_size();
 		self._radar_range = self._radar.radius;
-		self._radar_resolution = self._radar.resolution;
 		self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
 
 		self._has_given_up = False
@@ -79,7 +78,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._invalidateNodes();
 
 		robot_location = self._gps.location()
-		if not (self._radar._env.grid_data[int(robot_location[0])][int(robot_location[1])] & CellFlag.DYNAMIC_OBSTACLE or self._mapper.get_grid_data()[int(robot_location[0])][int(robot_location[1])] & CellFlag.STATIC_OBSTACLE):
+		if not (self._radar._env.get_obsflags(robot_location) & ObsFlag.DYNAMIC_OBSTACLE or self._mapper.get_grid_data()[int(robot_location[0])][int(robot_location[1])] & ObsFlag.STATIC_OBSTACLE):
 			if any([n.flag == 1 for n in self._solution]) or (len(self._solution) > 0 and self._collides(robot_location, self._solution[0].data)):
 				self._regrow_rrt();
 				self._extract_solution();
@@ -96,7 +95,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				self._has_given_up = True
 				dist = 0
 				direction = np.random.uniform(low=0, high=360);
-		elif self._mapper.get_grid_data()[int(robot_location[0])][int(robot_location[1])] & CellFlag.STATIC_OBSTACLE:
+		elif self._mapper.get_grid_data()[int(robot_location[0])][int(robot_location[1])] & ObsFlag.STATIC_OBSTACLE:
 			self._has_given_up = True
 			dist = 0
 			direction = np.random.uniform(low=0, high=360);
@@ -303,12 +302,12 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			for i in np.arange(0, dist, 1):
 				x = int(cos_cached * i + fromPoint[0])
 				y = int(sin_cached * i + fromPoint[1])
-				if grid_data[x,y] & CellFlag.ANY_OBSTACLE:
+				if grid_data[x,y] & ObsFlag.ANY_OBSTACLE:
 					return True
-				if self._sensors['debug']['name'] != 'safe' and self._radar._env.grid_data[x,y] & CellFlag.DYNAMIC_OBSTACLE and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius:
+				if self._sensors['debug']['name'] != 'safe' and self._radar._env.get_obsflags([x,y]) & ObsFlag.DYNAMIC_OBSTACLE and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius:
 					return True
 
-		return grid_data[int(toPoint[0])][int(toPoint[1])] & CellFlag.ANY_OBSTACLE;
+		return grid_data[int(toPoint[0])][int(toPoint[1])] & ObsFlag.ANY_OBSTACLE;
 
 
 class Tree:

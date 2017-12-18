@@ -7,6 +7,7 @@ from RobotControlInput import RobotControlInput
 from ObstaclePredictor import CollisionConeObstaclePredictor, HMMObstaclePredictor
 from queue import Queue, PriorityQueue
 import Distributions
+from Radar import Radar
 
 
 ## A navigation algorithm to be used with robots, based on trajectory 
@@ -256,7 +257,9 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			return self._radar_data;
 
 		radius = self._radar.radius;
-		resolution = self._radar.resolution;
+		resolution = 10
+		if isinstance(self._radar, Radar):
+			resolution = self._radar.resolution;
 		degree_step = self._radar.get_degree_step();
 		nPoints = self._radar.get_data_size();
 		radar_data = np.full([nPoints], radius, dtype=np.float64);

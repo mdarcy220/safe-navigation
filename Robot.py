@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import time
 import scipy.signal
 from pygame import gfxdraw
-from Environment import CellFlag
+from Environment import ObsFlag
 from RobotControlInput import RobotControlInput
 from NavigationAlgorithm import LinearNavigationAlgorithm
 import DrawTool
@@ -122,7 +122,7 @@ class Robot:
 	# decision about the robot's next action to reach the goal. Then,
 	# it takes one step in the planned direction.
 	#
-	def NextStep(self, grid_data):
+	def NextStep(self, env):
 		self.stepNum += 1
 		self.stats.num_steps += 1
 
@@ -148,14 +148,14 @@ class Robot:
 		# Update the robot's position and check for a collision
 		# with an obstacle
 		new_location = np.add(self.location, movement_vec)
-		if (grid_data[int(new_location[0]), int(new_location[1])] & CellFlag.ANY_OBSTACLE):
+		if (env.get_obsflags(new_location) & ObsFlag.ANY_OBSTACLE):
 			if self.stepNum - self._last_collision_step > 1:
 				if not self._cmdargs.batch_mode:
 					print('Robot ({}) glitched into obstacle!'.format(self.name))
 				self._drawcoll = 10
-				if grid_data[int(new_location[0]), int(new_location[1])] & CellFlag.DYNAMIC_OBSTACLE:
+				if env.get_obsflags(new_location) & ObsFlag.DYNAMIC_OBSTACLE:
 					self.stats.num_dynamic_collisions += 1
-				elif grid_data[int(new_location[0]), int(new_location[1])] & CellFlag.STATIC_OBSTACLE:
+				elif env.get_obsflags(new_location) & ObsFlag.STATIC_OBSTACLE:
 					self.stats.num_static_collisions += 1
 			self._last_collision_step = self.stepNum
 			new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-.5, .5, size=2));
