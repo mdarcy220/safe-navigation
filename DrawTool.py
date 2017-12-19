@@ -2,7 +2,6 @@
 
 import numpy as np
 import pygame as PG
-import math
 
 
 ## Draws things
@@ -14,6 +13,14 @@ class DrawTool:
 
 	def draw_circle(self, center, radius):
 		pass;
+
+	## Draws an ellipse
+	# 
+	# @param angle (float)
+	# <br>  -- The counterclockwise angle of rotation of the ellipse, in radians.
+	# 
+	def draw_ellipse(self, center, width, height, angle):
+		pass
 
 	def draw_poly(self, points):
 		pass;
@@ -54,14 +61,12 @@ class PygameDrawTool(DrawTool):
 		PG.draw.circle(self._pg_surface, self._color, center, radius, self._stroke_width);
 
 
-	def draw_ellipse(self, center, width, height, direction):
+	def draw_ellipse(self, center, width, height, angle):
 		surface = PG.Surface((width, height), PG.SRCALPHA, 32).convert_alpha()
 		PG.draw.ellipse(surface, self._color,(0,0,width,height),0)
-		angle = math.degrees(math.atan2(direction[1],direction[0]))
-		rot_surface = PG.transform.rotate(surface, angle)
+		rot_surface = PG.transform.rotate(surface, angle*180/np.pi)
 		rcx, rcy = rot_surface.get_rect().center
 		self._pg_surface.blit(rot_surface, center)
-		#PG.draw.circle(self._pg_surface, self._color, center, radius, self._stroke_width);
 
 
 	def draw_poly(self, points):
@@ -119,6 +124,11 @@ class SvgDrawTool(DrawTool):
 		self._elems.append("""<circle id="circle{:d}" r="{:f}" cx="{:f}" cy="{:f}" style="{}"/>""".format(len(self._elems), radius, center[0], center[1], style_attr));
 
 
+	def draw_ellipse(self, center, width, height, angle):
+		style_attr = self._gen_style_str()
+		self._elems.append("""<ellipse id="ellipse{:d}" rx="{rx:f}" ry="{ry:f}" cx="{cx:f}" cy="{cy:f}" style="{style:s}" transform="rotate({angle:f}, {cx:f}, {cy:f})"/>""".format(len(self._elems), rx=width/2, ry=height/2, cx=center[0], cy=center[1], style=style_attr, angle=angle*180/np.pi))
+
+
 	def draw_poly(self, points):
 		self.draw_lineseries(points, True);
 
@@ -159,6 +169,10 @@ class MultiDrawTool:
 	def draw_circle(self, center, radius):
 		for dtool in self.dtools:
 			dtool.draw_circle(center, radius)
+
+	def draw_ellipse(self, *args, **kwargs):
+		for dtool in self.dtools:
+			dtool.draw_ellipse(*args, **kwargs)
 
 	def draw_poly(self, points):
 		for dtool in self.dtools:
