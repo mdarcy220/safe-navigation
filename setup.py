@@ -27,6 +27,7 @@ extensions = cythonize(
 			"Robot.py",
 			"Shape.py",
 			"StaticMapper.py",
+			"StaticGeometricMaps.py",
 			"Target.py",
 		],
 		language_level=3)
