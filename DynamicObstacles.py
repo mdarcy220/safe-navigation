@@ -15,10 +15,11 @@ class DynamicObstacle:
 
 	## @var shape 
 	# (int) 
-	# <br>	The shape of the obstacle. If set to 1, the obstacle is circular.
-	# If set to 2, the object is rectanglar. If set to 3, the obstacle is
-	# elliptical. See the #radius, #size, #width, #height and #direction
-	# attributes for controlling the dimensions of these shapes.
+	# <br>	The shape of the obstacle. If set to 1, the obstacle is
+	#       circular.  If set to 2, the object is rectanglar. If set to 3,
+	#       the obstacle is elliptical. If 4, it is a polygon. See the
+	#       #radius, #size, #width, #height, #direction, and #polygon
+	#       attributes for controlling the dimensions of these shapes.
 	#
 	# @var radius
 	# (float)
@@ -36,6 +37,10 @@ class DynamicObstacle:
 	# @var height
 	# (float)
 	# <br>	The height (2*y depth), if the shape is an ellipse
+	# 
+	# @var polygon
+	# (Polygon object)
+	# <br>	An object representing the polygon, if the shape is a Polygon
 	#
 	# @var coordinate
 	# (numpy array)
@@ -56,9 +61,10 @@ class DynamicObstacle:
 		self._last_position     = self.coordinate
 
 		self.radius		= 0 # Used for Circle shape
-		self.width              = 0 # Used for ellipse shape
-		self.height             = 0 # Used for ellipse shape
+		self.width              = 0 # Used for Ellipse shape
+		self.height             = 0 # Used for Ellipse shape
 		self.size		= [50, 50] # Used for Rectangle shape
+		self.polygon            = None # Used for Polygon shape
 		self.fillcolor		= (0x44, 0xcc, 0xee)
 		self.bordercolor	= (0xFF, 0x00, 0x00)
 		self.shape		= 1 # 1 = Circle, 2 = Rectangle, 3 = Ellipse
