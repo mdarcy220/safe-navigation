@@ -95,13 +95,13 @@ class GridDataEnvironment(Environment):
 		for i in self.dynamic_obstacles:
 			dtool.set_color(i.fillcolor);
 			if (i.shape == 1):
-				dtool.draw_circle(np.array(i.coordinate, dtype='int64'), i.radius)
+				dtool.draw_circle(np.array(i.coordinate), i.radius)
 			if (i.shape == 2):
 				dtool.draw_rect(i.coordinate.tolist(), i.size)
 			if (i.shape == 3):
 				vec = i.get_velocity_vector()
 				angle = np.arctan2(vec[1], vec[0])
-				dtool.draw_ellipse(np.array(i.coordinate, dtype='int64'), i.width, i.height, angle)
+				dtool.draw_ellipse(np.array(i.coordinate), i.width, i.height, angle)
 
 
 	## Update the grid data from the given display.
