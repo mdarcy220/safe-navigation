@@ -22,6 +22,7 @@ class GridDataEnvironment(Environment):
 		self.cmdargs = cmdargs
 		self.width = width
 		self.height = height
+		super().__init__(width, height, map_filename, cmdargs=cmdargs)
 		self.grid_data = np.zeros((self.width, self.height), dtype=np.uint8)
 		self.dynamic_obstacles = []
 
@@ -29,8 +30,6 @@ class GridDataEnvironment(Environment):
 		#  - init_map_modifiers() MUST be called BEFORE
 		#    loading and initilizing the map, or else the modifiers
 		#    will not work
-		#  - The map modifier must be applied before setting the
-		#    speed mode
 
 		# Init map modifiers
 		self.map_modifiers = [None];
@@ -53,8 +52,6 @@ class GridDataEnvironment(Environment):
 
 		if (cmdargs):
 			self.apply_map_modifier_by_number(self.cmdargs.map_modifier_num)
-		# Set the speed mode
-		self.set_speed_mode(self.cmdargs.speedmode)
 
 		# Initialize the grid data
 		self._grid_data_display = PG.Surface((self.width, self.height))
@@ -150,10 +147,10 @@ class GridDataEnvironment(Environment):
 
 	## Step the environment, updating dynamic obstacles and grid data.
 	#
-	def next_step(self):
+	def next_step(self, timestep=1):
 		if self.needs_grid_data_update:
 			self._update_grid_data();
-		self._update_dynamic_obstacles();
+		self._update_dynamic_obstacles(timestep);
 		self.needs_grid_data_update = True
 
 

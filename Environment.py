@@ -30,56 +30,15 @@ class Environment:
 		self.width = width
 		self.height = height
 		self.dynamic_obstacles = []
+		self._speed_mode = cmdargs.speedmode
+
+
+	def get_speed_mode(self):
+		return self._speed_mode
 
 
 	def load_map(self, map_filename):
 		pass
-
-
-	## Sets the speed mode of the obstacles
-	#
-	# Currently, these modes are defined as follows:
-	# <br>	0. No speed mode (leave speeds as default)
-	# <br>	1. All obstacles move at speed 4
-	# <br>	2. All obstacles move at speed 8
-	# <br>	3. Obstacles move at the robot's normal speed
-	# <br>	4. Roughly half the obstacles move at speed 4, the other
-	# 	half move at speed 8
-	# <br>	5. All obstacles move at speed 6
-	# <br>	6. All obstacles move at speed 12
-	#
-	#
-	# @param speedmode (int)
-	# <br>	-- The number of the speed mode to set
-	#
-	def set_speed_mode(self, speedmode):
-		for obstacle in self.dynamic_obstacles:
-			if speedmode == 0:
-				pass; # Leave obstacle speeds as default
-			elif speedmode == 1:
-				obstacle.speed = 4;		 
-			elif (speedmode == 2):
-				obstacle.speed = 8;
-			elif speedmode == 3:
-				obstacle.speed = self.cmdargs.robot_speed;
-			elif speedmode == 4:
-				obstacle.speed = np.array ([4, 8])[np.random.randint(2)];
-			elif speedmode == 5:
-				obstacle.speed = 6;
-			elif speedmode == 6:
-				obstacle.speed = 12;
-			elif speedmode == 7:
-				obstacle.speed = 5;
-			elif speedmode == 8:
-				obstacle.speed = self.cmdargs.robot_speed;
-			elif speedmode == 9:
-				obstacle.speed = 15;
-			elif speedmode == 10:
-				obstacle.speed = np.random.uniform(low=5.0, high=15.0);
-			else:
-				sys.stderr.write("Invalid speed mode. Assuming mode 0.\n");
-				sys.stderr.flush();
-				break;
 
 
 	def apply_map_modifier_by_number(self, modifier_num):
@@ -93,9 +52,9 @@ class Environment:
 		map_modifier(self);
 
 
-	def _update_dynamic_obstacles(self):
+	def _update_dynamic_obstacles(self, timestep):
 		for dynobs in self.dynamic_obstacles:
-			dynobs.next_step();
+			dynobs.next_step(timestep);
 
 
 	## Draws the environment onto the given display.
@@ -109,8 +68,8 @@ class Environment:
 
 	## Step the environment, updating dynamic obstacles
 	#
-	def next_step(self):
-		self._update_dynamic_obstacles();
+	def next_step(self, timestep=1):
+		self._update_dynamic_obstacles(timestep);
 
 
 	## Checks what kind of obstacle the given point is

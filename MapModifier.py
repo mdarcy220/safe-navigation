@@ -10,6 +10,7 @@ import os
 import sys
 import json
 from DynamicObstacles import DynamicObstacle
+import MovementPattern
 
 
 def make_randompath_dynamic_obstacle(env,
@@ -32,99 +33,146 @@ def make_randompath_dynamic_obstacle(env,
 	path_x_high = env.width if path_x_high is None else path_x_high
 	path_y_high = env.height if path_y_high is None else path_y_high
 
-	dynobs = DynamicObstacle()
-	x_coord = int(np.random.uniform(low=x_low, high=x_high))
-	y_coord = int(np.random.uniform(low=y_low, high=y_high))
-	dynobs.coordinate = np.array([x_coord, y_coord])
-	dynobs.origin = dynobs.coordinate
-	
-	dynobs.movement_mode = 3
-	dynobs.radius = int(np.random.uniform(radius_low, radius_high))
-	dynobs.size = [dynobs.radius, dynobs.radius];
-	dynobs.shape = shape
-	dynobs.speed = np.random.uniform(low=speed_low, high=speed_high)
+	speed = np.random.uniform(low=speed_low, high=speed_high)
+	path_list = []
 	for j in range(num_path_points):
 		x_coord = int(np.random.uniform(path_x_low, path_x_high))
 		y_coord = int(np.random.uniform(path_y_low, path_y_high))
-		dynobs.path_list.append(np.array([x_coord, y_coord]))
+		path_list.append((x_coord, y_coord))
+
+	# For smooth looping, close the path
+	path_list.append(path_list[0])
+
+	obs_mover = MovementPattern.PathMovement(path_list, speed=speed, loop=True)
+
+	dynobs = DynamicObstacle(obs_mover)
+
+	dynobs.radius = int(np.random.uniform(radius_low, radius_high))
+	dynobs.size = [dynobs.radius, dynobs.radius];
+	dynobs.shape = shape
+
 	return dynobs
+
+
+## Gets the speed of the obstacles given the speed mode
+#
+# Currently, these modes are defined as follows:
+# <br>	0. No speed mode (leave speeds as default)
+# <br>	1. All obstacles move at speed 4
+# <br>	2. All obstacles move at speed 8
+# <br>	3. Obstacles move at the robot's normal speed
+# <br>	4. Roughly half the obstacles move at speed 4, the other
+# 	half move at speed 8
+# <br>	5. All obstacles move at speed 6
+# <br>	6. All obstacles move at speed 12
+#
+#
+# @param speedmode (int)
+# <br>	-- The number of the speed mode to set
+#
+def _get_speed_for_speedmode(speedmode):
+	if speedmode == 0:
+		return np.random.uniform(low=1.0, high=9.0);
+	elif speedmode == 1:
+		return 4;
+	elif (speedmode == 2):
+		return 8;
+	elif speedmode == 3:
+		return 10;
+	elif speedmode == 4:
+		return np.array ([4, 8])[np.random.randint(2)];
+	elif speedmode == 5:
+		return 6;
+	elif speedmode == 6:
+		return 12;
+	elif speedmode == 7:
+		return 5;
+	elif speedmode == 8:
+		return 10;
+	elif speedmode == 9:
+		return 15;
+	elif speedmode == 10:
+		return np.random.uniform(low=5.0, high=15.0);
+	else:
+		sys.stderr.write("Invalid speed mode. Assuming mode 0.\n");
+		sys.stderr.flush();
+
+
+## Creates kwargs to set speed_low and speed_high for
+# make_randompath_dynamic_obstacle given a fixed speed
+#
+def _fixed_speed_kwargs(speed):
+	return {'speed_low': speed, 'speed_high': speed}
 
 
 def _map_mod_1(env):
 
 	for i in range(1, 20):
-		dynobs = make_randompath_dynamic_obstacle(env, radius_low=10, radius_high=35, speed_high=7.0)
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		speed_args = _fixed_speed_kwargs(speed)
+		dynobs = make_randompath_dynamic_obstacle(env, radius_low=10, radius_high=35, **speed_args)
 		env.dynamic_obstacles.append(dynobs)
 	for j in np.arange(4):
-		dynobs = DynamicObstacle()
 		x = int(np.random.uniform(100, 700))
 		y = int(np.random.uniform(150, 450))
-		dynobs.coordinate = np.array([x,y])
-		dynobs.origin	= (x,y)
-		dynobs.movement_mode = 2
+		origin = (x,y)
+
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.CircleMovement(origin, 30, speed=speed)
+
+		dynobs = DynamicObstacle(obs_mover)
+
 		dynobs.radius = int(np.random.uniform(20, 30))
 		dynobs.shape = 1
 		env.dynamic_obstacles.append(dynobs)
 	for j in np.arange(4):
-		dynobs = DynamicObstacle()
 		x = int(np.random.uniform(100, 700))
 		y = int(np.random.uniform(150, 450))
-		dynobs.coordinate = np.array([x, y])
-		dynobs.origin = np.array([x, y])
-		dynobs.movement_mode = 1
+		origin = np.array([x, y])
+
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.RandomMovement(initial_pos=origin, speed=speed)
+
+		dynobs = DynamicObstacle(obs_mover)
+
 		dynobs.size = [int(np.random.uniform(20, 30)),int(np.random.uniform(20, 30))]
 		dynobs.shape = 2
 		env.dynamic_obstacles.append(dynobs)
 
 
-def _map_mod_2(env,image):
+def _map_mod_2(env):
+	p_list = [
+		[100, 50],
+		[400, 350],
+		[600, 175],
+	]
 
-	x1 = 100
-	x2 = 400
-	x3 = 600
+	for p in p_list:
+		x = p[0]
+		y = p[1]
+		origin = np.array([x, y])
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.CircleMovement(origin, 30, 10)
 
-	y1 = 50
-	y2 = 350
-	y3 = 175
+		dynobs = DynamicObstacle(obs_mover)
 
-	dynobs1 = DynamicObstacle()
-	dynobs1.coordinate = np.array([x1, y1])
-	dynobs1.origin = np.array([x1, y1])
-	dynobs1.movement_mode = 2
-	dynobs1.radius = 50
-	dynobs1.shape = 1
+		dynobs.radius = 50
+		dynobs.shape = 1
 
-
-	dynobs2 = DynamicObstacle()
-	dynobs2.coordinate = np.array([x2, y2])
-	dynobs2.origin = np.array([x2, y2])
-	dynobs2.movement_mode = 2
-	dynobs2.radius = 50
-	dynobs2.shape = 1
-
-
-	dynobs3 = DynamicObstacle()
-	dynobs3.coordinate = np.array([x3, y3])
-	dynobs3.origin = np.array([x3, y3])
-	dynobs3.movement_mode = 2
-	dynobs3.radius = 50
-	dynobs3.shape = 1
-
-	env.dynamic_obstacles.append(dynobs1)
-	env.dynamic_obstacles.append(dynobs2)
-	env.dynamic_obstacles.append(dynobs3)
-
-
+		env.dynamic_obstacles.append(dynobs)
 
 
 def _map_mod_3(env):
 	for j in np.arange(8):
-		dynobs = DynamicObstacle()
 		x = int(np.random.uniform(100, 700))
 		y = int(np.random.uniform(150, 450))
-		dynobs.coordinate = np.array([x,y])
-		dynobs.origin	= (x,y)
-		dynobs.movement_mode = 2
+		origin	= (x,y)
+
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.CircleMovement(origin, 30, speed=speed)
+
+		dynobs = DynamicObstacle(obs_mover)
+
 		dynobs.radius = int(np.random.uniform(20, 30))
 		dynobs.shape = 1
 		env.dynamic_obstacles.append(dynobs)
@@ -133,25 +181,33 @@ def _map_mod_3(env):
 def _map_mod_4(env):
 
 	for i in range(1, 20):
-		dynobs = make_randompath_dynamic_obstacle(env)
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		speed_args = _fixed_speed_kwargs(speed)
+		dynobs = make_randompath_dynamic_obstacle(env, **speed_args)
 		env.dynamic_obstacles.append(dynobs)
 	for j in np.arange(10):
-		dynobs = DynamicObstacle()
 		x = int(np.random.uniform(0, 800))
 		y = int(np.random.uniform(0, 600))
-		dynobs.coordinate = np.array([x, y])
-		dynobs.origin = np.array([x, y])
-		dynobs.movement_mode = 2
+		origin = np.array([x, y])
+
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.CircleMovement(origin, 30, speed=speed)
+
+		dynobs = DynamicObstacle(obs_mover)
+
 		dynobs.radius = int(np.random.uniform(10, 20))
 		dynobs.shape = 1
 		env.dynamic_obstacles.append(dynobs)
 	for j in np.arange(10):
-		dynobs = DynamicObstacle()
 		x = int(np.random.uniform(0, 800))
 		y = int(np.random.uniform(0, 600))
-		dynobs.coordinate = np.array([x, y])
-		dynobs.origin = np.array([x, y])
-		dynobs.movement_mode = 1
+		origin = np.array([x, y])
+
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.RandomMovement(initial_pos=origin, speed=speed)
+
+		dynobs = DynamicObstacle(obs_mover)
+
 		dynobs.size = [int(np.random.uniform(10, 20)), int(np.random.uniform(10, 20))]
 		dynobs.shape = 2
 		env.dynamic_obstacles.append(dynobs)
@@ -160,69 +216,66 @@ def _map_mod_4(env):
 def _map_mod_5(env):
 
 	for i in range(1, 20):
-		dynobs = make_randompath_dynamic_obstacle(env, radius_low=10, radius_high=25)
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		speed_args = _fixed_speed_kwargs(speed)
+		dynobs = make_randompath_dynamic_obstacle(env, radius_low=10, radius_high=25, **speed_args)
 		env.dynamic_obstacles.append(dynobs)
 	for j in np.arange(10):
-		dynobs = DynamicObstacle()
 		x = int(np.random.uniform(0, 800))
 		y = int(np.random.uniform(0, 600))
-		dynobs.coordinate = np.array([x, y])
-		dynobs.origin = np.array([x, y])
-		dynobs.movement_mode = 2
+		origin = np.array([x, y])
+
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.CircleMovement(origin, 30, speed=speed)
+
+		dynobs = DynamicObstacle(obs_mover)
+
 		dynobs.radius = int(np.random.uniform(10, 20))
 		dynobs.shape = 1
 		env.dynamic_obstacles.append(dynobs)
 	for j in np.arange(10):
-		dynobs = DynamicObstacle()
 		x = int(np.random.uniform(0, 800))
 		y = int(np.random.uniform(0, 600))
-		dynobs.coordinate = np.array([x, y])
-		dynobs.origin = np.array([x, y])
-		dynobs.movement_mode = 1
+		origin = np.array([x, y])
+
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.RandomMovement(initial_pos=origin, speed=speed)
+
+		dynobs = DynamicObstacle(obs_mover)
+
 		dynobs.size = [int(np.random.uniform(10, 20)), int(np.random.uniform(10, 20))]
 		dynobs.shape = 2
 		env.dynamic_obstacles.append(dynobs)
 
 
-
-
 def _map_mod_7(env):
-	x = [200, 300, 440, 560]
-	y = [50, 200, 350, 500]
+	y_arr = [50, 200, 350, 500]
 
-	for ind,i in enumerate(y):
-		dynobs = DynamicObstacle()
-		dynobs.coordinate = np.array([x[0], i])
-		dynobs.origin = np.array([x[0], i])
-		dynobs.movement_mode = 2
-		dynobs.radius = 50
-		dynobs.shape = 1
-		env.dynamic_obstacles.append(dynobs)
-	for ind, i in enumerate(y):
-		dynobs = DynamicObstacle()
-		dynobs.coordinate = np.array([x[2], i])
-		dynobs.origin = np.array([x[2], i])
-		dynobs.movement_mode = 2
-		dynobs.radius = 50
-		dynobs.shape = 1
-		env.dynamic_obstacles.append(dynobs)
+	for x in [200, 440]:
+		for ind,i in enumerate(y_arr):
+			origin = np.array([x, i])
 
-	for ind, i in enumerate(y):
-		dynobs = DynamicObstacle()
-		dynobs.coordinate = np.array([x[1], i])
-		dynobs.origin = np.array([x[1], i])
-		dynobs.movement_mode = 1
-		dynobs.size = [50,50]
-		dynobs.shape = 2
-		env.dynamic_obstacles.append(dynobs)
-	for ind, i in enumerate(y):
-		dynobs = DynamicObstacle()
-		dynobs.coordinate = np.array([x[3], i])
-		dynobs.origin = np.array([x[3], i])
-		dynobs.movement_mode = 1
-		dynobs.size = [50, 50]
-		dynobs.shape = 2
-		env.dynamic_obstacles.append(dynobs)
+			speed = _get_speed_for_speedmode(env.get_speed_mode())
+			obs_mover = MovementPattern.CircleMovement(origin, 30, speed=speed)
+
+			dynobs = DynamicObstacle(obs_mover)
+
+			dynobs.radius = 50
+			dynobs.shape = 1
+			env.dynamic_obstacles.append(dynobs)
+
+	for x in [300, 560]:
+		for ind, i in enumerate(y_arr):
+			origin = np.array([x, i])
+
+			speed = _get_speed_for_speedmode(env.get_speed_mode())
+			obs_mover = MovementPattern.RandomMovement(initial_pos=origin, speed=speed)
+
+			dynobs = DynamicObstacle(obs_mover)
+
+			dynobs.size = [50,50]
+			dynobs.shape = 2
+			env.dynamic_obstacles.append(dynobs)
 
 
 def _map_mod_8(env):
@@ -230,10 +283,13 @@ def _map_mod_8(env):
 	x = [100, 400, 600, 100,700,650]
 	y = [50, 350, 175, 200, 400,500]
 	for ind,i in enumerate (x):
-		dynobs = DynamicObstacle()
-		dynobs.coordinate = np.array([i, y[ind]])
-		dynobs.origin = np.array([i, y[ind]])
-		dynobs.movement_mode = 2
+		origin = np.array([i, y[ind]])
+
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		obs_mover = MovementPattern.CircleMovement(origin, 30, speed=speed)
+
+		dynobs = DynamicObstacle(obs_mover)
+
 		dynobs.radius = 20
 		dynobs.shape = 1
 		env.dynamic_obstacles.append(dynobs)
@@ -241,21 +297,27 @@ def _map_mod_8(env):
 
 def _map_mod_9(env):
 	for i in range(1, 15):
-		dynobs = make_randompath_dynamic_obstacle(env, radius_low=10, radius_high=25)
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		speed_args = _fixed_speed_kwargs(speed)
+		dynobs = make_randompath_dynamic_obstacle(env, radius_low=10, radius_high=25, **speed_args);
 		env.dynamic_obstacles.append(dynobs)
 
 # Swarm of obstacles
 def _map_mod_10(env):
 	for i in range(1, 70):
-		dynobs = make_randompath_dynamic_obstacle(env, radius_low=10, radius_high=15, speed_high=11.0)
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		speed_args = _fixed_speed_kwargs(speed)
+		dynobs = make_randompath_dynamic_obstacle(env, radius_low=10, radius_high=15, **speed_args);
 		env.dynamic_obstacles.append(dynobs)
 
 
 def _map_mod_11(env):
 	for i in range(20):
 		dynobs = None;
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		speed_args = _fixed_speed_kwargs(speed)
 		while dynobs is None or Vector.distance_between(dynobs.coordinate, [50,550]) < 100:
-			dynobs = make_randompath_dynamic_obstacle(env, radius_low=5, radius_high=30);
+			dynobs = make_randompath_dynamic_obstacle(env, radius_low=5, radius_high=30, **speed_args);
 		dynobs.shape = 1 if i < 10 else 2;
 		env.dynamic_obstacles.append(dynobs);
 
@@ -263,8 +325,10 @@ def _map_mod_11(env):
 def _map_mod_12(env):
 	for i in range(20):
 		dynobs = None;
+		speed = _get_speed_for_speedmode(env.get_speed_mode())
+		speed_args = _fixed_speed_kwargs(speed)
 		while dynobs is None or Vector.distance_between(dynobs.coordinate, [50,550]) < 100:
-			dynobs = make_randompath_dynamic_obstacle(env, radius_low=5, radius_high=30, num_path_points=2);
+			dynobs = make_randompath_dynamic_obstacle(env, radius_low=5, radius_high=30, num_path_points=2, **speed_args);
 		dynobs.shape = 1 if i < 10 else 2;
 		env.dynamic_obstacles.append(dynobs);
 
@@ -282,26 +346,28 @@ def _map_mod_obsmat(env):
 	with open('obsmat.json', 'r') as f:
 		obsmat = json.load(f)
 		for ped_id in obsmat:
-			dynobs = DynamicObstacle()
-			dynobs.speed = 1000
-			dynobs.shape = 3
-			dynobs.radius = 6
-			dynobs.width = 12
-			dynobs.height = 6
-			dynobs.movement_mode = 3
-			dynobs.path_list = []
-			dynobs.vel_list = []
+			path_list = []
+			vel_list = []
 			firstpoint = obsmat[ped_id][0]
-			for i in range(int((firstpoint['time']-750)//6)):
-				dynobs.path_list.append(np.zeros(2))
+			path_list.append((0, 0, firstpoint['time']-770))
 			for waypoint in obsmat[ped_id]:
 				pos = Geometry.apply_homography(H_meter2pix, (waypoint['pos_x'], waypoint['pos_y']))
 				direction = Geometry.apply_homography(H_meter2pix, (waypoint['vel_x'], waypoint['vel_y']))
 				# Rotate 90 degrees to match video
-				dynobs.path_list.append(np.array([pos[1], pos[0]]))
-				dynobs.vel_list.append((np.array([direction[1],direction[0]])))
-			for i in range(2500):
-				dynobs.path_list.append(np.zeros(2, dtype=np.float32))
-				dynobs.vel_list.append(np.zeros(2, dtype=np.float32))
+				path_list.append((pos[1], pos[0], waypoint['time']-770))
+				vel_list.append((np.array([direction[1],direction[0]])))
+
+			# Get obstacles offscreen after they finish their path
+			path_list.append((0, 0, path_list[-1][2]+0.01))
+			vel_list.append(np.zeros(3, dtype=np.float32))
+
+			obs_mover = MovementPattern.PathMovement(path_list, loop=False)
+
+			dynobs = DynamicObstacle(obs_mover)
+			dynobs.shape = 3
+			dynobs.radius = 6
+			dynobs.width = 12
+			dynobs.height = 6
+			dynobs.vel_list = vel_list
 			env.dynamic_obstacles.append(dynobs)
 
