@@ -24,6 +24,19 @@ class MovementPattern:
 		return self._pos
 
 
+## A static MovementPattern that does not move. Good for static obstacles.
+#
+class StaticMovement(MovementPattern):
+	def __init__(self, initial_pos):
+		super().__init__(initial_pos=initial_pos)
+
+	def step(self, timestep):
+		pass
+
+	def get_pos(self):
+		return self._pos
+
+
 ## Represents a movement through space modeled as a parametric curve
 #
 class ParametricPathMovement(MovementPattern):
