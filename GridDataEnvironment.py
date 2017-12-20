@@ -102,7 +102,7 @@ class GridDataEnvironment(Environment):
 				vec = i.get_velocity_vector()
 				angle = np.arctan2(vec[1], vec[0])
 				dtool.draw_ellipse(np.array(i.coordinate), i.width, i.height, angle)
-			elif (obs.shape == 4):
+			elif (i.shape == 4):
 				dtool.draw_poly(i.polygon.get_vertices())
 
 
