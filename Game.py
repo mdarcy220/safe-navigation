@@ -11,6 +11,8 @@ import base64
 import DrawTool
 from GridDataEnvironment import GridDataEnvironment
 from GridDataRadar import GridDataRadar
+from GeometricEnvironment import GeometricEnvironment
+from GeometricRadar import GeometricRadar
 from Robot import Robot, RobotStats, GpsSensor
 from Target import Target
 import time
@@ -74,12 +76,12 @@ class Game:
 		self._gameDisplay = PG.display.set_mode((640, 480))
 
 		# Init environment
-		self._env = GridDataEnvironment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
+		self._env = GeometricEnvironment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
 		self._start_point = Target((50,450), color=0x00FF00)
 		self._target = Target((530, 70))#(760,50)
 
 		# Init robots
-		radar = GridDataRadar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);
+		radar = GeometricRadar(self._env, radius = cmdargs.radar_range);
 		initial_position = np.array(self._start_point.position);
 		self._robot_list    = [];
 
@@ -147,7 +149,6 @@ class Game:
 		dtool = DrawTool.PygameDrawTool(self._gameDisplay);
 
 		self._env.update_display(dtool);
-		self._env.update_grid_data_from_display(self._gameDisplay)
 
 		if self._display_every_frame:
 			if self._display_robot_perspective:
