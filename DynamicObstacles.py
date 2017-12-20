@@ -87,7 +87,6 @@ class DynamicObstacle:
 		self.radius		= 0 # Used for Circle shape
 		self.width              = 0 # Used for ellipse shape
 		self.heigth             = 0 # Used for ellipse shape
-		self.direction          = [0,0] # Used for ellipse shape
 		self.size		= [50, 50] # Used for Rectangle shape
 		self.fillcolor		= (0x44, 0xcc, 0xee)
 		self.bordercolor	= (0xFF, 0x00, 0x00)
@@ -114,6 +113,8 @@ class DynamicObstacle:
 	# direction according to its movement mode.
 	#
 	def next_step(self, timestep):
+		self._last_position = self.coordinate
+
 		self._movement.step(timestep)
 		self.coordinate = self._movement.get_pos()
 

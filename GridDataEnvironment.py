@@ -92,6 +92,7 @@ class GridDataEnvironment(Environment):
 	def update_display(self, dtool):
 		dtool.draw_image(self.static_base_image, (0, 0))
 		dtool.set_stroke_width(0);
+		tmp = 0
 		for i in self.dynamic_obstacles:
 			dtool.set_color(i.fillcolor);
 			if (i.shape == 1):
@@ -99,7 +100,9 @@ class GridDataEnvironment(Environment):
 			if (i.shape == 2):
 				dtool.draw_rect(i.coordinate.tolist(), i.size)
 			if (i.shape == 3):
-				dtool.draw_ellipse(np.array(i.coordinate, dtype='int64'), i.width, i.height, np.arctan2(i.direction[1], i.direction[0]))
+				vec = i.get_velocity_vector()
+				angle = np.arctan2(vec[1], vec[0])
+				dtool.draw_ellipse(np.array(i.coordinate, dtype='int64'), i.width, i.height, angle)
 
 
 	## Update the grid data from the given display.
