@@ -96,12 +96,14 @@ class GridDataEnvironment(Environment):
 			dtool.set_color(i.fillcolor);
 			if (i.shape == 1):
 				dtool.draw_circle(np.array(i.coordinate), i.radius)
-			if (i.shape == 2):
+			elif (i.shape == 2):
 				dtool.draw_rect(i.coordinate.tolist(), i.size)
-			if (i.shape == 3):
+			elif (i.shape == 3):
 				vec = i.get_velocity_vector()
 				angle = np.arctan2(vec[1], vec[0])
 				dtool.draw_ellipse(np.array(i.coordinate), i.width, i.height, angle)
+			elif (obs.shape == 4):
+				dtool.draw_poly(i.polygon.get_vertices())
 
 
 	## Update the grid data from the given display.

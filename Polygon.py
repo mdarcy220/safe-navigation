@@ -45,6 +45,10 @@ class Polygon(Shape):
 		return intersections;
 
 
+	def get_vertices(self):
+		return self._vertices
+
+
 	def __repr__(self):
 		return "Polygon([])".format(self._vertices);
 
