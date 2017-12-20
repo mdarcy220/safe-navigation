@@ -57,7 +57,7 @@ class DynamicObstacle:
 
 		self.radius		= 0 # Used for Circle shape
 		self.width              = 0 # Used for ellipse shape
-		self.heigth             = 0 # Used for ellipse shape
+		self.height             = 0 # Used for ellipse shape
 		self.size		= [50, 50] # Used for Rectangle shape
 		self.fillcolor		= (0x44, 0xcc, 0xee)
 		self.bordercolor	= (0xFF, 0x00, 0x00)
@@ -73,7 +73,7 @@ class DynamicObstacle:
 	def set_width(self, width):
 		self.width = width
 
-	def set_heigth(self, heigth):
+	def set_height(self, height):
 		self.height = height
 
 	def get_velocity_vector(self):

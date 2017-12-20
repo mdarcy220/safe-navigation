@@ -1,7 +1,7 @@
 
 C_SOURCES = c_src/_GridDataRadar.c c_src/_Vector.c
 PXD_SOURCES = GridDataRadar.pxd Vector.pxd
-PY_SOURCES = Circle.py Distributions.py DrawTool.py DynamicObstacles.py Environment.py Game.py Geometry.py GridDataEnvironment.py GridDataRadar.py Human.py Main.py MapModifier.py MDPAdapterSensor.py ObstaclePredictor.py Polygon.py Radar.py Robot.py RobotControlInput.py Shape.py StaticMapper.py Target.py Vector.py NavigationAlgorithm/*.py
+PY_SOURCES = Circle.py Distributions.py DrawTool.py DynamicObstacles.py Environment.py Game.py Geometry.py GridDataEnvironment.py GridDataRadar.py Main.py MapModifier.py MDPAdapterSensor.py MovementPattern.py ObstaclePredictor.py Polygon.py Radar.py Robot.py RobotControlInput.py Shape.py StaticMapper.py Target.py Vector.py NavigationAlgorithm/*.py
 DOXYGEN_CONFIG_FILE = doxygen.conf
 
 default: cython
