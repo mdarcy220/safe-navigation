@@ -45,6 +45,15 @@ class ReplayMemory:
         # this complete binary tree. The following code initializes
         # all internal nodes, if any, to have value 0.
         self._memory = [0] * (capacity - 1) if prioritized else []
+    
+    def empty_memory(self):
+        prioritized = self._use_prioritized_replay
+        self._memory = [0] * (capacity - 1) if prioritized else []
+        self._position = 0
+
+    def add_batch(self, batch):
+        for (state, action,reward,next_state,priority) in batch:
+          self.store(state, action, reward,next_state,priority)
 
     def store(self, *args):
         """Store a transition in replay memory.

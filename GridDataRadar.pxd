@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 # distutils: language = c
-# distutils: source = c_src/_Radar.c
+# distutils: source = c_src/_GridDataRadar.c
 
-## @package Radar
+## @package C_GridDataRadar
 #
 
 cimport numpy as np
 
-cdef extern from "c_src/_Radar.h":
+cdef extern from "c_src/_GridDataRadar.h":
 	cdef void _c_scan_generic(double centerx,
 		double centery,
 		double radius,

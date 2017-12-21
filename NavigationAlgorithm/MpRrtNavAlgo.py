@@ -7,6 +7,7 @@ from math import *
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from ObstaclePredictor import CollisionConeObstaclePredictor
 from Robot import RobotControlInput
+from Environment import ObsFlag
 
 
 ## Implementation of the Dynamic Window algorithm for robotic navigation.
@@ -39,7 +40,6 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._data_size = self._radar.get_data_size();
 		self._radar_range = self._radar.radius;
-		self._radar_resolution = self._radar.resolution;
 		self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
 		self._robot_speed = cmdargs.robot_speed;
 		self._targetpos = self._target.position;
@@ -133,7 +133,6 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _grow_rrt(self, tree, qgoal, goalThreshold, useForest):
 
-	       # grid_data = self._radar._env.grid_data;
 		if self._collides(None, tree.root.data, True):
 			return 2;
 		if self._collides(None, qgoal.data, True):
@@ -308,7 +307,7 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _collides(self, fromData, toData, dynamicOnly):
 		toPoint = toData[:2];
-		grid_data = self._radar._env.grid_data;
+		env = self._radar._env
 
 		if fromData is not None:
 			fromPoint = fromData[:2];
@@ -323,28 +322,28 @@ class MpRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			for i in np.arange(0, dist, 2):
 				x = int(cos_cached * i + fromPoint[0])
 				y = int(sin_cached * i + fromPoint[1])
-				if grid_data[x][y] & 1 and Vector.distance_between((x,y), self._gps.location()) < self._radar.radius:
+				if env.get_obsflags([x,y]) & ObsFlag.ANY_OBSTACLE and Vector.distance_between((x,y), self._gps.location()) < self._radar.radius:
 					return True
 				if fromDataTimeOffset <= self._maxPredictTime:
 					for i in np.arange(fromDataTimeOffset, min(self._maxPredictTime, toDataTimeOffset), 1):
 						if self._obstacle_predictor.get_prediction((x,y), i) > 0.15:
 							return True;
 				if not dynamicOnly:
-					if grid_data[x][y] & 4:
+					if env.get_obsflags([x,y]) & ObsFlag.STATIC_OBSTACLE:
 						return True
 		else:
-				# Check for dynamic obstacle
+                        # Check for dynamic obstacle
 			timeOffset = toData[2] - self._time;
 			if timeOffset <= self._maxPredictTime:
 				if self._obstacle_predictor.get_prediction(toPoint, timeOffset) > 0.15:
 					return True;
 
 
-			if grid_data[int(toPoint[0])][int(toPoint[1])] & 1 and Vector.distance_between(toPoint, self._gps.location()) < self._radar.radius:
+			if env.get_obsflags(toPoint) & ObsFlag.ANY_OBSTACLE and Vector.distance_between(toPoint, self._gps.location()) < self._radar.radius:
 				return True
 			# Check for static obstacle
 			if not dynamicOnly:
-				if grid_data[int(toPoint[0])][int(toPoint[1])] & 4:
+				if env.get_obsflags(toPoint) & ObsFlag.STATIC_OBSTACLE:
 					return True;
 
 		return False;

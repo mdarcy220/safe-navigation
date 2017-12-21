@@ -516,6 +516,112 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 	return rectangle_shadow_angle_range(circle_center, rect_pos, rect_dim);
 
 
+## Creates a 2x2 rotation transform matrix
+#
+# @param angle (float)
+# <br>	-- The angle of rotation (counterclockwise) in radians
+#
+# @return (numpy array)
+# <br>	-- A 2x2 matrix `A`, such that `Ax` for a point `x` results in the
+#          rotation of `x` about the origin
+#
+def make_rot_matrix(angle):
+	return np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+
+
+## Returns the point(s) of intersection of the given ellipse
+# object with the given line.
+# 
+# @param ellipse_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of the ellipse
+# 
+# @param ellipse_width (float)
+# <br>	-- the width of the ellipse
+# 
+# @param ellipse_height (float)
+# <br>	-- the height of the ellipse
+# 
+# @param ellipse_angle (float)
+# <br>	-- the angle of the ellipse
+# 
+# @param line (list of numpy array)
+# <br>	Format: `[[x1, y1], [x2, y2]]`
+# <br>	-- the line to check
+# 
+# @returns (list of numpy array)
+# <br>	Format: `[[x1, y1], ..., [xn, yn]]`
+# <br>	-- Returns a list of intersection points. If there are no
+# 	intersection points, an empty list will be returned. If an error
+# 	occurs, `None` is returned.
+#
+def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ellipse_angle, line):
+
+	# Use radii instead of diameters
+	ellipse_rx = ellipse_width / 2.0
+	ellipse_ry = ellipse_height / 2.0
+
+	# Transformation matrix to normalize the angle of the ellipse
+	rotation_matrix = make_rot_matrix(-ellipse_angle)
+
+	# Transformation to squeeze/stretch the ellipse back to a perfect circle
+	stretch_matrix = np.array([[1.0/ellipse_rx, 0], [0, 1.0/ellipse_ry]])
+
+	# Combined transformation to make the ellipse a perfect circle
+	# Note: Matrix multiplication, so order matters
+	transform_matrix = np.dot(stretch_matrix, rotation_matrix)
+
+	# Transform both the ellipse and the line
+	# This reduces the problem to a circle-line intersection
+	new_center = np.dot(transform_matrix, ellipse_center)
+	new_line = np.array([np.dot(transform_matrix, line[0]), np.dot(transform_matrix, line[1])])
+
+	transformed_intersections = circle_line_intersection(new_center, 1, new_line)
+
+	if transformed_intersections is None:
+		return None
+
+	# Inverse transformation matrix to go back to the original coordinate
+	# system
+	inverse_trans_matrix = np.linalg.inv(transform_matrix)
+
+	intersections = []
+	for trans_inter in transformed_intersections:
+		intersections.append(np.dot(inverse_trans_matrix, trans_inter))
+
+	return intersections
+
+
+## Transforms a point according to the given homography matrix.
+#
+# Note that this is different than just doing a matrix multiplication as one
+# would with an affine transform.
+#
+# @param homography_matrix (numpy array)
+# <br>  Format: `[[h11, h12, h13], [h21, h22, h23], [h31, h32, h33]]`
+# <br>  -- A 3x3 homography matrix
+#
+# @param point (array-like)
+# <br>  Format: `[x, y]`
+# <br>  -- The point to transform
+#
+# @return (numpy array)
+# <br>  Format: `[xprime, yprime]`
+# <br>  -- The transformed coordinates after apply the homography
+#
+def apply_homography(homography_matrix, point):
+	# Convert point to homogeneous coordinates
+	vec = np.array([point[0], point[1], 1])
+
+	# Dot product, just like affine transform (but next step is different)
+	new_vec = np.dot(homography_matrix, vec)
+
+	# Notice that new_vec[2] is used as a scaling factor. If new_vec[2]
+	# equals 1, then it is equivalent to an affine transform.
+	return (1.0 / new_vec[2]) * np.array([new_vec[0], new_vec[1]])
+
+
+
 
 if __name__ == '__main__':
 	print(circle_line_intersection(np.array([2.46,1.04]), 2.6**0.5, [[3.72,-1.96], [0.9,2.84]]))

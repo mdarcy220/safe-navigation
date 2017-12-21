@@ -9,12 +9,16 @@ import pickle
 import base64
 
 import DrawTool
-from Environment import Environment
+from GridDataEnvironment import GridDataEnvironment
+from GridDataRadar import GridDataRadar
+from GeometricEnvironment import GeometricEnvironment
+from GeometricRadar import GeometricRadar
 from Robot import Robot, RobotStats, GpsSensor
-from Radar import Radar
 from Target import Target
 import time
 import Vector
+from MDPAdapterSensor import MDPAdapterSensor
+import os
 
 from NavigationAlgorithm import DeepQNavigationAlgorithm
 from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
@@ -26,6 +30,10 @@ from NavigationAlgorithm import ManualMouseNavigationAlgorithm
 from NavigationAlgorithm import MpRrtNavigationAlgorithm
 from NavigationAlgorithm import MultiLevelNavigationAlgorithm
 from NavigationAlgorithm import SamplingNavigationAlgorithm
+from NavigationAlgorithm import ValueIterationNavigationAlgorithm
+from NavigationAlgorithm import InverseRLNavigationAlgorithm
+from NavigationAlgorithm import DeepIRLAlgorithm
+from NavigationAlgorithm import DeepQIRLAlgorithm
 
 ## Handles the main game loop
 #
@@ -64,31 +72,40 @@ class Game:
 
 		# Initialize the game display to 800x600
 		PG.init()
-		self._gameDisplay = PG.display.set_mode((800, 600))
+		#self._gameDisplay = PG.display.set_mode((800, 600))
+		self._gameDisplay = PG.display.set_mode((640, 480))
 
 		# Init environment
-		self._env = Environment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
-		self._start_point = Target((50,550), color=0x00FF00)
-		self._target = Target((740, 50))
+		self._env = GeometricEnvironment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
+		self._start_point = Target((50,450), color=0x00FF00)
+		self._target = Target((530, 70))#(760,50)
 
 		# Init robots
-		radar = Radar(self._env, radius = cmdargs.radar_range, resolution = cmdargs.radar_resolution);
+		radar = GeometricRadar(self._env, radius = cmdargs.radar_range);
 		initial_position = np.array(self._start_point.position);
 		self._robot_list    = [];
 
 		self._normal_robot  = Robot(initial_position, cmdargs, path_color=(0,0,255),   name="NormalRobot");
 		self._normal_robot.put_sensor('radar', radar);
 		self._normal_robot.put_sensor('gps', GpsSensor(self._normal_robot));
+		#self._normal_robot.put_sensor('mdp', MDPAdapterSensor(self._env, self._start_point.position, self._target.position, unique_id=os.path.basename(cmdargs.map_name)));
 		self._normal_robot.put_sensor('debug', {'name': 'normal'});
-		self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(DeepIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(DeepQIRLAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(InverseRLNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(DeepQNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(ValueIterationNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		self._normal_robot.set_nav_algo(LinearNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		self._robot_list.append(self._normal_robot);
+
 
 		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(0xf3,0x91,0x12), name="SafeRobot");
 		self._safe_robot.put_sensor('radar', radar);
 		self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
 		self._safe_robot.put_sensor('debug', {'name': 'safe'});
 		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
-		self._robot_list.append(self._safe_robot);
+		#self._robot_list.append(self._safe_robot);
 
 		# Set window title
 		PG.display.set_caption(cmdargs.window_title)
@@ -126,9 +143,12 @@ class Game:
 	# not always need to be done.
 	#
 	def update_game_image(self):
+		#dtool = DrawTool.MultiDrawTool();
+		#dtool.dtools.append(DrawTool.PygameDrawTool(self._gameDisplay));
+		#dtool.dtools.append(DrawTool.SvgDrawTool());
 		dtool = DrawTool.PygameDrawTool(self._gameDisplay);
+
 		self._env.update_display(dtool);
-		self._env.update_grid_data_from_display(self._gameDisplay)
 
 		if self._display_every_frame:
 			if self._display_robot_perspective:
@@ -142,6 +162,10 @@ class Game:
 			self._target.draw(dtool)
 			for robot in self._robot_list:
 				robot.draw(dtool)
+
+		#dtool.dtools[1]._elems.insert(0, '<image x="0" y="0" width="800" height="600" xlink:href="../{}" />'.format(self._cmdargs.map_name))
+		#with open('imdir/frame-{:05d}.svg'.format(self._step_num), 'x') as f:
+		#	f.write(dtool.dtools[1].get_svg_xml())
 
 
 	## Renders the stored game image onto the screen, to make it
@@ -187,7 +211,7 @@ class Game:
 					break;
 				if not (self.check_robot_at_target(robot)):
 					allBotsAtTarget = False
-					robot.NextStep(self._env.grid_data)
+					robot.NextStep(self._env)
 
 			# Step the environment
 			self._env.next_step()

@@ -14,6 +14,14 @@ class DrawTool:
 	def draw_circle(self, center, radius):
 		pass;
 
+	## Draws an ellipse
+	# 
+	# @param angle (float)
+	# <br>  -- The counterclockwise angle of rotation of the ellipse, in radians.
+	# 
+	def draw_ellipse(self, center, width, height, angle):
+		pass
+
 	def draw_poly(self, points):
 		pass;
 
@@ -42,6 +50,8 @@ class DrawTool:
 		return self._stroke_width;
 
 
+## Draws to the screen using Pygame
+#
 class PygameDrawTool(DrawTool):
 	def __init__(self, pg_surface):
 		self._pg_surface = pg_surface;
@@ -49,6 +59,14 @@ class PygameDrawTool(DrawTool):
 
 	def draw_circle(self, center, radius):
 		PG.draw.circle(self._pg_surface, self._color, center, radius, self._stroke_width);
+
+
+	def draw_ellipse(self, center, width, height, angle):
+		surface = PG.Surface((width, height), PG.SRCALPHA, 32).convert_alpha()
+		PG.draw.ellipse(surface, self._color,(0,0,width,height),0)
+		rot_surface = PG.transform.rotate(surface, angle*180/np.pi)
+		rcx, rcy = rot_surface.get_rect().center
+		self._pg_surface.blit(rot_surface, center)
 
 
 	def draw_poly(self, points):
@@ -80,6 +98,9 @@ def _color_to_int(color_tuple):
 		return color_int
 	return color_tuple
 
+
+## Draws to SVG markup
+#
 class SvgDrawTool(DrawTool):
 	def __init__(self):
 		self._svg_template_xml = """<svg width="800px" height="600px" viewBox="0 0 800 600"><g id="layer1">{}</g></svg>""";
@@ -88,7 +109,7 @@ class SvgDrawTool(DrawTool):
 		self._stroke_width = 1
 
 	def get_svg_xml(self):
-		return self._svg_template_xml.format(" ".join(self._elems));
+		return self._svg_template_xml.format("\n".join(self._elems));
 
 
 	def _gen_style_str(self):
@@ -101,6 +122,11 @@ class SvgDrawTool(DrawTool):
 	def draw_circle(self, center, radius):
 		style_attr = self._gen_style_str();
 		self._elems.append("""<circle id="circle{:d}" r="{:f}" cx="{:f}" cy="{:f}" style="{}"/>""".format(len(self._elems), radius, center[0], center[1], style_attr));
+
+
+	def draw_ellipse(self, center, width, height, angle):
+		style_attr = self._gen_style_str()
+		self._elems.append("""<ellipse id="ellipse{:d}" rx="{rx:f}" ry="{ry:f}" cx="{cx:f}" cy="{cy:f}" style="{style:s}" transform="rotate({angle:f}, {cx:f}, {cy:f})"/>""".format(len(self._elems), rx=width/2, ry=height/2, cx=center[0], cy=center[1], style=style_attr, angle=angle*180/np.pi))
 
 
 	def draw_poly(self, points):
@@ -133,3 +159,55 @@ class SvgDrawTool(DrawTool):
 	def draw_image(self, image_data, location):
 		pass;
 
+
+## Composite tool that duplicates drawing commands over all its component tools
+#
+class MultiDrawTool:
+	def __init__(self):
+		self.dtools = []
+
+	def draw_circle(self, center, radius):
+		for dtool in self.dtools:
+			dtool.draw_circle(center, radius)
+
+	def draw_ellipse(self, *args, **kwargs):
+		for dtool in self.dtools:
+			dtool.draw_ellipse(*args, **kwargs)
+
+	def draw_poly(self, points):
+		for dtool in self.dtools:
+			dtool.draw_poly(points)
+
+	def draw_lineseries(self, points):
+		for dtool in self.dtools:
+			dtool.draw_lineseries(points)
+
+	def draw_line(self, point1, point2):
+		for dtool in self.dtools:
+			dtool.draw_line(point1, point2)
+
+	def draw_rect(self, point, dimension):
+		for dtool in self.dtools:
+			dtool.draw_rect(point, dimension)
+
+	def draw_image(self, image_data, location):
+		for dtool in self.dtools:
+			dtool.draw_image(image_data, location)
+
+	def set_color(self, color):
+		for dtool in self.dtools:
+			dtool.set_color(color)
+
+	def get_color(self):
+		if len(self.dtools) == 0:
+			return (0,0,0)
+		return self.dtools[0].get_color()
+
+	def set_stroke_width(self, width):
+		for dtool in self.dtools:
+			dtool.set_stroke_width(width)
+
+	def get_stroke_width(self):
+		if len(self.dtools) == 0:
+			return 0
+		return self.dtools[0].get_stroke_width()

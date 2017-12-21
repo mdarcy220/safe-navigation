@@ -9,6 +9,7 @@ import numpy as np
 
 import ast
 import configparser
+import os
 
 
 class QLearningParameters:
@@ -19,6 +20,10 @@ class QLearningParameters:
 
         Use default value if the value is not present.
         """
+
+        if not os.path.isfile(config_file):
+            raise FileNotFoundError("No config file found at {}".format(str(config_file)))
+
         # TODO: validate parameter values.
         self.config = configparser.ConfigParser()
         self.config.optionxform = str
@@ -26,7 +31,7 @@ class QLearningParameters:
 
         # Discount factor
         self.gamma = self.config.getfloat(
-            'General', 'Gamma', fallback=0.95)
+            'General', 'Gamma', fallback=0.999)#0.9
 
         # Name of class that does preprocessing.
         self.preprocessing = self.config.get(
@@ -48,7 +53,7 @@ class QLearningParameters:
 
         # Number of steps before epsilon reaches minimum value.
         self.epsilon_decay_step_count = self.config.getint(
-            'QLearningAlgo', 'EpsilonDecayStepCount', fallback=40000)
+            'QLearningAlgo', 'EpsilonDecayStepCount', fallback=10000)#40000
 
         # Minimum value of epsilon.
         self.epsilon_minimum = self.config.getfloat(
@@ -57,7 +62,7 @@ class QLearningParameters:
         # Initial value of eta, which is the learning rate for gradient
         # descent.
         self.initial_eta = self.config.getfloat(
-            'Optimization', 'InitialEta', fallback=0.003)
+            'Optimization', 'InitialEta', fallback=0.001)
 
         # Number of steps before eta reaches minimum value.
         self.eta_decay_step_count = self.config.getint(
@@ -67,11 +72,11 @@ class QLearningParameters:
         # starting point is to set EtaMinimum equal to InitialEta, which is
         # equivalent to using a constant learning rate.
         self.eta_minimum = self.config.getfloat(
-            'Optimization', 'EtaMinimum', fallback=0.001)
+            'Optimization', 'EtaMinimum', fallback=0.0005)
 
         # Momentum used by RMSProp.
         self.momentum = self.config.getfloat(
-            'Optimization', 'Momentum', fallback=0.99)
+            'Optimization', 'Momentum', fallback=0.98)
 
         # Initial value for table entries.
         # TODO(maoyi): allow DQN initialization through config file.
@@ -90,11 +95,11 @@ class QLearningParameters:
         # Number of actions chosen between successive
         # target network updates.
         self.target_q_update_frequency = self.config.getint(
-            'QLearningAlgo', 'TargetQUpdateFrequency', fallback=80)
+            'QLearningAlgo', 'TargetQUpdateFrequency', fallback=100)
 
         # Sample size of each minibatch.
         self.minibatch_size = self.config.getint(
-            'QLearningAlgo', 'MinibatchSize', fallback=32)
+            'QLearningAlgo', 'MinibatchSize', fallback=64)
 
         # Number of replays per update.
         self.replays_per_update = self.config.getint(
@@ -102,7 +107,7 @@ class QLearningParameters:
 
         # Number of actions chosen between successive SGD updates of Q.
         self.q_update_frequency = self.config.getint(
-            'QLearningAlgo', 'QUpdateFrequency', fallback=1)
+            'QLearningAlgo', 'QUpdateFrequency', fallback=50)
 
         # Use Huber loss with \delta=1 when True. Otherwise, use least square
         # loss.
