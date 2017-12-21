@@ -58,7 +58,7 @@ class PygameDrawTool(DrawTool):
 
 
 	def draw_circle(self, center, radius):
-		PG.draw.circle(self._pg_surface, self._color, center, radius, self._stroke_width);
+		PG.draw.circle(self._pg_surface, self._color, np.array(center, dtype=int), radius, self._stroke_width);
 
 
 	def draw_ellipse(self, center, width, height, angle):
