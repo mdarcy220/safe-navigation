@@ -22,6 +22,7 @@ class Polygon(Shape):
 	#
 	def __init__(self, vertices):
 		self._vertices = np.array(vertices)
+		self._bounding_rectangle = self._calc_bounding_rectangle()
 
 
 	## Get the intersection point(s) of this polygon with the given line
@@ -45,12 +46,51 @@ class Polygon(Shape):
 		return intersections;
 
 
+	## Determines whether this polygon contains the specified point
+	# 
+	# @param testp (array-like)
+	# <br>  Format: `[x, y]`
+	# <br>  -- The point to test for inclusion
+	#
+	def contains_point(self, testp):
+		# First do a course check to see if it is even close
+		rect = self._bounding_rectangle
+		if not Geometry.point_inside_rectangle(rect, testp):
+			return False
+
+		# Based on the C source code by Randolph Franklin on Wikipedia
+		# Commons, this method uses ray casting to check inclusion of
+		# a point inside a polygon
+
+		v = self._vertices
+
+		containsPoint = False
+		for i in range(len(self._vertices)):
+			if ((v[i][1] > testp[1]) != (v[i-1][1] > testp[1])) and (testp[0] < (v[i-1][0] - v[i][0]) * (testp[1] - v[i][1]) / (v[i-1][1] - v[i][1]) + v[i][0]):
+				containsPoint = ~containsPoint
+		return containsPoint
+
+
+	def _calc_bounding_rectangle(self):
+		min_x = min(self._vertices, key=lambda p: p[0])[0]
+		max_x = max(self._vertices, key=lambda p: p[0])[0]
+		min_y = min(self._vertices, key=lambda p: p[1])[1]
+		max_y = max(self._vertices, key=lambda p: p[1])[1]
+		rect_pos = [min_x, min_y]
+		rect_size = np.subtract((max_x, max_y), rect_pos)
+		return [rect_pos, rect_size]
+
+
+	def get_bounding_rectangle(self):
+		return self._bounding_rectangle
+
+
 	def get_vertices(self):
 		return self._vertices
 
 
 	def __repr__(self):
-		return "Polygon([])".format(self._vertices);
+		return "Polygon([{}])".format(self._vertices);
 
 
 
