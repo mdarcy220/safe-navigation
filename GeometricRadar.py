@@ -126,14 +126,8 @@ class GeometricRadar(Radar):
 		elif obs.shape == 3:
 			angle_range = Geometry.circle_circle_overlap_angle_range(scan_center, self.radius, obs.coordinate, max(obs.width,obs.height)/2);
 		elif obs.shape == 4:
-			points = obs.polygon.get_vertices()
-			min_x = min(points, key=lambda p: p[0])[0]
-			max_x = max(points, key=lambda p: p[0])[0]
-			min_y = min(points, key=lambda p: p[1])[1]
-			max_y = max(points, key=lambda p: p[1])[1]
-			rect_pos = [min_x, min_y]
-			rect_size = np.subtract((max_x, max_y), rect_pos)
-			angle_range = Geometry.circle_rectangle_overlap_angle_range(scan_center, self.radius, rect_pos, rect_size);
+			rect = obs.polygon.get_bounding_rectangle()
+			angle_range = Geometry.circle_rectangle_overlap_angle_range(scan_center, self.radius, rect[0], rect[1]);
 
 		if angle_range is None:
 			return None;
@@ -213,8 +207,7 @@ class GeometricRadar(Radar):
 			angle = np.arctan2(vec[1], vec[0])
 			inters = Geometry.ellipse_line_intersection(obs.coordinate, obs.width, obs.height, angle, line);
 		elif obs.shape == 4:
-			poly = obs.polygon
-			inters = poly.line_intersection(line);
+			inters = obs.polygon.line_intersection(line);
 
 		if len(inters) == 0:
 			return float('inf')
