@@ -15,6 +15,7 @@ from Polygon import Polygon
 def _create_map_1(env):
 	obs_movement = MovementPattern.StaticMovement((0,0))
 	obs = DynamicObstacle(obs_movement)
+	obs.fillcolor = (0x55, 0x55, 0x55)
 	obs.shape = 4
 	obs.polygon = Polygon([
 		(640, 80),
