@@ -592,6 +592,54 @@ def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ell
 	return intersections
 
 
+## Tests whether the given point is inside the given ellipse.
+# 
+# @param ellipse_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of the ellipse
+# 
+# @param ellipse_width (float)
+# <br>	-- the width of the ellipse
+# 
+# @param ellipse_height (float)
+# <br>	-- the height of the ellipse
+# 
+# @param ellipse_angle (float)
+# <br>	-- the angle of the ellipse
+# 
+# @param line (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the point to check
+# 
+# @returns (boolean)
+# <br>	-- True if the point is inside the ellipse, False otherwise
+#
+def point_inside_ellipse(ellipse_center, ellipse_width, ellipse_height, ellipse_angle, point):
+	# Use radii instead of diameters
+	ellipse_rx = ellipse_width / 2.0
+	ellipse_ry = ellipse_height / 2.0
+
+	# Transformation matrix to normalize the angle of the ellipse
+	rotation_matrix = make_rot_matrix(-ellipse_angle)
+
+	# Transformation to squeeze/stretch the ellipse back to a perfect circle
+	stretch_matrix = np.array([[1.0/ellipse_rx, 0], [0, 1.0/ellipse_ry]])
+
+	# Combined transformation to make the ellipse a perfect circle
+	# Note: Matrix multiplication, so order matters
+	transform_matrix = np.dot(stretch_matrix, rotation_matrix)
+
+	# Transform both the ellipse and the point
+	# This reduces the problem to a point-in-circle problem
+	new_center = np.dot(transform_matrix, ellipse_center)
+	new_point = np.dot(transform_matrix, point)
+
+	vec = new_point - new_center
+
+	# Radius is 1 due to transformation
+	return np.dot(vec, vec) < 1
+
+
 ## Transforms a point according to the given homography matrix.
 #
 # Note that this is different than just doing a matrix multiplication as one

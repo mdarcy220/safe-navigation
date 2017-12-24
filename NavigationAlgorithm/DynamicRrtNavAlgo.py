@@ -190,8 +190,8 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 			randInt = np.random.randint(0, len(self._waypointCache));
 			return self._waypointCache[randInt];
 		else:
-			XDIM = 800
-			YDIM = 600
+			XDIM = self._mapper.get_grid_data().shape[0]
+			YDIM = self._mapper.get_grid_data().shape[1]
 			return Node((np.random.uniform(low=0.0, high=XDIM), np.random.uniform(low=0.0, high=YDIM)))
 
 
@@ -304,7 +304,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				y = int(sin_cached * i + fromPoint[1])
 				if grid_data[x,y] & ObsFlag.ANY_OBSTACLE:
 					return True
-				if self._sensors['debug']['name'] != 'safe' and self._radar._env.get_obsflags([x,y]) & ObsFlag.DYNAMIC_OBSTACLE and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius:
+				if self._sensors['debug']['name'] != 'safe' and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius and self._radar._env.get_obsflags([x,y]) & ObsFlag.DYNAMIC_OBSTACLE:
 					return True
 
 		return grid_data[int(toPoint[0])][int(toPoint[1])] & ObsFlag.ANY_OBSTACLE;

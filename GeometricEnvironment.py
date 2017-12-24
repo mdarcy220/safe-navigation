@@ -9,9 +9,10 @@ import DrawTool
 from DynamicObstacles import DynamicObstacle
 import sys
 import Vector
-from Environment import Environment
+from Environment import Environment, ObsFlag
 import MapModifier
 import StaticGeometricMaps
+import Geometry
 
 
 ## Holds information related to the simulation environment, such as the
@@ -20,6 +21,7 @@ import StaticGeometricMaps
 class GeometricEnvironment(Environment):
 
 	def __init__(self, width, height, map_filename, cmdargs=None):
+		super().__init__(width, height, map_filename, cmdargs);
 		self.cmdargs = cmdargs
 		self.width = width
 		self.height = height
@@ -118,7 +120,27 @@ class GeometricEnvironment(Environment):
 	# <br>  -- Location to check
 	#
 	def get_obsflags(self, location):
-		# TODO: implement this method
-		# 0 = no obstacle
-		return 0
+		flags = 0x00000000
+		for obs in self.dynamic_obstacles:
+			vec = np.subtract(location, obs.coordinate)
+			if (obs.shape == 1 and np.dot(vec, vec) < obs.radius) \
+				or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
+				or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
+				or (obs.shape == 4 and obs.polygon.contains_point(location)):
+				flags |= ObsFlag.DYNAMIC_OBSTACLE
+				break
+
+		for obs in self.static_obstacles:
+			vec = np.subtract(location, obs.coordinate)
+			if (obs.shape == 1 and np.dot(vec, vec) < obs.radius) \
+				or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
+				or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
+				or (obs.shape == 4 and obs.polygon.contains_point(location)):
+				flags |= ObsFlag.STATIC_OBSTACLE
+				break
+
+		if flags & (ObsFlag.DYNAMIC_OBSTACLE | ObsFlag.STATIC_OBSTACLE):
+			flags |= ObsFlag.ANY_OBSTACLE
+
+		return flags
 

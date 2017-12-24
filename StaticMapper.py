@@ -6,9 +6,11 @@ import Vector
 
 
 class StaticMapper:
-	def __init__(self, sensors, initial_gridsize=[800,600]):
+	def __init__(self, sensors, initial_gridsize=None):
 		self._radar = sensors['radar'];
 		self._gps = sensors['gps'];
+		if initial_gridsize is None:
+			initial_gridsize = (self._radar._env.width, self._radar._env.height)
 		self._griddata = np.zeros(np.array(initial_gridsize), dtype=int);
 
 

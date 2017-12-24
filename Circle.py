@@ -24,7 +24,7 @@ class Circle(Shape):
 	def rectangle_overlap_angle_range(self, rect_pos, rect_dim):
 		return Geometry.circle_rectangle_overlap_angle_range(self.center, self.radius, rect_pos, rect_dim);
 
-	## Get the overlap o this circle with the given circle
+	## Get the overlap of this circle with the given circle
 	#
 	def circle_overlap_angle_range(self, circle2_center, circle2_radius):
 		return Geometry.circle_circle_overlap_angle_range(self.center, self.radius, circle2_center, circle2_radius);
@@ -41,6 +41,17 @@ class Circle(Shape):
 		given line.
 		"""
 		return Geometry.circle_line_intersection(self.center, self.radius, line);
+
+
+	## Determines whether this Circle contains the specified point
+	# 
+	# @param testp (array-like)
+	# <br>  Format: `[x, y]`
+	# <br>  -- The point to test for inclusion
+	#
+	def contains_point(self, point):
+		vec = np.subtract(point, self.center)
+		return np.dot(vec, vec) < (self.radius * self.radius)
 
 
 	def __repr__(self):
