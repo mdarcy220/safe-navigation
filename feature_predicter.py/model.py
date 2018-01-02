@@ -8,17 +8,18 @@ from matplotlib import style
 import pandas as pd
 import seaborn as sns
 import math
-import Vector
 import cntk as C
 
 class feature_extractor:
 	
-	def __init__(self, feature_vector, learning_rate, name='deep_irl_fc'):
+	def __init__(self, feature_vector, learning_rate, name='feature_predicter'):
 		self._input_size = feature_vector
-		self._input = C.input_variable(feature_vector)
-		self._lr_schedule = C.learning_rate_schedule(learning_rate, C.UnitType.sample)
-		self._output = C.input_variable(feature_vector)
+		self._input = C.sequence.input_variable(feature_vector)
+		self._output = C.sequence.input_variable(feature_vector)
 		self.name = name
+		self._batch_size = 2
+		self._max_iter = 1000
+		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.97**i) for i in range(30)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
 		self._model,self._loss, self._learner, self._trainer = self.create_model()
 
 	def create_model(self):
@@ -29,27 +30,31 @@ class feature_extractor:
 		#C.layers.Convolution2D((1,5), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh),
 		######
 		# Dense layers
+		C.layers.Dense(32, activation=C.ops.relu),
 		C.layers.Dense(16, activation=C.ops.relu),
 		C.layers.Dense(4, activation=C.ops.relu),
 		######
 		# Recurrence
-		#C.layers.Recurrence(C.layers.LSTM(4, init=C.glorot_uniform())),
+		C.layers.Recurrence(C.layers.LSTM(2048, init=C.glorot_uniform())),
 		######
 		# Prediction
 		C.layers.Dense(4, activation=C.ops.relu),
 		######
 		# Decoder layers
-		C.layers.Dense(32, activation=C.ops.relu)
-		])
+		C.layers.Dense(32, activation=C.ops.relu),
+		C.layers.Dense(64, activation=C.ops.relu),
+		C.layers.Dense(120, activation=C.ops.relu)
+		])(self._input)
 		######
 		# Reshape output
-		model2 = C.ops.reshape(model1,(2,16))
+		model2 = C.ops.reshape(model1,(1,1,120))
 		model3 = C.layers.Sequential([
 		######
 		# Deconvolution layers
-		C.layers.ConvolutionTranspose((1,3), num_filters=16, strides=(1,1), pad=False, bias=False, init=C.glorot_uniform(1))
-		])
-		model = model3(model2)
+		C.layers.ConvolutionTranspose((1,3), num_filters=1, strides=(1,3), pad=False, bias=False, init=C.glorot_uniform(1)),
+		C.layers.ConvolutionTranspose((1,3), num_filters=1,  pad=True)
+		])(model2)
+		model = C.ops.reshape(model3,(1,360))
 
 		err = C.ops.reshape(C.ops.minus(model,self._output), (self._input_size))
 		sq_err = C.ops.square(err)
@@ -57,7 +62,36 @@ class feature_extractor:
 		rmse_loss = C.ops.sqrt(mse)
 		rmse_eval = rmse_loss
 		learner = C.adadelta(model.parameters, self._lr_schedule)
-		trainer = C.Trainer(model, (rmse_loss,rmse_eval), learner)
+		progress_printer = C.logging.ProgressPrinter(tag='Training')
+		trainer = C.Trainer(model, (rmse_loss,rmse_eval), learner, progress_printer)
 		return model, rmse_loss, learner, trainer
-	def train_network(self,data):
-		pass		
+
+	def train_network(self, data):
+		input_sequence,output_sequence = self.sequence_minibatch(data, self._batch_size)
+		for i in range(self._max_iter):
+			self._trainer.train_minibatch({self._input: input_sequence, self._output: output_sequence})
+			self._trainer.summarize_training_progress()
+			self._model.save('feature_predicter.dnn')
+
+	def sequence_minibatch(self, data, batch_size):
+		sequence_keys    = list(data.keys())
+		minibatch_keys   = random.sample(sequence_keys,batch_size)
+		minibatch_input  = []
+		minibatch_output = []
+
+		for key in minibatch_keys:
+			_input,_ouput = self.input_output_sequence(data,key)
+			minibatch_input.append(_input)
+			minibatch_output.append(_ouput)
+		
+		return minibatch_input,minibatch_output
+	
+	def input_output_sequence(self, data, seq_key):
+		data_k = data[seq_key]
+		input_sequence = np.zeros((len(data_k)-1,self._input_size[0],self._input_size[1]), dtype=np.float32)
+		output_sequence = np.copy(input_sequence)
+		for i in range(len(data_k)-1):
+			input_sequence[i,:,:] = data_k[i]
+			output_sequence[i,:,:] = data_k[i+1]
+		return input_sequence,output_sequence
+
