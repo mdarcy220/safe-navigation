@@ -13,7 +13,7 @@ from model import feature_extractor
 import json
 
 
-f1 = feature_extractor((1,360),1)
+f1 = feature_extractor((2,360),1)
 with open('human_observations.json') as json_data:
 	data = json.load(json_data)
 #print(np.array(data[list(data.keys())[0]]['radardata_list'][0]['observation']).shape)

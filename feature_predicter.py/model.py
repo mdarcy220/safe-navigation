@@ -14,28 +14,30 @@ class feature_extractor:
 	
 	def __init__(self, feature_vector, learning_rate, name='feature_predicter'):
 		self._input_size = feature_vector
-		self._input = C.sequence.input_variable(feature_vector)
-		self._output = C.sequence.input_variable(feature_vector)
+		self._output_size = (1,feature_vector[1])
+		self._input = C.sequence.input_variable(self._input_size)
+		self._output = C.sequence.input_variable(self._output_size)
+		print(self._output)
 		self.name = name
 		self._batch_size = 2
 		self._max_iter = 1000
-		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.97**i) for i in range(30)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
+		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.999**i) for i in range(1000)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
 		self._model,self._loss, self._learner, self._trainer = self.create_model()
 
 	def create_model(self):
 		model1 = C.layers.Sequential([
 		# Convolution layers
-		C.layers.Convolution2D((1,5), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh),
-		#C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh),
-		#C.layers.Convolution2D((1,5), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh),
+		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh),
+		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh),
+		C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh),
 		######
 		# Dense layers
+		C.layers.Dense(64, activation=C.ops.relu),
 		C.layers.Dense(32, activation=C.ops.relu),
-		C.layers.Dense(16, activation=C.ops.relu),
-		C.layers.Dense(4, activation=C.ops.relu),
+		C.layers.Dense(8, activation=C.ops.relu),
 		######
 		# Recurrence
-		C.layers.Recurrence(C.layers.LSTM(2048, init=C.glorot_uniform())),
+		C.layers.Recurrence(C.layers.LSTM(8, init=C.glorot_uniform())),
 		######
 		# Prediction
 		C.layers.Dense(4, activation=C.ops.relu),
@@ -51,12 +53,12 @@ class feature_extractor:
 		model3 = C.layers.Sequential([
 		######
 		# Deconvolution layers
-		C.layers.ConvolutionTranspose((1,3), num_filters=1, strides=(1,3), pad=False, bias=False, init=C.glorot_uniform(1)),
+		C.layers.ConvolutionTranspose((1,3), num_filters=3, strides=(1,3), pad=False, bias=False, init=C.glorot_uniform(1)),
 		C.layers.ConvolutionTranspose((1,3), num_filters=1,  pad=True)
 		])(model2)
 		model = C.ops.reshape(model3,(1,360))
 
-		err = C.ops.reshape(C.ops.minus(model,self._output), (self._input_size))
+		err = C.ops.reshape(C.ops.minus(model,self._output), (self._output_size))
 		sq_err = C.ops.square(err)
 		mse = C.ops.reduce_mean(sq_err)
 		rmse_loss = C.ops.sqrt(mse)
@@ -88,10 +90,11 @@ class feature_extractor:
 	
 	def input_output_sequence(self, data, seq_key):
 		data_k = data[seq_key]
-		input_sequence = np.zeros((len(data_k)-1,self._input_size[0],self._input_size[1]), dtype=np.float32)
-		output_sequence = np.copy(input_sequence)
-		for i in range(len(data_k)-1):
-			input_sequence[i,:,:] = data_k[i]
-			output_sequence[i,:,:] = data_k[i+1]
+		input_sequence = np.zeros((len(data_k)-2,self._input_size[0],self._input_size[1]), dtype=np.float32)
+		output_sequence = np.zeros((len(data_k)-2,self._input_size[0]-1,self._input_size[1]), dtype=np.float32)
+		for i in range(0,len(data_k)-2):
+			input_sequence[i,0,:] = data_k[i]
+			input_sequence[i,1,:] = data_k[i+1]
+			output_sequence[i,0,:] = data_k[i+2]
 		return input_sequence,output_sequence
 
