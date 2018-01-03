@@ -27,25 +27,25 @@ class feature_extractor:
 	def create_model(self):
 		model1 = C.layers.Sequential([
 		# Convolution layers
-		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh),
-		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh),
-		C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh),
+		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh,name='conv'),
+		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh,name='conv'),
+		C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh,name='conv'),
 		######
 		# Dense layers
-		C.layers.Dense(64, activation=C.ops.relu),
-		C.layers.Dense(32, activation=C.ops.relu),
-		C.layers.Dense(8, activation=C.ops.relu),
+		C.layers.Dense(64, activation=C.ops.relu,name='dense1'),
+		C.layers.Dense(32, activation=C.ops.relu,name='dense1'),
+		C.layers.Dense(8, activation=C.ops.relu,name='dense1'),
 		######
 		# Recurrence
-		C.layers.Recurrence(C.layers.LSTM(8, init=C.glorot_uniform())),
+		C.layers.Recurrence(C.layers.LSTM(8, init=C.glorot_uniform()),name='lstm'),
 		######
 		# Prediction
-		C.layers.Dense(4, activation=C.ops.relu),
+		C.layers.Dense(4, activation=C.ops.relu,name='predict'),
 		######
 		# Decoder layers
-		C.layers.Dense(32, activation=C.ops.relu),
-		C.layers.Dense(64, activation=C.ops.relu),
-		C.layers.Dense(120, activation=C.ops.relu)
+		C.layers.Dense(32, activation=C.ops.relu,name='dense2'),
+		C.layers.Dense(64, activation=C.ops.relu,name='dense2'),
+		C.layers.Dense(120, activation=C.ops.relu,name='dense2')
 		])(self._input)
 		######
 		# Reshape output
@@ -53,8 +53,8 @@ class feature_extractor:
 		model3 = C.layers.Sequential([
 		######
 		# Deconvolution layers
-		C.layers.ConvolutionTranspose((1,3), num_filters=3, strides=(1,3), pad=False, bias=False, init=C.glorot_uniform(1)),
-		C.layers.ConvolutionTranspose((1,3), num_filters=1,  pad=True)
+		C.layers.ConvolutionTranspose((1,3), num_filters=3, strides=(1,3), pad=False, bias=False, init=C.glorot_uniform(1),name='conv2'),
+		C.layers.ConvolutionTranspose((1,3), num_filters=1,  pad=True,name='conv2')
 		])(model2)
 		model = C.ops.reshape(model3,(1,360))
 
