@@ -66,7 +66,7 @@ class action_prediction:
 		for i in range(self._max_iter):
 			self._trainer.train_minibatch({self._input: input_sequence, self._output: output_sequence})
 			self._trainer.summarize_training_progress()
-			self._model.save('feature_predicter.dnn')
+			self._model.save('action_predicter.dnn')
 
 	def sequence_minibatch(self, data, actions, batch_size):
 		sequence_keys    = list(data.keys())
