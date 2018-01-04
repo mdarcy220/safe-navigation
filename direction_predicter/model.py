@@ -36,20 +36,20 @@ class action_prediction:
 	def create_model(self):
 		model = C.layers.Sequential([
 		# Convolution layers
-		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh,name='conv'),
-		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh,name='conv'),
-		C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh,name='conv'),
+		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh),
+		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh),
+		C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh),
 		######
 		# Dense layers
-		C.layers.Dense(128, activation=C.ops.relu,name='dense1'),
-		C.layers.Dense(64, activation=C.ops.relu,name='dense1'),
-		C.layers.Dense(32, activation=C.ops.relu,name='dense1'),
+		C.layers.Dense(128, activation=C.ops.relu),
+		C.layers.Dense(64, activation=C.ops.relu),
+		C.layers.Dense(32, activation=C.ops.relu),
 		######
 		# Recurrence
-		C.layers.Recurrence(C.layers.LSTM(32, init=C.glorot_uniform()),name='lstm'),
+		C.layers.Recurrence(C.layers.LSTM(32, init=C.glorot_uniform())),
 		######
 		# Prediction
-		C.layers.Dense(32, activation=C.ops.softmax,name='predict')
+		C.layers.Dense(32, activation=C.ops.softmax)
 		])(self._input)
 		
 		loss = C.cross_entropy_with_softmax(model, self._output)
@@ -62,11 +62,12 @@ class action_prediction:
 
 	def train_network(self, data, actions):
 		self.predict(data)
-		input_sequence,output_sequence = self.sequence_minibatch(data, actions,self._batch_size)
 		for i in range(self._max_iter):
+			input_sequence,output_sequence = self.sequence_minibatch(data, actions,self._batch_size)
 			self._trainer.train_minibatch({self._input: input_sequence, self._output: output_sequence})
 			self._trainer.summarize_training_progress()
-			self._model.save('action_predicter.dnn')
+			if i%10 == 0:
+				self._model.save('action_predicter.dnn')
 
 	def sequence_minibatch(self, data, actions, batch_size):
 		sequence_keys    = list(data.keys())

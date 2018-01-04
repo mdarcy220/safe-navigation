@@ -19,8 +19,8 @@ class feature_extractor:
 		self._output = C.sequence.input_variable(self._output_size)
 		print(self._output)
 		self.name = name
-		self._batch_size = 2
-		self._max_iter = 1000
+		self._batch_size = 8
+		self._max_iter = 1000000
 		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.999**i) for i in range(1000)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
 		self._model,self._loss, self._learner, self._trainer = self.create_model()
 
@@ -69,11 +69,12 @@ class feature_extractor:
 		return model, rmse_loss, learner, trainer
 
 	def train_network(self, data):
-		input_sequence,output_sequence = self.sequence_minibatch(data, self._batch_size)
 		for i in range(self._max_iter):
+			input_sequence,output_sequence = self.sequence_minibatch(data, self._batch_size)
 			self._trainer.train_minibatch({self._input: input_sequence, self._output: output_sequence})
 			self._trainer.summarize_training_progress()
-			self._model.save('feature_predicter.dnn')
+			if i%10 == 0:
+				self._model.save('feature_predicter.dnn')
 
 	def sequence_minibatch(self, data, batch_size):
 		sequence_keys    = list(data.keys())
