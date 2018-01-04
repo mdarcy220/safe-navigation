@@ -12,20 +12,22 @@ import cntk as C
 
 class feature_extractor:
 	
-	def __init__(self, feature_vector, learning_rate, name='feature_predicter'):
+	def __init__(self, feature_vector, target_vector, learning_rate, name='feature_predicter'):
 		self._input_size = feature_vector
 		self._output_size = (1,feature_vector[1])
+		self._target_size = target_vector
 		self._input = C.sequence.input_variable(self._input_size)
+		self._target = C.sequence.input_variable(self._target_size)
 		self._output = C.sequence.input_variable(self._output_size)
 		print(self._output)
 		self.name = name
 		self._batch_size = 8
 		self._max_iter = 1000000
-		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.999**i) for i in range(1000)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
+		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.997**i) for i in range(1000)], C.UnitType.sample, epoch_size=round(self._max_iter*self._batch_size/100))
 		self._model,self._loss, self._learner, self._trainer = self.create_model()
 
 	def create_model(self):
-		model1 = C.layers.Sequential([
+		model1i = C.layers.Sequential([
 		# Convolution layers
 		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh,name='conv'),
 		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh,name='conv'),
@@ -34,7 +36,19 @@ class feature_extractor:
 		# Dense layers
 		C.layers.Dense(64, activation=C.ops.relu,name='dense1'),
 		C.layers.Dense(32, activation=C.ops.relu,name='dense1'),
-		C.layers.Dense(8, activation=C.ops.relu,name='dense1'),
+		C.layers.Dense(8, activation=C.ops.relu,name='dense1')
+		]) (self._input)
+		### target
+		model1t = C.layers.Sequential([
+		C.layers.Dense(16, activation=C.ops.relu,name='dense1'),
+		C.layers.Dense(8, activation=C.ops.relu,name='dense1')
+		]) (self._target)
+		### concatenate both processed target and observations
+		inputs = C.ops.splice(model1i,model1t)
+		### Use input to predict next hidden state, and generate
+		### next observation
+		model1 = C.layers.Sequential([
+		C.layers.Dense(8, activation=C.ops.relu),
 		######
 		# Recurrence
 		C.layers.Recurrence(C.layers.LSTM(8, init=C.glorot_uniform()),name='lstm'),
@@ -46,7 +60,7 @@ class feature_extractor:
 		C.layers.Dense(32, activation=C.ops.relu,name='dense2'),
 		C.layers.Dense(64, activation=C.ops.relu,name='dense2'),
 		C.layers.Dense(120, activation=C.ops.relu,name='dense2')
-		])(self._input)
+		])(inputs)
 		######
 		# Reshape output
 		model2 = C.ops.reshape(model1,(1,1,120))
@@ -68,34 +82,39 @@ class feature_extractor:
 		trainer = C.Trainer(model, (rmse_loss,rmse_eval), learner, progress_printer)
 		return model, rmse_loss, learner, trainer
 
-	def train_network(self, data):
+	def train_network(self, data, targets):
 		for i in range(self._max_iter):
-			input_sequence,output_sequence = self.sequence_minibatch(data, self._batch_size)
-			self._trainer.train_minibatch({self._input: input_sequence, self._output: output_sequence})
+			input_sequence,target_sequence,output_sequence = self.sequence_minibatch(data, targets, self._batch_size)
+			self._trainer.train_minibatch({self._input: input_sequence, self._target: target_sequence, self._output: output_sequence})
 			self._trainer.summarize_training_progress()
 			if i%10 == 0:
 				self._model.save('feature_predicter.dnn')
 
-	def sequence_minibatch(self, data, batch_size):
+	def sequence_minibatch(self, data, targets, batch_size):
 		sequence_keys    = list(data.keys())
 		minibatch_keys   = random.sample(sequence_keys,batch_size)
 		minibatch_input  = []
+		minibatch_target = []
 		minibatch_output = []
 
 		for key in minibatch_keys:
-			_input,_ouput = self.input_output_sequence(data,key)
+			_input,_target,_ouput = self.input_output_sequence(data,targets,key)
 			minibatch_input.append(_input)
+			minibatch_target.append(_target)
 			minibatch_output.append(_ouput)
 		
-		return minibatch_input,minibatch_output
+		return minibatch_input,minibatch_target,minibatch_output
 	
-	def input_output_sequence(self, data, seq_key):
+	def input_output_sequence(self, data, targets, seq_key):
 		data_k = data[seq_key]
 		input_sequence = np.zeros((len(data_k)-2,self._input_size[0],self._input_size[1]), dtype=np.float32)
-		output_sequence = np.zeros((len(data_k)-2,self._input_size[0]-1,self._input_size[1]), dtype=np.float32)
+		target_sequence = np.zeros((len(data_k)-2,self._target_size[0],self._target_size[1]), dtype=np.float32)
+		output_sequence = np.zeros((len(data_k)-2,self._output_size[0],self._output_size[1]), dtype=np.float32)
+
 		for i in range(0,len(data_k)-2):
-			input_sequence[i,0,:] = data_k[i]
-			input_sequence[i,1,:] = data_k[i+1]
+			input_sequence[i,0,:]  = data_k[i]
+			input_sequence[i,1,:]  = data_k[i+1]
+			target_sequence[i,:,:] = targets[seq_key][i]
 			output_sequence[i,0,:] = data_k[i+2]
-		return input_sequence,output_sequence
+		return input_sequence,target_sequence,output_sequence
 
