@@ -21,55 +21,62 @@ class feature_extractor:
 		self._output = C.sequence.input_variable(self._output_size)
 		print(self._output)
 		self.name = name
-		self._batch_size = 8
+		self._batch_size = 24
 		self._max_iter = 1000000
 		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.997**i) for i in range(1000)], C.UnitType.sample, epoch_size=round(self._max_iter*self._batch_size/100))
 		self._model,self._loss, self._learner, self._trainer = self.create_model()
 
 	def create_model(self):
 		model1i = C.layers.Sequential([
-		# Convolution layers
-		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh,name='conv'),
-		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh,name='conv'),
-		C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh,name='conv'),
-		######
-		# Dense layers
-		C.layers.Dense(64, activation=C.ops.relu,name='dense1'),
-		C.layers.Dense(32, activation=C.ops.relu,name='dense1'),
-		C.layers.Dense(8, activation=C.ops.relu,name='dense1')
+			# Convolution layers
+			C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh,name='conv'),
+			C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh,name='conv2'),
+			C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh,name='conv3'),
+			######
+			# Dense layers
+			C.layers.Dense(64, activation=C.ops.relu,name='dense1'),
+			#C.layers.Dense(32, activation=C.ops.relu,name='dense1'),
+			#C.layers.Dense(16, activation=C.ops.relu,name='dense1')
 		]) (self._input)
+
 		### target
 		model1t = C.layers.Sequential([
-		C.layers.Dense(16, activation=C.ops.relu,name='dense1'),
-		C.layers.Dense(8, activation=C.ops.relu,name='dense1')
+			C.layers.Dense(16, activation=C.ops.relu,name='dense1'),
+			C.layers.Dense(16, activation=C.ops.relu,name='dense1')
 		]) (self._target)
+
 		### concatenate both processed target and observations
 		inputs = C.ops.splice(model1i,model1t)
+
 		### Use input to predict next hidden state, and generate
 		### next observation
 		model1 = C.layers.Sequential([
-		C.layers.Dense(8, activation=C.ops.relu),
-		######
-		# Recurrence
-		C.layers.Recurrence(C.layers.LSTM(8, init=C.glorot_uniform()),name='lstm'),
-		######
-		# Prediction
-		C.layers.Dense(4, activation=C.ops.relu,name='predict'),
-		######
-		# Decoder layers
-		C.layers.Dense(32, activation=C.ops.relu,name='dense2'),
-		C.layers.Dense(64, activation=C.ops.relu,name='dense2'),
-		C.layers.Dense(120, activation=C.ops.relu,name='dense2')
+			C.layers.Dense(24, activation=C.ops.relu),
+			######
+			# Recurrence
+			C.layers.Recurrence(C.layers.LSTM(24, init=C.glorot_uniform()),name='lstm'),
+			######
+			# Prediction
+			#C.layers.Dense(16, activation=C.ops.relu,name='predict'),
+			######
+			# Decoder layers
+			C.layers.Dense(32, activation=C.ops.relu,name='dense2'),
+			#C.layers.Dense(64, activation=C.ops.relu,name='dense2'),
+			C.layers.Dense(114, activation=C.ops.relu,name='dense2')
 		])(inputs)
+
 		######
 		# Reshape output
-		model2 = C.ops.reshape(model1,(1,1,120))
+		model2 = C.ops.reshape(model1,(1,1,114))
+
 		model3 = C.layers.Sequential([
-		######
-		# Deconvolution layers
-		C.layers.ConvolutionTranspose((1,3), num_filters=3, strides=(1,3), pad=False, bias=False, init=C.glorot_uniform(1),name='conv2'),
-		C.layers.ConvolutionTranspose((1,3), num_filters=1,  pad=True,name='conv2')
+			######
+			# Deconvolution layers
+			C.layers.ConvolutionTranspose((1,7), num_filters=8, strides=(1,1), pad=False, bias=False, init=C.glorot_uniform(1),name='deconv1'),
+			C.layers.ConvolutionTranspose((1,3), num_filters=4, strides=(1,3), pad=False, bias=False, init=C.glorot_uniform(1),name='deconv2'),
+			C.layers.ConvolutionTranspose((1,3), num_filters=1,  pad=True,name='deconv3')
 		])(model2)
+
 		model = C.ops.reshape(model3,(1,360))
 
 		err = C.ops.reshape(C.ops.minus(model,self._output), (self._output_size))
@@ -77,7 +84,8 @@ class feature_extractor:
 		mse = C.ops.reduce_mean(sq_err)
 		rmse_loss = C.ops.sqrt(mse)
 		rmse_eval = rmse_loss
-		learner = C.adadelta(model.parameters, self._lr_schedule)
+
+		learner = C.adadelta(model.parameters)
 		progress_printer = C.logging.ProgressPrinter(tag='Training')
 		trainer = C.Trainer(model, (rmse_loss,rmse_eval), learner, progress_printer)
 		return model, rmse_loss, learner, trainer
