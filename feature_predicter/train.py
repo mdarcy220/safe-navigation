@@ -17,7 +17,7 @@ target_dist = 30
 target_var = 5
 #######################
 f1 = feature_extractor((2,360),(1,32),0.7)
-with open('human_observations.json') as json_data:
+with open('training_human_data.json') as json_data:
 	data = json.load(json_data)
 #print(np.array(data[list(data.keys())[0]]['radardata_list'][0]['observation']).shape)
 #print(data[list(data.keys())[0]]['radardata_list'][0]['position'])

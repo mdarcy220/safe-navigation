@@ -18,7 +18,7 @@ target_dist = 30
 target_var = 5
 #######################
 f1 = action_prediction((2,360),(1,32),(1,32),0.5)
-with open('human_observations.json') as json_data:
+with open('../feature_predicter.py/training_human_data.json') as json_data:
 	data = json.load(json_data)
 #print(np.array(data[list(data.keys())[0]]['radardata_list'][0]['observation']).shape)
 #print(np.array(data[list(data.keys())[0]]['radardata_list'][0]['vel']))

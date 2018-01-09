@@ -38,18 +38,18 @@ class action_prediction:
 	def create_model(self):
 		modeli = C.layers.Sequential([
 		# Convolution layers
-		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh),
-		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh),
-		C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh),
+		C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh, name='conv_a'),
+		C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh, name='conv2_a'),
+		C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh, name='conv3_a'),
 		######
 		# Dense layers
-		C.layers.Dense(128, activation=C.ops.relu),
-		C.layers.Dense(64, activation=C.ops.relu),
-		C.layers.Dense(32, activation=C.ops.relu)
+		C.layers.Dense(128, activation=C.ops.relu,name='dense1_a'),
+		C.layers.Dense(64, activation=C.ops.relu,name='dense2_a'),
+		C.layers.Dense(32, activation=C.ops.relu,name='dense3_a')
 		])(self._input)
 		### target
 		modelt = C.layers.Sequential([
-		C.layers.Dense(32, activation=C.ops.relu,name='dense1')
+		C.layers.Dense(32, activation=C.ops.relu,name='dense4_a')
 		]) (self._target)
 		### concatenate both processed target and observations
 		inputs = C.ops.splice(modeli,modelt)
@@ -57,12 +57,12 @@ class action_prediction:
 		### next observation
 		model = C.layers.Sequential([
 		######
-		C.layers.Dense(32, activation=C.ops.relu,name='dense1'),
+		C.layers.Dense(32, activation=C.ops.relu,name='dense5_a'),
 		# Recurrence
-		C.layers.Recurrence(C.layers.LSTM(32, init=C.glorot_uniform())),
+		C.layers.Recurrence(C.layers.LSTM(32, init=C.glorot_uniform()),name='lstm_a'),
 		######
 		# Prediction
-		C.layers.Dense(32, activation=None)
+		C.layers.Dense(32, activation=None,name='dense6_a')
 		])(inputs)
 		
 		loss = C.cross_entropy_with_softmax(model, self._output)
