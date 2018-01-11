@@ -31,18 +31,18 @@ class feature_extractor:
 			# Convolution layers
 			C.layers.Convolution2D((1,3), num_filters=8, pad=True, reduction_rank=0, activation=C.ops.tanh,name='conv_f'),
 			C.layers.Convolution2D((1,3), num_filters=16, pad=True, reduction_rank=1, activation=C.ops.tanh,name='conv2_f'),
-			C.layers.Convolution2D((1,3), num_filters=16, pad=False, reduction_rank=1, activation=C.ops.tanh,name='conv3_f'),
+			C.layers.Convolution2D((1,3), num_filters=32, strides=(1,3), pad=False, reduction_rank=1, activation=C.ops.tanh,name='conv3_f'),
 			######
 			# Dense layers
-			C.layers.Dense(64, activation=C.ops.relu,name='dense1_f'),
+			C.layers.Dense(32, activation=C.ops.relu,name='dense1_f'),
 			#C.layers.Dense(32, activation=C.ops.relu,name='dense1_f'),
 			#C.layers.Dense(16, activation=C.ops.relu,name='dense1_f')
 		]) (self._input)
 
 		### target
 		model1t = C.layers.Sequential([
-			C.layers.Dense(16, activation=C.ops.relu,name='dense2_f'),
-			C.layers.Dense(16, activation=C.ops.relu,name='dense3_f')
+			#C.layers.Dense(16, activation=C.ops.relu,name='dense2_f'),
+			C.layers.Dense(32, activation=C.ops.relu,name='dense3_f')
 		]) (self._target)
 
 		### concatenate both processed target and observations
@@ -51,16 +51,16 @@ class feature_extractor:
 		### Use input to predict next hidden state, and generate
 		### next observation
 		model1 = C.layers.Sequential([
-			C.layers.Dense(24, activation=C.ops.relu),
+			C.layers.Dense(64, activation=C.ops.relu),
 			######
 			# Recurrence
-			C.layers.Recurrence(C.layers.LSTM(24, init=C.glorot_uniform()),name='lstm_f'),
+			C.layers.Recurrence(C.layers.LSTM(2048, init=C.glorot_uniform()),name='lstm_f'),
 			######
 			# Prediction
 			#C.layers.Dense(16, activation=C.ops.relu,name='predict'),
 			######
 			# Decoder layers
-			C.layers.Dense(32, activation=C.ops.relu,name='dense4_f'),
+			C.layers.Dense(256, activation=C.ops.relu,name='dense4_f'),
 			#C.layers.Dense(64, activation=C.ops.relu,name='dense2'),
 			C.layers.Dense(114, activation=C.ops.relu,name='dense5_f')
 		])(inputs)
