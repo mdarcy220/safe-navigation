@@ -17,19 +17,21 @@ import json
 target_dist = 30
 target_var = 5
 #######################
-f1 = action_prediction((2,360),(1,32),(1,32),0.5)
-with open('../feature_predicter.py/testing_human_data.json') as json_data:
+f1 = action_prediction((2,360),(1,32),(1,32),(1,1),15, 0.5)
+with open('../feature_predicter/testing_human_data.json') as json_data:
 	data = json.load(json_data)
 #print(np.array(data[list(data.keys())[0]]['radardata_list'][0]['observation']).shape)
 #print(np.array(data[list(data.keys())[0]]['radardata_list'][0]['vel']))
 #print(data.keys())
 data_new = {}
 actions  = {}
-targets = {}
+targets  = {}
+vel      = {}
 for key in data.keys():
 	data_new[key] = []
-	actions[key] = []
-	targets[key] = []
+	actions [key] = []
+	targets [key] = []
+	vel     [key] = []
 	observations = np.array(data[key]['radardata_list'])
 	n = len(observations)
 	for i in range(len(observations)):
@@ -44,6 +46,13 @@ for key in data.keys():
 		the_angle = int(round(angle*31/360))
 		action[0,the_angle] = 1
 		actions[key].append(action)
+		
+		veloc  = np.zeros((1,1))
+		velo   = np.sqrt(np.sum(np.power(velocity,2)))
+		velo   = velo if velo < 15 else 15
+		veloc += velo
+		vel[key].append(veloc)
+		
 		### compute target list ###
 		target_position = np.zeros((1,2))
 		if i+target_dist+target_var < n:
@@ -63,4 +72,4 @@ for key in data.keys():
 		target_action[0,target_angle] = 1
 		targets[key].append(target_action)
 
-f1.test_network(data_new,targets,actions)
+f1.test_network(data_new,targets,actions,vel)
