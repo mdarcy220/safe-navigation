@@ -60,16 +60,20 @@ class action_prediction:
 		return action_model#, loss, learner, trainer
 
 	def test_network(self, data, targets, actions, velocities):
-		count = 0
-		cl_error = 0
-		v_error  = 0
+		count      = 0
+		cl_error   = 0
+		cl_error_2 = 0
+		v_error    = 0
 		for key in data.keys():
-			cn,cl_er,v_er = self.test_seq(data,targets,actions,velocities,key)
-			cl_error += cl_er
-			v_error  += v_er
-			count += cn
+			cn,cl_er,cl_er_2,v_er = self.test_seq(data,targets,actions,velocities,key)
+			cl_error   += cl_er
+			cl_error_2 += cl_er_2
+			v_error    += v_er
+			count      += cn
 		print ('average classifiaction error:', cl_error/count, 'for:', count, ' total steps')
+		print ('average angular classifiaction error:', cl_error_2/count, 'for:', count, ' total steps')
 		print ('rmse normalized velocity error:', math.sqrt(v_error/count)/self._max_velocity, 'for:', count, ' total steps')
+		return cl_error/count,cl_error_2/count
 
 	def test_seq(self, data, targets, actions,velocities, key):
 		input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_batch(data, targets, actions, velocities, key)
@@ -86,22 +90,25 @@ class action_prediction:
 			for value in predicted_values[k]:
 				direction = value[0:32]
 				velocity  = value[32]
-				action = list(np.zeros((32,1)))
+				action = np.zeros(32)
 				action[np.argmax(direction)] = 1
 				predicted_seq.append(action)
 				predicted_actions.append(predicted_seq)
 				predicted_velocity.append(velocity)
-		count    = 0
-		cl_error = 0
-		v_error  = 0
+		count     = 0
+		cl_error   = 0
+		cl_error_2 = 0
+		v_error    = 0
 		for k in range(0,len(predicted_values)):
 			for i in range(0,len(predicted_values[k])):
-				cl_error += sum(abs(sum(np.array(predicted_actions[count]) 
-				    - np.array(output_sequence[k][i]))))/2.0
+				pre_cl  = np.where(predicted_actions[k][i] == 1)[0]
+				real_cl = np.where(output_sequence[k][i].flatten() == 1)[0]
+				cl_error   += 0 if pre_cl == real_cl else 1 
+				cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/32))
 				v_error += np.power(np.array(predicted_velocity[count]) 
 				    -np.array(velocity_sequence[k][i]),2)
 				count += 1
-		return count, cl_error, v_error
+		return count, cl_error, cl_error_2, v_error
 
 	def sequence_batch(self, data, targets, actions, vel, key):
 		batch_input  = []
