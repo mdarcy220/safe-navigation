@@ -21,13 +21,15 @@ import cntk as C
 
 class action_prediction:
 	
-	def __init__(self, feature_vector, target_vector, action_vector, learning_rate, name='action_predicter'):
+	def __init__(self, feature_vector, target_vector, action_vector, velocity, learning_rate, name='action_predicter'):
 		self._input_size  = feature_vector
 		self._output_size = action_vector
 		self._target_size = target_vector
+		self._velocity_size = velocity
 		self._input = C.input_variable(self._input_size)
 		self._target = C.input_variable(self._target_size)
 		self._output = C.input_variable(self._output_size)
+		self._output_velocity = C.input_variable(self._velocity_size)
 		self.name = name
 		self._batch_size = 1
 		self._max_iter = 1000000
@@ -52,55 +54,67 @@ class action_prediction:
 			    reduction_rank=1, activation=C.ops.tanh)(input_new)
 		######
 		# Dense layers
-		model = C.layers.Sequential([
+		direction = C.layers.Sequential([
 		C.layers.Dense(256, activation=C.ops.relu),
 		C.layers.Dense(128, activation=C.ops.relu),
 		C.layers.Dense(64, activation=C.ops.relu),
 		C.layers.Dense(32, activation=None),
 		])(model)
+
+		velocity = C.layers.Sequential([
+		C.layers.Dense(128,activation=C.ops.relu),
+		C.layers.Dense(64,activation=None),
+		C.layers.Dense(1,activation=None)
+		])(model)
+
+		model = C.ops.splice(direction,velocity)
 		print(model)
 		
-		loss = C.cross_entropy_with_softmax(model, self._output)
-		error = C.classification_error(model, self._output)
+		loss = C.cross_entropy_with_softmax(direction, self._output) + C.squared_error(velocity, self._output_velocity) 
+		error = C.classification_error(direction, self._output)  + C.squared_error(velocity, self._output_velocity) 
 		
 		learner = C.adadelta(model.parameters)
 		progress_printer = C.logging.ProgressPrinter(tag='Training')
-		trainer = C.Trainer(model, (loss,loss), learner, progress_printer)
+		trainer = C.Trainer(model, (loss,error), learner, progress_printer)
 		return model, loss, learner, trainer
 
-	def train_network(self, data, targets, actions):
+	def train_network(self, data, targets, actions, velocities):
 		for i in range(self._max_iter):
-			input_sequence,target_sequence,output_sequence = self.sequence_minibatch(data, targets, actions,self._batch_size)
-			self._trainer.train_minibatch({self._input: input_sequence, self._target: target_sequence, self._output: output_sequence})
+			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions,velocities,self._batch_size)
+			self._trainer.train_minibatch({self._input: input_sequence, self._target: target_sequence, self._output: output_sequence, self._output_velocity: velocity_sequence})
 			self._trainer.summarize_training_progress()
 			if i%10 == 0:
 				self._model.save('action_predicter.dnn')
 
-	def sequence_minibatch(self, data, targets, actions, batch_size):
+	def sequence_minibatch(self, data, targets, actions, vel, batch_size):
 		sequence_keys    = list(data.keys())
 		minibatch_keys   = random.sample(sequence_keys,batch_size)
 		minibatch_input  = []
 		minibatch_target = []
 		minibatch_output = []
+		minibatch_veloc  = []
 
 		for key in minibatch_keys:
-			_input,_target,_output = self.input_output_sequence(data,targets,actions,key)
+			_input,_target,_output,_vel = self.input_output_sequence(data,targets,actions,vel,key)
 			for i in range(len(_input)):
 				minibatch_input.append(_input[i])
 				minibatch_target.append(_target[i])
 				minibatch_output.append(_output[i])
+				minibatch_veloc.append(_vel[i])
 		
-		return minibatch_input,minibatch_target,minibatch_output
+		return minibatch_input,minibatch_target,minibatch_output,minibatch_veloc
 	
-	def input_output_sequence(self, data, targets, actions, seq_key):
+	def input_output_sequence(self, data, targets, actions, vel, seq_key):
 		data_k = data[seq_key]
 		input_sequence = np.zeros((len(data_k),self._input_size[0],self._input_size[1]), dtype=np.float32)
 		target_sequence = np.zeros((len(data_k),self._target_size[0],self._target_size[1]), dtype=np.float32)
 		output_sequence = np.zeros((len(data_k),self._output_size[0],self._output_size[1]), dtype=np.float32)
+		vel_sequence = np.zeros((len(data_k),self._velocity_size[0],self._velocity_size[1]), dtype=np.float32)
 		
 		for i in range(0,len(data_k)):
 			input_sequence[i,:,:] = data_k[i]
 			target_sequence[i,:,:] = targets[seq_key][i]
 			output_sequence[i,:,:] = actions[seq_key][i]
+			vel_sequence   [i,:,:] = vel[seq_key][i]
 		return input_sequence,target_sequence,output_sequence
 	
