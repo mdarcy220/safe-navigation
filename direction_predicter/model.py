@@ -22,6 +22,7 @@ import cntk as C
 class action_prediction:
 	
 	def __init__(self, feature_vector, target_vector, action_vector, velocity, max_velocity, learning_rate, name='action_predicter'):
+		self._load_model = False
 		self._input_size  = (feature_vector[0]+1,feature_vector[1])
 		self._output_size = action_vector
 		self._target_size = target_vector
@@ -34,7 +35,7 @@ class action_prediction:
 		self._max_velocity = max_velocity
 		self._batch_size = 8
 		self._max_iter = 1000000
-		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.999**i) for i in range(1000)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
+		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.995**i) for i in range(10000)], C.UnitType.sample, epoch_size=round(self._max_iter*self._batch_size/100))
 		self._model,self._loss, self._learner, self._trainer = self.create_model()
 		self._predicted = {}
 
@@ -73,27 +74,33 @@ class action_prediction:
 		])(model)
 		velocity = C.layers.Sequential([
 		C.layers.Dense(128,activation=C.ops.relu),
-		C.layers.Dense(64,activation=C.ops.relu),
-		C.layers.Dense(1,activation=C.ops.softmax)
+		C.layers.Dense(64,activation=None),
+		C.layers.Dense(1,activation=None)
 		])(model)
 		model = C.ops.splice(direction,velocity)
-		print (model)
-		loss = C.cross_entropy_with_softmax(direction, self._output) + (1/self._max_velocity**2 ) * C.squared_error(velocity, self._output_velocity)
-		error = C.classification_error(direction, self._output) + (1/self._max_velocity**2) * C.squared_error(velocity, self._output_velocity)
 		
-		learner = C.adadelta(model.parameters, self._lr_schedule)
+		if self._load_model:
+			model = C.load_model('action_predicter.dnn')
+			direction = model[0:32]
+			velocity  = model[32]
+ 
+		print (model)
+		loss = C.cross_entropy_with_softmax(direction, self._output) +  C.squared_error(velocity, self._output_velocity)
+		error = C.classification_error(direction, self._output) +   C.squared_error(velocity, self._output_velocity)
+		
+		learner = C.adadelta(model.parameters, l2_regularization_weight=0.001)
 		progress_printer = C.logging.ProgressPrinter(tag='Training')
-		trainer = C.Trainer(model, (loss,loss), learner, progress_printer)
+		trainer = C.Trainer(model, (loss,error), learner, progress_printer)
 		return model, loss, learner, trainer
 
 	def train_network(self, data, targets,actions, velocities):
 		self.predict(data,targets)
 		for i in range(self._max_iter):
 			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions,velocities,self._batch_size)
-			self._trainer.train_minibatch({self._input: input_sequence, self._target: target_sequence, 
+			self._trainer.train_minibatch({self._model.arguments[0]: input_sequence, self._model.arguments[1]: target_sequence, 
 			    self._output: output_sequence, self._output_velocity:velocity_sequence})
 			self._trainer.summarize_training_progress()
-			if i%10 == 0:
+			if i%100 == 0:
 				self._model.save('action_predicter.dnn')
 
 	def sequence_minibatch(self, data, targets, actions, vel, batch_size):

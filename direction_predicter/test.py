@@ -51,8 +51,8 @@ for key in data.keys():
 		
 		veloc  = np.zeros((1,1))
 		velo   = np.sqrt(np.sum(np.power(velocity,2)))
-		velo   = velo if velo < 15 else 15
-		veloc += velo
+		velo   = velo if velo < max_velocity else max_velocity
+		veloc += velo/max_velocity
 		vel[key].append(veloc)
 		
 		### compute target list ###

@@ -52,13 +52,16 @@ class action_prediction:
 		return action_model#, loss, learner, trainer
 
 	def test_network(self, data, targets, actions):
-		count = 0
-		error = 0
+		count   = 0
+		error   = 0
+		error_2 = 0
 		for key in data.keys():
-			cn,er = self.test_seq(data,targets,actions,key)
-			error += er
-			count += cn
+			cn,er,er_2 = self.test_seq(data,targets,actions,key)
+			error   += er
+			error_2 += er_2
+			count   += cn
 		print ('average classifiaction error:', error/count, 'for:', count, ' total steps')
+		print ('average angle classifiaction error:', error_2/count, 'for:', count, ' total steps', 'with angle', 180*math.acos(1-(error_2/count))/math.pi)
 
 	def test_seq(self, data, targets, actions, key):
 		input_sequence,target_sequence,output_sequence = self.sequence_batch(data, targets, actions, key)
@@ -71,13 +74,19 @@ class action_prediction:
 			action = list(np.zeros((32,1)))
 			action[np.argmax(value)] = 1
 			predicted_actions.append(action)
-		count = 0
-		error = 0
+		count   = 0
+		error   = 0
+		error_2 = 0
 		for i in range(0,len(predicted_values)):
-			error += sum(abs(sum(np.array(predicted_actions[i]) 
-			    - np.array(output_sequence[i]))))/2.0
+			pre_cl  = np.where(predicted_actions[i] == 1)[0]
+			real_cl = np.where(output_sequence[i].flatten() == 1)[0]
+			error   += 0 if pre_cl == real_cl else 1 
+			error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/32))
+
+			#error += sum(abs(sum(np.array(predicted_actions[i]) 
+			#    - np.array(output_sequence[i]))))/2.0
 			count += 1
-		return count, error
+		return count, error, error_2
 
 	def sequence_batch(self, data, targets, actions, key):
 		batch_input  = []

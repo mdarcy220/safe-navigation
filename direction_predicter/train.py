@@ -17,7 +17,9 @@ import json
 target_dist = 30
 target_var = 5
 #######################
-f1 = action_prediction((2,360),(1,32),(1,32),(1,1),15, 0.5)
+max_velocity = 0.31
+learning_rate = 0.1
+f1 = action_prediction((2,360),(1,32),(1,32),(1,1),max_velocity, learning_rate)
 with open('../feature_predicter/training_human_data.json') as json_data:
 	data = json.load(json_data)
 #print(np.array(data[list(data.keys())[0]]['radardata_list'][0]['observation']).shape)
@@ -49,8 +51,8 @@ for key in data.keys():
 		
 		veloc  = np.zeros((1,1))
 		velo   = np.sqrt(np.sum(np.power(velocity,2)))
-		velo   = velo if velo < 15 else 15
-		veloc += velo
+		velo   = velo if velo < max_velocity else max_velocity
+		veloc += velo/max_velocity
 		vel[key].append(veloc)
 
 		### compute target list ###
