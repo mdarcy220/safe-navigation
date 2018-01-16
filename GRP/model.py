@@ -36,7 +36,7 @@ class action_prediction:
 		self._predicted = {}
 
 	def create_model(self):
-		hidden_layers = [8,16,16,32,32,64,64,128,128]
+		hidden_layers = [8,8,8,8,8,8,8,8,8]
 		
 		first_input = C.ops.reshape(
 		    C.ops.splice(self._input,self._target),
@@ -46,9 +46,10 @@ class action_prediction:
 		    (1,3), num_filters=8, pad=True, reduction_rank=1, activation=C.ops.tanh)(first_input)
 		
 		for h in hidden_layers:
+			input_new = C.ops.splice(model,first_input)
 			model = C.layers.Convolution2D(
 			    (1,3), num_filters=h, pad=True, 
-			    reduction_rank=1, activation=C.ops.tanh)(model+first_input)
+			    reduction_rank=1, activation=C.ops.tanh)(input_new)
 		######
 		# Dense layers
 		model = C.layers.Sequential([
