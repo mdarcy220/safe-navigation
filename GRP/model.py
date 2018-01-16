@@ -29,7 +29,7 @@ class action_prediction:
 		self._target = C.input_variable(self._target_size)
 		self._output = C.input_variable(self._output_size)
 		self.name = name
-		self._batch_size = 8
+		self._batch_size = 1
 		self._max_iter = 1000000
 		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.999**i) for i in range(1000)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
 		self._model,self._loss, self._learner, self._trainer = self.create_model()
@@ -63,7 +63,7 @@ class action_prediction:
 		loss = C.cross_entropy_with_softmax(model, self._output)
 		error = C.classification_error(model, self._output)
 		
-		learner = C.adadelta(model.parameters, self._lr_schedule)
+		learner = C.adadelta(model.parameters)
 		progress_printer = C.logging.ProgressPrinter(tag='Training')
 		trainer = C.Trainer(model, (loss,loss), learner, progress_printer)
 		return model, loss, learner, trainer

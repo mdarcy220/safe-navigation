@@ -71,7 +71,7 @@ class action_prediction:
 			})
 		predicted_actions = []
 		for value in predicted_values:
-			action = list(np.zeros((32,1)))
+			action = np.zeros(32)
 			action[np.argmax(value)] = 1
 			predicted_actions.append(action)
 		count   = 0
