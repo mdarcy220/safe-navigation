@@ -72,7 +72,8 @@ class action_prediction:
 			count      += cn
 		print ('average classifiaction error:', cl_error/count, 'for:', count, ' total steps')
 		print ('average angular classifiaction error:', cl_error_2/count, 'for:', count, ' total steps', 'with angle', 180*math.acos(1-(cl_error_2/count))/math.pi)
-		print ('rmse normalized velocity error:', math.sqrt(v_error/count)/self._max_velocity, 'for:', count, ' total steps')
+		print ('rmse normalized velocity error:', math.sqrt(v_error/count), 'for:', count, ' total steps')
+		print ('rmse actual velocity error:', self._max_velocity*math.sqrt(v_error/count), 'for:', count, ' total steps')
 		return cl_error/count,cl_error_2/count
 
 	def test_seq(self, data, targets, actions,velocities, key):
