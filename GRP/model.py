@@ -83,8 +83,8 @@ class action_prediction:
 			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions,velocities,self._batch_size)
 			self._trainer.train_minibatch({self._input: input_sequence, self._target: target_sequence, self._output: output_sequence, self._output_velocity: velocity_sequence})
 			self._trainer.summarize_training_progress()
-			if i%10 == 0:
-				self._model.save('action_predicter.dnn')
+			if i%100 == 0:
+				self._model.save('GRP.dnn')
 
 	def sequence_minibatch(self, data, targets, actions, vel, batch_size):
 		sequence_keys    = list(data.keys())
@@ -116,5 +116,5 @@ class action_prediction:
 			target_sequence[i,:,:] = targets[seq_key][i]
 			output_sequence[i,:,:] = actions[seq_key][i]
 			vel_sequence   [i,:,:] = vel[seq_key][i]
-		return input_sequence,target_sequence,output_sequence
+		return input_sequence,target_sequence,output_sequence,vel_sequence
 	

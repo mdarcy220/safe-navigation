@@ -21,7 +21,7 @@ import cntk as C
 
 class action_prediction:
 	
-	def __init__(self, feature_vector, target_vector, action_vector, velocity, learning_rate, name='action_predicter'):
+	def __init__(self, feature_vector, target_vector, action_vector, velocity, max_velocity, learning_rate, name='action_predicter'):
 		self._input_size    = feature_vector
 		self._output_size   = action_vector
 		self._target_size   = target_vector
@@ -30,6 +30,7 @@ class action_prediction:
 		self._target          = C.input_variable(self._target_size)
 		self._output          = C.input_variable(self._output_size)
 		self._output_velocity = C.input_variable(self._velocity_size)
+		self._max_velocity = max_velocity	
 		self.name = name
 		self._batch_size = 8
 		self._max_iter = 1000000
@@ -62,11 +63,13 @@ class action_prediction:
 			cn,er,er_2,v_er = self.test_seq(data,targets,actions,velocities,key)
 			error   += er
 			error_2 += er_2
+			v_error += v_er
 			count   += cn
 		print ('average classifiaction error:', error/count, 'for:', count, ' total steps')
 		print ('average angle classifiaction error:', error_2/count, 'for:', count, ' total steps', 'with angle', 180*math.acos(1-(error_2/count))/math.pi)
-		print ('rmse normalized velocity error:', math.sqrt(v_error/count)/self._max_velocity, 'for:', count, ' total steps')
-		return cl_error/count, cl_error_2/count
+		print ('rmse normalized velocity error:', math.sqrt(v_error/count), 'for:', count, ' total steps')
+		print ('rmse real velocity error:', self._max_velocity*math.sqrt(v_error/count), 'for:', count, ' total steps')
+		return error/count, error_2/count
 	
 	def test_seq(self, data, targets, actions, velocities, key):
 		input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_batch(data, targets, actions, velocities, key)
@@ -92,8 +95,8 @@ class action_prediction:
 			real_cl = np.where(output_sequence[i].flatten() == 1)[0]
 			error   += 0 if pre_cl == real_cl else 1 
 			error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/32))
-			v_error += np.power(predicted_velocity[i] - 
-			    velocity_sequence[i],2)
+			#print (predicted_velocity[i], velocity_sequence[i][0])
+			v_error += np.power(predicted_velocity[i] - velocity_sequence[i][0][0],2)
 			count += 1
 		return count, error, error_2, v_error
 
@@ -107,9 +110,9 @@ class action_prediction:
 			batch_input.append(_input[i])
 			batch_target.append(_target[i])
 			batch_output.append(_ouput[i])
-			bathc_veloc.append(_vel[i])
+			batch_veloc.append(_vel[i])
 		
-		return batch_input,batch_target,batch_output,bathc_veloc
+		return batch_input,batch_target,batch_output,batch_veloc
 	
 	def input_output_sequence(self, data, targets, actions, vel, seq_key):
 		data_k = data[seq_key]
