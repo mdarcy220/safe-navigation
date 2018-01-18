@@ -103,8 +103,8 @@ class feature_predicter_ours:
 				self._output: output_sequence
 				})
 			self._trainer.summarize_training_progress()
-			if i%10 == 0:
-				self._model.save('feature_predicter.dnn')
+			if i%100 == 0:
+				self._model.save('feature_predicter_ours.dnn')
 
 	def sequence_minibatch(self, data, targets, batch_size):
 		sequence_keys    = list(data.keys())
