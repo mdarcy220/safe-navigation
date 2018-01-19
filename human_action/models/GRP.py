@@ -60,12 +60,13 @@ class GRP:
 		print(first_input)
 		model = C.layers.Convolution2D(
 		    (1,3), num_filters=8, pad=True, reduction_rank=1, activation=C.ops.tanh)(first_input)
-		
+		print(model)	
 		for h in hidden_layers:
 			input_new = C.ops.splice(model,first_input)
 			model = C.layers.Convolution2D(
 			    (1,3), num_filters=h, pad=True, 
 			    reduction_rank=1, activation=C.ops.tanh)(input_new)
+			print(model)
 		######
 		# Dense layers
 		direction = C.layers.Sequential([
@@ -87,6 +88,7 @@ class GRP:
 			direction = model[0:32]
 			velocity  = model[32]
 		
+		C.logging.log_number_of_parameters(model)
 		print(model)
 		loss = C.cross_entropy_with_softmax(direction, self._output) + C.squared_error(velocity, self._output_velocity) 
 		error = C.classification_error(direction, self._output)  + C.squared_error(velocity, self._output_velocity) 

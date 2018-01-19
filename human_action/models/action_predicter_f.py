@@ -44,7 +44,7 @@ class action_predicter_f:
 		self._predicted = {}
 
 	def load_models(self):
-		feature_model = C.load_model('dnns/feature_predicter_ours.dnn')((self._input[0]-1,self._input[1]), self._target)
+		feature_model = C.load_model('dnns/feature_predicter_ours.dnn')(self._input, self._target)
 		feature_model = feature_model.clone(C.CloneMethod.freeze)
 		print(feature_model)
 		inputs = C.ops.splice(self._input,feature_model,axis=0)
