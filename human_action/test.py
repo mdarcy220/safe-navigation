@@ -16,7 +16,7 @@ from models import action_predicter_f
 #from models import action_predicter 
 from models import feature_predicter_ours
 from models import GRP
-#from models import GRP_f
+from models import GRP_f
 #from models import feature_predciter_GRP
 
 ### User inputs ###
@@ -135,6 +135,9 @@ if network == 'GRP':
     f1.test_network(data_new,target_obs,actions,vel)
 elif network == 'action+':
     f1 = action_predicter_f((2,360),(1,32),(1,32),(1,1),True,True,max_velocity)
+    f1.test_network(data_new,targets,actions,vel)
+elif network == 'GRP+':
+    f1 = GRP_f((1,360),(1,360),(1,32),(1,1),True,True,max_velocity)
     f1.test_network(data_new,targets,actions,vel)
 else:
     sys.exit(1)

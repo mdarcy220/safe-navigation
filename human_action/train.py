@@ -16,7 +16,7 @@ from models import action_predicter_f
 #from models import action_predicter 
 from models import feature_predicter_ours
 from models import GRP
-#from models import GRP_f
+from models import GRP_f
 from models import feature_predicter_GRP
 
 ### User inputs ###
@@ -140,6 +140,9 @@ elif network == 'feature':
     f1.train_network(data_new,targets)
 elif network == 'GRP_feature':
     f1 = feature_predicter_GRP((1,360),(1,360),load_network,False,0.7)
+    f1.train_network(data_new,target_obs)
+elif network == 'GRP+':
+    f1 = GRP_f((1,360),(1,360),load_network,False,0.7)
     f1.train_network(data_new,target_obs)
 else:
     sys.exit(1)
