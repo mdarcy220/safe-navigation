@@ -29,7 +29,7 @@ def _create_map_1(env):
 	#	(490, 91),
 	#	(640, 80),
 	#]);
-	with open('/dev/shm/obs2.json') as f:
+	with open('obs2.json') as f:
 		obslist = json.load(f)
 
 	for obs in obslist:

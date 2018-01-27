@@ -166,7 +166,7 @@ class Robot:
 			new_location = np.array(new_location, dtype=int)
 		self.location = new_location
 
-		self._visited_points.append(np.array(self.location, dtype=int))
+		self._visited_points.append(np.array(self.location))
 
 
 	def set_nav_algo(self, nav_algo):
@@ -191,7 +191,7 @@ class Robot:
 	#
 	def draw(self, dtool):
 		dtool.set_color(self._path_color);
-		dtool.set_stroke_width(2);
+		dtool.set_stroke_width(0.2);
 		dtool.draw_lineseries(self._visited_points[-1500:])
 		if (0 < self._cmdargs.debug_level):
 
@@ -206,8 +206,8 @@ class Robot:
 			# Draw circle to indicate a collision
 			if self._drawcoll > 0:
 				dtool.set_color((255, 80, 210))
-				dtool.set_stroke_width(3);
-				dtool.draw_circle(np.array(self.location, dtype=int), 16)
+				dtool.set_stroke_width(0.3);
+				dtool.draw_circle(np.array(self.location, dtype=int), 1.2)
 				self._drawcoll = self._drawcoll - 1
 
 			# Draw static mapper data
@@ -235,7 +235,7 @@ class Robot:
 			# Draw RRT
 			if "rrt_tree" in self._nav_algo.debug_info.keys() and self._nav_algo.debug_info["rrt_tree"]:
 				dtool.set_color((255,0,0));
-				dtool.set_stroke_width(1);
+				dtool.set_stroke_width(0.11);
 				for node in self._nav_algo.debug_info['rrt_tree'].toListValidNodes():
 					if node.parent is None or node is None:
 						continue

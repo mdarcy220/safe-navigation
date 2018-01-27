@@ -21,3 +21,4 @@ from .InverseRLNavAlgo import InverseRLNavigationAlgorithm
 from .DeepIRL import DeepIRLAlgorithm
 #from .DeepQIRLNavAlgo import DeepQIRLAlgorithm # this file is kept as a reference
 from .DQNIRLNavAlgo import DeepQIRLAlgorithm
+from .DeepPredNavAlgo import DeepPredNavigationAlgorithm

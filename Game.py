@@ -19,6 +19,7 @@ import time
 import Vector
 from MDPAdapterSensor import MDPAdapterSensor
 import os
+import json
 
 from NavigationAlgorithm import DeepQNavigationAlgorithm
 from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
@@ -34,6 +35,7 @@ from NavigationAlgorithm import ValueIterationNavigationAlgorithm
 from NavigationAlgorithm import InverseRLNavigationAlgorithm
 from NavigationAlgorithm import DeepIRLAlgorithm
 from NavigationAlgorithm import DeepQIRLAlgorithm
+from NavigationAlgorithm import DeepPredNavigationAlgorithm
 
 ## Handles the main game loop
 #
@@ -75,10 +77,17 @@ class Game:
 		#self._gameDisplay = PG.display.set_mode((800, 600))
 		self._gameDisplay = PG.display.set_mode((640, 480))
 
+		# Get start and end points
+		with open('obsmat.json', 'r') as f:
+			obsmat = json.load(f)
+			start_human_obs = obsmat[str(cmdargs.ped_id_to_replace)][0]
+			end_human_obs = obsmat[str(cmdargs.ped_id_to_replace)][-1]
+			obsmat = None
+
 		# Init environment
 		self._env = GeometricEnvironment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
-		self._start_point = Target((50,450), color=0x00FF00)
-		self._target = Target((530, 70))#(760,50)
+		self._start_point = Target((start_human_obs['pos_y'], start_human_obs['pos_x']), color=0x00FF00)
+		self._target = Target((end_human_obs['pos_y'], end_human_obs['pos_x']))#(760,50)
 
 		# Init robots
 		radar = GeometricRadar(self._env, radius = cmdargs.radar_range);
@@ -96,7 +105,8 @@ class Game:
 		#self._normal_robot.set_nav_algo(DeepQNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(ValueIterationNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
 		#self._normal_robot.set_nav_algo(DynamicRrtNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
-		self._normal_robot.set_nav_algo(LinearNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		#self._normal_robot.set_nav_algo(LinearNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs));
+		self._normal_robot.set_nav_algo(DeepPredNavigationAlgorithm(self._normal_robot.get_sensors(), self._target, cmdargs, net_type='grp'));
 		self._robot_list.append(self._normal_robot);
 
 
@@ -104,8 +114,9 @@ class Game:
 		self._safe_robot.put_sensor('radar', radar);
 		self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
 		self._safe_robot.put_sensor('debug', {'name': 'safe'});
-		self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
-		#self._robot_list.append(self._safe_robot);
+		#self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
+		self._safe_robot.set_nav_algo(DeepPredNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, net_type='perl'));
+		self._robot_list.append(self._safe_robot);
 
 		# Set window title
 		PG.display.set_caption(cmdargs.window_title)
@@ -143,10 +154,10 @@ class Game:
 	# not always need to be done.
 	#
 	def update_game_image(self):
-		#dtool = DrawTool.MultiDrawTool();
+		dtool = DrawTool.MultiDrawTool();
 		#dtool.dtools.append(DrawTool.PygameDrawTool(self._gameDisplay));
-		#dtool.dtools.append(DrawTool.SvgDrawTool());
-		dtool = DrawTool.PygameDrawTool(self._gameDisplay);
+		dtool.dtools.append(DrawTool.SvgDrawTool());
+		#dtool = DrawTool.PygameDrawTool(self._gameDisplay);
 
 		self._env.update_display(dtool);
 
@@ -163,9 +174,9 @@ class Game:
 			for robot in self._robot_list:
 				robot.draw(dtool)
 
-		#dtool.dtools[1]._elems.insert(0, '<image x="0" y="0" width="800" height="600" xlink:href="../{}" />'.format(self._cmdargs.map_name))
-		#with open('imdir/frame-{:05d}.svg'.format(self._step_num), 'x') as f:
-		#	f.write(dtool.dtools[1].get_svg_xml())
+		dtool.dtools[-1]._elems.insert(0, '<image x="0" y="0" width="800" height="600" xlink:href="../{}" />'.format(self._cmdargs.map_name))
+		with open('imdir/frame-{:07d}.svg'.format(self._step_num), 'x') as f:
+			f.write(dtool.dtools[-1].get_svg_xml())
 
 
 	## Renders the stored game image onto the screen, to make it
@@ -287,7 +298,7 @@ class Game:
 	# 	otherwise.
 	#
 	def check_robot_at_target(self, robot):
-		return (Vector.distance_between(robot.location, self._target.position) < 20);
+		return (Vector.distance_between(robot.location, self._target.position) < 0.5);
 
 
 	## Runs the game

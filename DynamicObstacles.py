@@ -54,8 +54,9 @@ class DynamicObstacle:
 	## Constructor. See the member descriptions for what each of these
 	# variables means in more detail.
 	#
-	def __init__(self, movement):
+	def __init__(self, movement, obs_id=0):
 		self._movement          = movement
+		self._obs_id            = obs_id
 
 		self.coordinate		= movement.get_pos()
 		self._last_position     = self.coordinate

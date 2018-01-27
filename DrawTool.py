@@ -103,7 +103,7 @@ def _color_to_int(color_tuple):
 #
 class SvgDrawTool(DrawTool):
 	def __init__(self):
-		self._svg_template_xml = """<svg width="800px" height="600px" viewBox="0 0 800 600"><g id="layer1">{}</g></svg>""";
+		self._svg_template_xml = """<svg width="600px" height="600px" viewBox="-20 -20 50 50"><g id="layer1">{}</g></svg>""";
 		self._elems = [];
 		self._color = 0;
 		self._stroke_width = 1
@@ -113,7 +113,7 @@ class SvgDrawTool(DrawTool):
 
 
 	def _gen_style_str(self):
-		style_attr = "stroke-width:{:d};".format(self._stroke_width);
+		style_attr = "stroke-width:{:f};".format(self._stroke_width);
 		color = '#{:06x}'.format(_color_to_int(self._color));
 		style_attr += ("fill:none;stroke:{};" if self._stroke_width != 0 else "fill:{};stroke:none;").format(color);
 		return style_attr

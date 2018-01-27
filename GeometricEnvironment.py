@@ -102,13 +102,13 @@ class GeometricEnvironment(Environment):
 
 	def _draw_obstacle(self, dtool, obs):
 		if (obs.shape == 1):
-			dtool.draw_circle(np.array(obs.coordinate, dtype='int64'), obs.radius)
+			dtool.draw_circle(np.array(obs.coordinate), obs.radius)
 		elif (obs.shape == 2):
 			dtool.draw_rect(obs.coordinate.tolist(), obs.size)
 		elif (obs.shape == 3):
 			vec = obs.get_velocity_vector()
 			angle = np.arctan2(vec[1], vec[0])
-			dtool.draw_ellipse(np.array(obs.coordinate, dtype='int64'), obs.width, obs.height, angle)
+			dtool.draw_ellipse(np.array(obs.coordinate), obs.width, obs.height, angle)
 		elif (obs.shape == 4):
 			dtool.draw_poly(obs.polygon.get_vertices())
 

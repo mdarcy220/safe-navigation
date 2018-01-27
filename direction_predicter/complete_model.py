@@ -44,7 +44,7 @@ class action_prediction:
 		feature_model = feature_model.clone(C.CloneMethod.freeze)
 		print(feature_model)
 		inputs = C.ops.splice(self._input,feature_model,axis=0)
-		print(inputs)
+		print('hhhaa',inputs)
 		action_model = C.load_model('action_predicter.dnn')(inputs,self._target)
 		action_model = action_model.clone(C.CloneMethod.freeze)
 		print(action_model)

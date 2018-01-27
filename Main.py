@@ -87,6 +87,13 @@ def get_cmdline_args():
 			default=1,
 			action='store'
 	);
+	parser.add_argument('--ped-id-to-replace',
+			help='The pedestrian ID to swap for the robot',
+			dest='ped_id_to_replace',
+			type=int,
+			default=0,
+			action='store'
+	);
 	parser.add_argument('--max-fps',
 			help='Max number of frames per second. Note that setting this to a small value will NOT improve the performance of the simulation, because it runs at one step per frame. For best performance, set this to a very high value, but low values may be useful for debugging.',
 			dest='max_fps',
