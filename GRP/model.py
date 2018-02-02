@@ -40,10 +40,11 @@ class action_prediction:
 	def create_model(self):
 		hidden_layers = [8,8,8,8,8,8,8,8,8]
 		
-		first_input = C.ops.reshape(
-		    C.ops.splice(self._input,self._target),
-		    (1,self._input_size[0]*2,self._input_size[1]))
-		print(first_input)
+		#first_input = C.ops.reshape(
+		#    C.ops.splice(self._input, self._target),
+		#    (1,self._input_size[0]*2,self._input_size[1]))
+		#print(first_input)
+		first_input = C.ops.reshape(self._input, (1, self._input_size[0], self._input_size[1]))
 		model = C.layers.Convolution2D(
 		    (1,3), num_filters=8, pad=True, reduction_rank=1, activation=C.ops.tanh)(first_input)
 		
@@ -52,6 +53,9 @@ class action_prediction:
 			model = C.layers.Convolution2D(
 			    (1,3), num_filters=h, pad=True, 
 			    reduction_rank=1, activation=C.ops.tanh)(input_new)
+
+		model = C.ops.splice(model, self._target)
+
 		######
 		# Dense layers
 		direction = C.layers.Sequential([
@@ -74,7 +78,7 @@ class action_prediction:
 		error = C.classification_error(direction, self._output)  + C.squared_error(velocity, self._output_velocity) 
 		
 		learner = C.adadelta(model.parameters)
-		progress_printer = C.logging.ProgressPrinter(tag='Training')
+		progress_printer = C.logging.ProgressPrinter(tag='Training', freq=50)
 		trainer = C.Trainer(model, (loss,error), learner, progress_printer)
 		return model, loss, learner, trainer
 
@@ -82,8 +86,8 @@ class action_prediction:
 		for i in range(self._max_iter):
 			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions,velocities,self._batch_size)
 			self._trainer.train_minibatch({self._input: input_sequence, self._target: target_sequence, self._output: output_sequence, self._output_velocity: velocity_sequence})
-			self._trainer.summarize_training_progress()
-			if i%100 == 0:
+			if i % 500 == 0:
+				self._trainer.summarize_training_progress()
 				self._model.save('GRP.dnn')
 
 	def sequence_minibatch(self, data, targets, actions, vel, batch_size):

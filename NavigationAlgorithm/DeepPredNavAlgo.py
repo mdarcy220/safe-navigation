@@ -47,12 +47,12 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 			self._model = self._create_perl_model()
 		elif net_type == 'grp':
-			feature_vector, target_features, action_vector, velocity = (1,360), (1,360), (1,32), (1,1)
+			feature_vector, target_features, action_vector, velocity = (1,360), (1,32), (1,32), (1,1)
 			self._input_size    = feature_vector
 			self._output_size   = action_vector
 			self._velocity_size = velocity
 			self._input           = C.input_variable(self._input_size)
-			self._target_input    = C.input_variable(self._input_size)
+			self._target_input    = C.input_variable(target_features)
 			self._output          = C.input_variable(self._output_size)
 			self._output_velocity = C.input_variable(self._velocity_size)
 
@@ -62,7 +62,9 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._start_pos = np.copy(self._gps.location())
 
-		self.debug_info = {};
+		self._last_radar_data = self._radar.scan(self._gps.location())
+
+		self.debug_info = {'min_proximity': sys.maxsize};
 
 
 	## Select the next action for the robot
@@ -108,9 +110,9 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _create_perl_input_data(self):
 		radar_data = self._radar.scan(self._gps.location())
-		other_radar_data = np.copy(radar_data)
+		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
 
-		radar_input_data = np.stack((radar_data, other_radar_data), axis=0)
+		radar_input_data = np.stack((radar_data, self._last_radar_data), axis=0)
 		radar_input_data = np.expand_dims(radar_input_data, 0).astype(np.float32)
 		target_direction_input_data = np.expand_dims(self._get_target_direction_input_data(), 0).astype(np.float32)
 
@@ -120,12 +122,17 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 			self._model.arguments[2]: target_direction_input_data,
 			self._model.arguments[3]: target_direction_input_data,
 		}
+		self._last_radar_data = radar_data
 		return input_dict
 
 
 	def _create_grp_input_data(self):
 		radar_data = self._radar.scan(self._gps.location())
-		target_radar_data = self._radar.scan(self._target.position)
+		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
+
+		#target_radar_data = self._radar.scan(self._target.position)
+		target_radar_data = np.zeros((1,32), dtype=np.float32)
+		target_radar_data[0][int(round(self._gps.angle_to(self._target.position)*31/360))] = 1
 
 		radar_input_data = np.expand_dims(radar_data, 0).astype(np.float32)
 		target_radar_input_data = np.expand_dims(target_radar_data, 0).astype(np.float32)
@@ -153,7 +160,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 	## Copied from GRP/complete_model.py
 	#
 	def _create_grp_model(self):
-		action_model = C.load_model('./GRP/GRP.dnn')(self._input,self._target_input)
+		action_model = C.load_model('./GRP/GRP.dnn')(self._input, self._target_input)
 		action_model = action_model.clone(C.CloneMethod.freeze)
 
 		return action_model

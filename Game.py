@@ -260,7 +260,25 @@ class Game:
 		output_csv += str(self._cmdargs.robot_memory_sigma) +','
 		output_csv += str(self._cmdargs.robot_memory_decay) +','
 		output_csv += str(self._cmdargs.robot_memory_size) +','
-		output_csv += str(self._cmdargs.map_name) +','
+
+
+		def make_extra_data(robot):
+			extra_data = dict()
+			extra_data['min_proximity'] = robot.debug_info['min_proximity']
+			extra_data['trajectory'] = [loc.tolist() for loc in robot._visited_points]
+			extra_data['ped_id'] = robot.debug_info['ped_id']
+			extra_data['map_name'] = self._cmdargs.map_name
+			return extra_data
+
+		extra_data = {
+			'normal_bot': make_extra_data(self._normal_robot),
+			'safe_bot': make_extra_data(self._safe_robot)
+		}
+		extra_data_str = "\"" + json.dumps(extra_data).replace("\"", "\"\"") + "\""
+
+		output_csv += str(extra_data_str) +','
+
+
 		output_csv += str(self._cmdargs.map_modifier_num) +','
 		output_csv += str(self._cmdargs.target_distribution_type) +','
 		output_csv += str(self._cmdargs.use_integer_robot_location) +','

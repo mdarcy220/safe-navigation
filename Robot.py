@@ -18,6 +18,7 @@ from Environment import ObsFlag
 from RobotControlInput import RobotControlInput
 from NavigationAlgorithm import LinearNavigationAlgorithm
 import DrawTool
+import sys
 
 
 ## Holds statistics about the robot's progress, used for reporting the
@@ -104,7 +105,13 @@ class Robot:
 		# Variables to store drawing and debugging info
 		self._last_mmv		= np.array([0, 0])
 		self._drawcoll = 0
-		self._visited_points	= [self.location]
+		self._visited_points	= [np.array(self.location)]
+
+		self.debug_info = {
+			'ped_id': cmdargs.ped_id_to_replace,
+			'trajectory': self._visited_points,
+			'min_proximity': sys.maxsize
+		}
 
 		# Number of steps taken in the navigation
 		self.stepNum = 0
@@ -132,6 +139,8 @@ class Robot:
 		start_decision_time = time.perf_counter()
 		control_input = self._nav_algo.select_next_action();
 		self.stats.decision_times.append(time.perf_counter() - start_decision_time)
+
+		self.debug_info['min_proximity'] = self._nav_algo.debug_info['min_proximity']
 
 		speed = min(control_input.speed, self.speed);
 		movement_ang = control_input.angle;
