@@ -54,39 +54,39 @@ class GRP:
 	def create_model(self):
 		hidden_layers = [8,8,8,8,8,8,8,8,8]
 		
-		first_input = C.ops.reshape(
-		    C.ops.splice(self._input,self._target),
-		    (1,self._input_size[0]*2,self._input_size[1]))
+		first_input = C.ops.reshape(self._input,
+		    (self._input_size[0],1,self._input_size[1]))
 		print(first_input)
 		model = C.layers.Convolution2D(
 		    (1,3), num_filters=8, pad=True, reduction_rank=1, activation=C.ops.tanh)(first_input)
 		print(model)	
 		for h in hidden_layers:
-			input_new = C.ops.splice(model,first_input)
+			input_new = C.ops.splice(model,first_input,axis=0)
 			model = C.layers.Convolution2D(
 			    (1,3), num_filters=h, pad=True, 
 			    reduction_rank=1, activation=C.ops.tanh)(input_new)
 			print(model)
 		######
+		model = C.ops.splice(model, self._target)
 		# Dense layers
 		direction = C.layers.Sequential([
-		C.layers.Dense(256, activation=C.ops.relu),
-		C.layers.Dense(128, activation=C.ops.relu),
-		C.layers.Dense(64, activation=C.ops.relu),
-		C.layers.Dense(32, activation=None),
-		])(model)
+			C.layers.Dense(720, activation=C.ops.relu),
+			#C.layers.Dense(128, activation=C.ops.relu),
+			#C.layers.Dense(64, activation=C.ops.relu),
+			C.layers.Dense(360, activation=None),
+			])(model)
 
 		velocity = C.layers.Sequential([
-		C.layers.Dense(128,activation=C.ops.relu),
-		C.layers.Dense(64,activation=None),
-		C.layers.Dense(1,activation=None)
-		])(model)
+			C.layers.Dense(128,activation=C.ops.relu),
+			C.layers.Dense(64,activation=None),
+			C.layers.Dense(1,activation=None)
+			])(model)
 
 		model = C.ops.splice(direction,velocity)
 		if self._load_model:
 			model = C.load_model('dnns/GRP.dnn')
-			direction = model[0:32]
-			velocity  = model[32]
+			direction = model[0:360]
+			velocity  = model[360]
 		
 		C.logging.log_number_of_parameters(model)
 		print(model)
@@ -133,9 +133,9 @@ class GRP:
 		predicted_actions  = []
 		predicted_velocity = []
 		for value in predicted_values:
-			direction = value[0:32]
-			velocity  = value[32]
-			action = np.zeros(32)
+			direction = value[0:360]
+			velocity  = value[360]
+			action = np.zeros(360)
 			action[np.argmax(direction)] = 1
 			predicted_actions.append(action)
 			predicted_velocity.append(velocity)
@@ -147,7 +147,7 @@ class GRP:
 			pre_cl  = np.where(predicted_actions[i] == 1)[0]
 			real_cl = np.where(output_sequence[i].flatten() == 1)[0]
 			error   += 0 if pre_cl == real_cl else 1 
-			error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/32))
+			error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/180))
 			#print (predicted_velocity[i], velocity_sequence[i][0])
 			v_error += np.power(predicted_velocity[i] - velocity_sequence[i][0][0],2)
 			count += 1
@@ -162,7 +162,7 @@ class GRP:
 		minibatch_veloc  = []
 
 		for key in minibatch_keys:
-			_input,_target,_output,_vel = self.input_output_sequence(data,targets,actions,vel,key)
+			_input,_target,_output,_vel = self.input_output_sequence_train(data,targets,actions,vel,key)
 			for i in range(len(_input)):
 				minibatch_input.append(_input[i])
 				minibatch_target.append(_target[i])
@@ -176,7 +176,7 @@ class GRP:
 		batch_target = []
 		batch_output = []
 		batch_veloc  = []
-		_input,_target,_ouput,_vel = self.input_output_sequence(data,targets,actions,vel,key)
+		_input,_target,_ouput,_vel = self.input_output_sequence_test(data,targets,actions,vel,key)
 		for i in range(len(_input)):
 			batch_input.append(_input[i])
 			batch_target.append(_target[i])
@@ -185,17 +185,32 @@ class GRP:
 		
 		return batch_input,batch_target,batch_output,batch_veloc
 	
-	def input_output_sequence(self, data, targets, actions, vel, seq_key):
-		data_k = data[seq_key]
-		input_sequence = np.zeros((len(data_k),self._input_size[0],self._input_size[1]), dtype=np.float32)
-		target_sequence = np.zeros((len(data_k),self._target_size[0],self._target_size[1]), dtype=np.float32)
-		output_sequence = np.zeros((len(data_k),self._output_size[0],self._output_size[1]), dtype=np.float32)
-		vel_sequence = np.zeros((len(data_k),self._velocity_size[0],self._velocity_size[1]), dtype=np.float32)
-		
-		for i in range(0,len(data_k)):
-			input_sequence[i,:,:] = data_k[i]
-			target_sequence[i,:,:] = targets[seq_key][i]
-			output_sequence[i,:,:] = actions[seq_key][i]
-			vel_sequence   [i,:,:] = vel[seq_key][i]
-		return input_sequence,target_sequence,output_sequence,vel_sequence
-	
+	def input_output_sequence_test(self, data, targets, actions, vel, seq_key): 
+                data_k = data[seq_key] 
+                input_sequence = np.zeros((len(data_k)-1,self._input_size[0],self._input_size[1]), dtype=np.float32) 
+                target_sequence = np.zeros((len(data_k)-1,self._target_size[0],self._target_size[1]), dtype=np.float32) 
+                output_sequence = np.zeros((len(data_k)-1,self._output_size[0],self._output_size[1]), dtype=np.float32) 
+                vel_sequence    = np.zeros((len(data_k)-1,self._velocity_size[0],self._velocity_size[1]), dtype=np.float32) 
+                 
+                for i in range(0,len(data_k)-1): 
+                        input_sequence [i,0,:] = data_k[i] 
+                        input_sequence [i,1,:] = data_k[i+1] 
+                        target_sequence[i,:,:] = targets[seq_key][i] 
+                        output_sequence[i,0,:] = actions[seq_key][i+1] 
+                        vel_sequence   [i,0,:] = vel[seq_key][i+1] 
+                return input_sequence,target_sequence,output_sequence,vel_sequence 
+         
+	def input_output_sequence_train(self, data, targets, actions, vel, seq_key): 
+                data_k = data[seq_key] 
+                input_sequence = np.zeros((len(data_k)-1,self._input_size[0],self._input_size[1]), dtype=np.float32) 
+                target_sequence = np.zeros((len(data_k)-1,self._target_size[0],self._target_size[1]), dtype=np.float32) 
+                output_sequence = np.zeros((len(data_k)-1,self._output_size[0],self._output_size[1]), dtype=np.float32) 
+                vel_sequence = np.zeros((len(data_k)-1,self._velocity_size[0],self._velocity_size[1]), dtype=np.float32) 
+                 
+                for i in range(0,len(data_k)-1): 
+                        input_sequence [i,0,:] = data_k[i] 
+                        input_sequence [i,1,:] = data_k[i+1] 
+                        target_sequence[i,:,:] = targets[seq_key][i] 
+                        output_sequence[i,:,:] = actions[seq_key][i+1] 
+                        vel_sequence   [i,0,:] = vel[seq_key][i+1] 
+                return input_sequence,target_sequence,output_sequence,vel_sequence 

@@ -67,11 +67,11 @@ class action_predicter_f:
 		# Dense layers
 		#C.layers.Dense(128, activation=C.ops.relu,name='dense1_a'),
 		#C.layers.Dense(64, activation=C.ops.relu,name='dense2_a'),
-		C.layers.Dense(32, activation=C.ops.relu,name='dense3_a')
+		C.layers.Dense(361, activation=C.ops.relu,name='dense3_a')
 		])(self._input)
 		### target
 		modelt = C.layers.Sequential([
-		C.layers.Dense(32, activation=C.ops.relu,name='dense4_a')
+		C.layers.Dense(360, activation=C.ops.relu,name='dense4_a')
 		]) (self._target)
 		### concatenate both processed target and observations
 		inputs = C.ops.splice(modeli,modelt)
@@ -79,16 +79,16 @@ class action_predicter_f:
 		### next observation
 		model = C.layers.Sequential([
 		######
-		C.layers.Dense(64, activation=C.ops.relu,name='dense5_a'),
+		C.layers.Dense(720, activation=C.ops.relu,name='dense5_a'),
 		# Recurrence
 		C.layers.Recurrence(C.layers.LSTM(2048, init=C.glorot_uniform()),name='lstm_a'),
-		C.layers.Dense(256,activation=None)
+		C.layers.Dense(1024,activation=None)
 		])(inputs)
 		######
 		# Prediction
 		direction = C.layers.Sequential([
-		C.layers.Dense(128, activation=None,name='dense6_a'),
-		C.layers.Dense(32, activation=None,name='dense7_a')
+		C.layers.Dense(720, activation=None,name='dense6_a'),
+		C.layers.Dense(360, activation=None,name='dense7_a')
 		])(model)
 		velocity = C.layers.Sequential([
 		C.layers.Dense(128,activation=C.ops.relu),
@@ -99,8 +99,8 @@ class action_predicter_f:
 		
 		if self._load_model:
 			model = C.load_model('dnns/action_predicter_f.dnn')
-			direction = model[0:32]
-			velocity  = model[32]
+			direction = model[0:360]
+			velocity  = model[360]
  
 		print (model)
 		loss = C.cross_entropy_with_softmax(direction, self._output) +  C.squared_error(velocity, self._output_velocity)
@@ -151,9 +151,9 @@ class action_predicter_f:
 		for k in range(0,len(predicted_values)):
 			predicted_seq = []
 			for value in predicted_values[k]:
-				direction = value[0:32]
-				velocity  = value[32]
-				action = np.zeros(32)
+				direction = value[0:360]
+				velocity  = value[360]
+				action = np.zeros(360)
 				action[np.argmax(direction)] = 1
 				predicted_seq.append(action)
 				predicted_actions.append(predicted_seq)
@@ -167,7 +167,7 @@ class action_predicter_f:
 				pre_cl  = np.where(predicted_actions[k][i] == 1)[0]
 				real_cl = np.where(output_sequence[k][i].flatten() == 1)[0]
 				cl_error   += 0 if pre_cl == real_cl else 1 
-				cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/32))
+				cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/180))
 				v_error += np.power(np.array(predicted_velocity[count]) 
 				    -np.array(velocity_sequence[k][i]),2)
 				count += 1
@@ -178,10 +178,10 @@ class action_predicter_f:
 		batch_target = []
 		batch_output = []
 		batch_veloc  = []
-		_input,_target,_ouput,_vel = self.input_output_sequence_test(data,targets,actions,vel,key)
+		_input,_target,_output,_vel = self.input_output_sequence_test(data,targets,actions,vel,key)
 		batch_input.append(_input)
 		batch_target.append(_target)
-		batch_output.append(_ouput)
+		batch_output.append(_output)
 		batch_veloc.append(_vel)
 		
 		return batch_input,batch_target,batch_output,batch_veloc
@@ -195,10 +195,10 @@ class action_predicter_f:
 		minibatch_veloc  = []
 
 		for key in minibatch_keys:
-			_input,_target,_ouput,_vel = self.input_output_sequence_train(data,targets,actions,vel,key)
+			_input,_target,_output,_vel = self.input_output_sequence_train(data,targets,actions,vel,key)
 			minibatch_input.append(_input)
 			minibatch_target.append(_target)
-			minibatch_output.append(_ouput)
+			minibatch_output.append(_output)
 			minibatch_veloc.append(_vel)
 		
 		return minibatch_input,minibatch_target,minibatch_output,minibatch_veloc
@@ -214,8 +214,8 @@ class action_predicter_f:
 			input_sequence [i,0,:] = data_k[i]
 			input_sequence [i,1,:] = data_k[i+1]
 			target_sequence[i,:,:] = targets[seq_key][i]
-			output_sequence[i,0,:] = actions[seq_key][i+2]
-			vel_sequence   [i,0,:] = vel[seq_key][i+2]
+			output_sequence[i,0,:] = actions[seq_key][i+1]
+			vel_sequence   [i,0,:] = vel[seq_key][i+1]
 		return input_sequence,target_sequence,output_sequence,vel_sequence
 	
 	def input_output_sequence_train(self, data, targets, actions, vel, seq_key):
@@ -230,8 +230,8 @@ class action_predicter_f:
 			input_sequence [i,1,:] = data_k[i+1]
 			input_sequence [i,2,:] = self._predicted[seq_key][i]
 			target_sequence[i,:,:] = targets[seq_key][i]
-			output_sequence[i,0,:] = actions[seq_key][i+2]
-			vel_sequence   [i,0,:] = vel[seq_key][i+2]
+			output_sequence[i,0,:] = actions[seq_key][i+1]
+			vel_sequence   [i,0,:] = vel[seq_key][i+1]
 		return input_sequence,target_sequence,output_sequence,vel_sequence
 	
 	def predict(self, data, targets):
