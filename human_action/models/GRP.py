@@ -54,8 +54,7 @@ class GRP:
 	def create_model(self):
 		hidden_layers = [8,8,8,8,8,8,8,8,8]
 		
-		first_input = C.ops.reshape(
-		    C.ops.splice(self._input,self._target),
+		first_input = C.ops.reshape(self._input,
 		    (1,self._input_size[0]*2,self._input_size[1]))
 		print(first_input)
 		model = C.layers.Convolution2D(
@@ -68,35 +67,36 @@ class GRP:
 			    reduction_rank=1, activation=C.ops.tanh)(input_new)
 			print(model)
 		######
+        model = C.ops.splice(model, self._target)
 		# Dense layers
-		direction = C.layers.Sequential([
+        direction = C.layers.Sequential([
 		C.layers.Dense(256, activation=C.ops.relu),
-		C.layers.Dense(128, activation=C.ops.relu),
-		C.layers.Dense(64, activation=C.ops.relu),
+		#C.layers.Dense(128, activation=C.ops.relu),
+		#C.layers.Dense(64, activation=C.ops.relu),
 		C.layers.Dense(32, activation=None),
 		])(model)
 
-		velocity = C.layers.Sequential([
+        velocity = C.layers.Sequential([
 		C.layers.Dense(128,activation=C.ops.relu),
 		C.layers.Dense(64,activation=None),
 		C.layers.Dense(1,activation=None)
 		])(model)
 
-		model = C.ops.splice(direction,velocity)
-		if self._load_model:
+        model = C.ops.splice(direction,velocity)
+        if self._load_model:
 			model = C.load_model('dnns/GRP.dnn')
 			direction = model[0:32]
 			velocity  = model[32]
 		
-		C.logging.log_number_of_parameters(model)
-		print(model)
-		loss = C.cross_entropy_with_softmax(direction, self._output) + C.squared_error(velocity, self._output_velocity) 
-		error = C.classification_error(direction, self._output)  + C.squared_error(velocity, self._output_velocity) 
+        C.logging.log_number_of_parameters(model)
+        print(model)
+        loss = C.cross_entropy_with_softmax(direction, self._output) + C.squared_error(velocity, self._output_velocity) 
+        error = C.classification_error(direction, self._output)  + C.squared_error(velocity, self._output_velocity) 
 		
-		learner = C.adadelta(model.parameters)
-		progress_printer = C.logging.ProgressPrinter(tag='Training')
-		trainer = C.Trainer(model, (loss,error), learner, progress_printer)
-		return model, loss, learner, trainer
+        learner = C.adadelta(model.parameters)
+        progress_printer = C.logging.ProgressPrinter(tag='Training')
+        trainer = C.Trainer(model, (loss,error), learner, progress_printer)
+        return model, loss, learner, trainer
 
 	def test_network(self, data, targets, actions, velocities):
 		count      = 0
@@ -133,9 +133,9 @@ class GRP:
 		predicted_actions  = []
 		predicted_velocity = []
 		for value in predicted_values:
-			direction = value[0:32]
-			velocity  = value[32]
-			action = np.zeros(32)
+			direction = value[0:360]
+			velocity  = value[360]
+			action = np.zeros(360)
 			action[np.argmax(direction)] = 1
 			predicted_actions.append(action)
 			predicted_velocity.append(velocity)

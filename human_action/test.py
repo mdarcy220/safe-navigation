@@ -13,7 +13,7 @@ import sys
 import json
 
 from models import action_predicter_f 
-#from models import action_predicter 
+from models import action_predicter 
 from models import feature_predicter_ours
 from models import GRP
 from models import GRP_f
@@ -144,10 +144,13 @@ else:
 #######################
 
 if network == 'GRP':
-    f1 = GRP((1,360),(1,360),(1,32),(1,1),True,True,max_velocity)
+    f1 = GRP((1,360),(1,361),(1,360),(1,1),True,True,max_velocity)
     f1.test_network(data_new,target_obs,actions,vel)
 elif network == 'action+':
     f1 = action_predicter_f((2,360),(1,361),(1,360),(1,1),True,True,max_velocity)
+    f1.test_network(data_new,targets,actions,vel)
+elif network == 'action':
+    f1 = action_predicter((2,360),(1,361),(1,360),(1,1),True,True,max_velocity)
     f1.test_network(data_new,targets,actions,vel)
 elif network == 'GRP+':
     f1 = GRP_f((1,360),(1,360),(1,32),(1,1),True,True,max_velocity)
