@@ -143,13 +143,13 @@ else:
 #network_list = ['action+','action','feature','GRP','GRP+','GRP_feature']
 
 if network == 'GRP':
-    f1 = GRP((1,360),(1,360),(1,32),(1,1),load_network,False,max_velocity)
-    f1.train_network(data_new,target_obs,cosined_actions,vel)
+    f1 = GRP((2,360),(1,361),(1,360),(1,1),load_network,False,max_velocity)
+    f1.train_network(data_new,targets,cosined_actions,vel)
 elif network == 'action+':
     f1 = action_predicter_f((3,360),(1,361),(1,360),(1,1),load_network,False,max_velocity)
     f1.train_network(data_new,targets,cosined_actions,vel)
 elif network == 'action':
-    f1 = action_predicter_f((2,360),(1,361),(1,360),(1,1),load_network,False,max_velocity)
+    f1 = action_predicter((2,360),(1,361),(1,360),(1,1),load_network,False,max_velocity)
     f1.train_network(data_new,targets,cosined_actions,vel)
 elif network == 'feature':
     f1 = feature_predicter_ours((2,360),(1,361),load_network,False,0.7)

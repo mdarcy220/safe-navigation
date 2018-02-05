@@ -44,10 +44,11 @@ def vector_to_vector_angle(v1:,v2:C.Tensor[2]):
 """
 class action_predicter:
 	
-	def __init__(self, feature_vector, target_vector, velocity, load_model = True, testing = False, max_velocity = 0.31, learning_rate = 0.5, name='action_predicter'):
+	def __init__(self, feature_vector, target_vector, output, velocity, load_model = True, testing = False, max_velocity = 0.31, learning_rate = 0.5, name='action_predicter'):
 		self._load_model    = load_model
 		self._input_size    = feature_vector
 		self._target_size   = target_vector
+		self._output_size   = output
 		self._velocity_size = velocity
 		self._input           = C.sequence.input_variable(self._input_size)
 		self._target          = C.sequence.input_variable(self._target_size)
@@ -153,7 +154,7 @@ class action_predicter:
 
 	def train_network(self, data, targets, actions, velocities):
 		for i in range(self._max_iter):
-			input_sequence,target_sequence,velocity_sequence = self.sequence_minibatch(data, targets, velocities,self._batch_size)
+			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions, velocities,self._batch_size)
 			self._trainer.train_minibatch({self._model.arguments[0]: input_sequence, self._model.arguments[1]: target_sequence, 
 			    self._output_velocity:velocity_sequence})
 			self._trainer.summarize_training_progress()
@@ -187,7 +188,7 @@ class action_predicter:
 				pre_cl  = np.where(predicted_actions[k][i] == 1)[0]
 				real_cl = np.where(output_sequence[k][i].flatten() == 1)[0]
 				cl_error   += 0 if pre_cl == real_cl else 1 
-				cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/360))
+				cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/180))
 				v_error += np.power(np.array(predicted_velocity[count]) 
 				    -np.array(velocity_sequence[k][i]),2)
 				count += 1
@@ -197,12 +198,12 @@ class action_predicter:
 		batch_input  = []
 		batch_target = []
 		batch_output = []
-                batch_veloc  = []
+		batch_veloc  = []
 		_input,_target,_output,_vel = self.input_output_sequence_test(data,targets,actions,vel,key)
 		batch_input.append(_input)
 		batch_target.append(_target)
 		batch_output.append(_output)
-                batch_veloc.append(_vel)
+		batch_veloc.append(_vel)
 		
 		return batch_input,batch_target,batch_output,batch_veloc
 	
@@ -211,14 +212,14 @@ class action_predicter:
 		minibatch_keys   = random.sample(sequence_keys,batch_size)
 		minibatch_input  = []
 		minibatch_target = []
-                minibatch_output = []
+		minibatch_output = []
 		minibatch_veloc  = []
 
 		for key in minibatch_keys:
 			_input,_target,_output,_vel = self.input_output_sequence_train(data,targets,actions,vel,key)
 			minibatch_input.append(_input)
 			minibatch_target.append(_target)
-                        minibatch_output.append(_output)
+			minibatch_output.append(_output)
 			minibatch_veloc.append(_vel)
 		
 		return minibatch_input,minibatch_target,minibatch_output,minibatch_veloc

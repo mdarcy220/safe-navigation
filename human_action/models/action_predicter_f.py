@@ -167,7 +167,7 @@ class action_predicter_f:
 				pre_cl  = np.where(predicted_actions[k][i] == 1)[0]
 				real_cl = np.where(output_sequence[k][i].flatten() == 1)[0]
 				cl_error   += 0 if pre_cl == real_cl else 1 
-				cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/360))
+				cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/180))
 				v_error += np.power(np.array(predicted_velocity[count]) 
 				    -np.array(velocity_sequence[k][i]),2)
 				count += 1

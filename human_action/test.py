@@ -144,8 +144,8 @@ else:
 #######################
 
 if network == 'GRP':
-    f1 = GRP((1,360),(1,361),(1,360),(1,1),True,True,max_velocity)
-    f1.test_network(data_new,target_obs,actions,vel)
+    f1 = GRP((2,360),(1,361),(1,360),(1,1),True,True,max_velocity)
+    f1.test_network(data_new,targets,actions,vel)
 elif network == 'action+':
     f1 = action_predicter_f((2,360),(1,361),(1,360),(1,1),True,True,max_velocity)
     f1.test_network(data_new,targets,actions,vel)
