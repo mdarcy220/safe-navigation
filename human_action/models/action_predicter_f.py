@@ -67,11 +67,11 @@ class action_predicter_f:
 		# Dense layers
 		#C.layers.Dense(128, activation=C.ops.relu,name='dense1_a'),
 		#C.layers.Dense(64, activation=C.ops.relu,name='dense2_a'),
-		C.layers.Dense(32, activation=C.ops.relu,name='dense3_a')
+		C.layers.Dense(361, activation=C.ops.relu,name='dense3_a')
 		])(self._input)
 		### target
 		modelt = C.layers.Sequential([
-		C.layers.Dense(32, activation=C.ops.relu,name='dense4_a')
+		C.layers.Dense(360, activation=C.ops.relu,name='dense4_a')
 		]) (self._target)
 		### concatenate both processed target and observations
 		inputs = C.ops.splice(modeli,modelt)
@@ -79,16 +79,16 @@ class action_predicter_f:
 		### next observation
 		model = C.layers.Sequential([
 		######
-		C.layers.Dense(64, activation=C.ops.relu,name='dense5_a'),
+		C.layers.Dense(720, activation=C.ops.relu,name='dense5_a'),
 		# Recurrence
 		C.layers.Recurrence(C.layers.LSTM(2048, init=C.glorot_uniform()),name='lstm_a'),
-		C.layers.Dense(256,activation=None)
+		C.layers.Dense(1024,activation=None)
 		])(inputs)
 		######
 		# Prediction
 		direction = C.layers.Sequential([
-		C.layers.Dense(128, activation=None,name='dense6_a'),
-		C.layers.Dense(32, activation=None,name='dense7_a')
+		C.layers.Dense(720, activation=None,name='dense6_a'),
+		C.layers.Dense(360, activation=None,name='dense7_a')
 		])(model)
 		velocity = C.layers.Sequential([
 		C.layers.Dense(128,activation=C.ops.relu),
@@ -99,8 +99,8 @@ class action_predicter_f:
 		
 		if self._load_model:
 			model = C.load_model('dnns/action_predicter_f.dnn')
-			direction = model[0:32]
-			velocity  = model[32]
+			direction = model[0:360]
+			velocity  = model[360]
  
 		print (model)
 		loss = C.cross_entropy_with_softmax(direction, self._output) +  C.squared_error(velocity, self._output_velocity)
