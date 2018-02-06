@@ -11,6 +11,7 @@ import math
 import cntk as C
 import sys
 import json
+import argparse
 
 from models import action_predicter_f 
 from models import action_predicter 
@@ -23,18 +24,22 @@ from models import feature_predicter_GRP
 
 network_list = ['action+','action','feature','GRP','GRP+','GRP_feature']
 
-if len(sys.argv) < 2:
-	print("Usage: python3 test.py network_module data_file(optional)")
-	sys.exit(1)
-elif len(sys.argv) <3:
-    network = sys.argv[1];
-    data_file = 'data/training_human_data.json'
-else:
-    network = sys.argv[1]
-    data_file = sys.argv[2];
-if network not in network_list:
-    print ('Please input network from the following list:', network_list)
-    sys.exit(1)
+parser = argparse.ArgumentParser()
+parser.add_argument('model_type', type=str, action='store', choices=network_list, help='The type of model to use')
+parser.add_argument('--data-file', dest='data_file', type=str, action='store', default='data/training_human_data.json')
+parser.add_argument('--gpu-id', dest='gpu_id', type=int, default=-2, help="""The GPU to use. -1 for CPU, -2 for default.""");
+
+cmdargs = parser.parse_args(sys.argv[1:])
+
+# Set device to run on
+if cmdargs.gpu_id >= 0:
+	C.try_set_default_device(C.gpu(cmdargs.gpu_id))
+elif cmdargs.gpu_id == -1:
+	C.try_set_default_device(C.cpu())
+
+network = cmdargs.model_type
+data_file = cmdargs.data_file
+
 
 ######################
 
