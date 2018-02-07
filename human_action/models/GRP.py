@@ -21,7 +21,7 @@ import cntk as C
 
 class GRP:
 	
-	def __init__(self, feature_vector, target_vector, action_vector, velocity, load_model = True, testing = False, max_velocity = 0.31, learning_rate = 0.5, name='action_predicter'):
+	def __init__(self, feature_vector, target_vector, action_vector, velocity, load_model = True, testing = False, max_velocity = 0.31, learning_rate = 0.5, name='action_predicter', file_name='dnns/GRP.dnn'):
 		self._load_model  = load_model
 		self._input_size  = feature_vector
 		self._output_size = action_vector
@@ -32,6 +32,7 @@ class GRP:
 		self._output = C.input_variable(self._output_size)
 		self._output_velocity = C.input_variable(self._velocity_size)
 		self.name = name
+		self._file_name = file_name
 		self._max_velocity = max_velocity
 		self._batch_size = 1
 		self._max_iter = 1000000
@@ -43,7 +44,7 @@ class GRP:
 		self._predicted = {}
 
 	def load_models(self):
-		action_model = C.load_model('dnns/GRP.dnn')(self._input,self._target)
+		action_model = C.load_model(self._file_name)(self._input,self._target)
 		action_model = action_model.clone(C.CloneMethod.freeze)
 		print(action_model)
 		node_outputs = C.logging.get_node_outputs(action_model)
@@ -79,7 +80,7 @@ class GRP:
 
 		model = C.ops.splice(direction,velocity)
 		if self._load_model:
-			model = C.load_model('dnns/GRP.dnn')
+			model = C.load_model(self._file_name)
 			direction = model[0:360]
 			velocity  = model[360]
 		
@@ -95,7 +96,7 @@ class GRP:
 		trainer = C.Trainer(model, (loss,error), learner, progress_printer)
 		return model, loss, learner, trainer
 
-	def test_network(self, data, targets, actions, velocities):
+	def test_network(self, data, targets, actions, velocities, printing=False):
 		count      = 0
 		cl_error   = 0
 		cl_error_2 = 0
@@ -106,20 +107,33 @@ class GRP:
 			cl_error_2 += cl_er_2
 			v_error    += v_er
 			count      += cn
-		print ('average classifiaction error:', cl_error/count, 'for:', count, ' total steps')
-		print ('average angular classifiaction error:', cl_error_2/count, 'for:', count, ' total steps', 'with angle', 180*math.acos(1-(cl_error_2/count))/math.pi)
-		print ('rmse normalized velocity error:', math.sqrt(v_error/count), 'for:', count, ' total steps')
-		print ('rmse actual velocity error:', self._max_velocity*math.sqrt(v_error/count), 'for:', count, ' total steps')
-		return cl_error/count,cl_error_2/count
+		if printing:
+			print ('average classifiaction error:', cl_error/count, 'for:', count, ' total steps')
+			print ('average angular classifiaction error:', cl_error_2/count, 'for:', count, ' total steps', 'with angle', 180*math.acos(1-(cl_error_2/count))/math.pi)
+			print ('rmse normalized velocity error:', math.sqrt(v_error/count), 'for:', count, ' total steps')
+			print ('rmse actual velocity error:', self._max_velocity*math.sqrt(v_error/count), 'for:', count, ' total steps')
+		return cl_error/count,180*math.acos(1-(cl_error_2/count))/math.pi,self._max_velocity*math.sqrt(v_error/count)
 
-	def train_network(self, data, targets, actions, velocities):
+	def train_network(self, data, targets, actions_prob, velocities,actions):
+		angle_error = 360
+		angle_old = float('inf')
 		for i in range(self._max_iter):
-			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions,velocities,self._batch_size)
+			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions_prob,velocities,self._batch_size)
 			self._trainer.train_minibatch({self._model.arguments[0]: input_sequence, self._model.arguments[1]: target_sequence, 
 			    self._output:output_sequence,self._output_velocity:velocity_sequence})
 			self._trainer.summarize_training_progress()
+			## evaluate the network for all the training data,
+			## save if improving, and stop if highly diverging
 			if i%100 == 0:
-				self._model.save('dnns/GRP.dnn')
+				angle_error_temp = self.test_network(data,targets,actions,vel)
+				if i>5000 and (abs(angle_error_temp - angle_old) < 10^-2 or angle_error_temp > angle_old + 5):
+					break
+				else:
+					angle_old = angle_error_temp
+				if angle_error_temp < angle_error:
+					angle_error = angle_error_temp
+					print (angle_error)
+					self._model.save(self._file_name)
 
 	def test_seq(self, data, targets, actions, velocities, key):
 		input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_batch(data, targets, actions, velocities, key)
