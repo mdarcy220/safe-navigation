@@ -52,35 +52,30 @@ class GRP:
 		return action_model
 
 	def create_model(self):
-		hidden_layers = [8,8,8,8,8,8,8,8,8]
-		
-		first_input = C.ops.reshape(self._input,
-		    (self._input_size[0],1,self._input_size[1]))
-		print(first_input)
-		model = C.layers.Convolution2D(
-		    (1,3), num_filters=8, pad=True, reduction_rank=1, activation=C.ops.tanh)(first_input)
-		print(model)	
+		hidden_layers = [8,8,8,8,8,8,8,8,8,8,16,32]
+		first_input = C.ops.splice(self._input,self._target)
+		first_input_size = first_input.shape
+		first_input = C.ops.reshape(first_input,(first_input_size[0],1,first_input_size[1]))
+
+		model = C.layers.Convolution2D((1,3), num_filters=8,pad=True, reduction_rank=1,activation=C.ops.tanh)(first_input)
+		print (model)
 		for h in hidden_layers:
 			input_new = C.ops.splice(model,first_input,axis=0)
-			model = C.layers.Convolution2D(
-			    (1,3), num_filters=h, pad=True, 
-			    reduction_rank=1, activation=C.ops.tanh)(input_new)
+			model = C.layers.Convolution2D((1,3), num_filters=h,pad=True, reduction_rank=1, activation=C.ops.tanh)(input_new)
 			print(model)
 		######
-		model = C.ops.splice(model, self._target)
+		#model = C.ops.splice(model, self._target)
 		# Dense layers
 		direction = C.layers.Sequential([
-			C.layers.Dense(720, activation=C.ops.relu),
-			#C.layers.Dense(128, activation=C.ops.relu),
-			#C.layers.Dense(64, activation=C.ops.relu),
-			C.layers.Dense(360, activation=None),
-			])(model)
+		C.layers.Dense(720, activation=C.ops.relu),
+		C.layers.Dense(360, activation=None)
+		])(model)
 
 		velocity = C.layers.Sequential([
-			C.layers.Dense(128,activation=C.ops.relu),
-			C.layers.Dense(64,activation=None),
-			C.layers.Dense(1,activation=None)
-			])(model)
+		C.layers.Dense(128,activation=C.ops.relu),
+		C.layers.Dense(64,activation=None),
+		C.layers.Dense(1,activation=None)
+		])(model)
 
 		model = C.ops.splice(direction,velocity)
 		if self._load_model:
@@ -90,10 +85,12 @@ class GRP:
 		
 		C.logging.log_number_of_parameters(model)
 		print(model)
+		#loss = C.squared_error(direction, self._output) + C.squared_error(velocity, self._output_velocity) 
+		#error = C.squared_error(direction, self._output)  + C.squared_error(velocity, self._output_velocity) 
 		loss = C.cross_entropy_with_softmax(direction, self._output) + C.squared_error(velocity, self._output_velocity) 
 		error = C.classification_error(direction, self._output)  + C.squared_error(velocity, self._output_velocity) 
 		
-		learner = C.adadelta(model.parameters)
+		learner = C.adadelta(model.parameters,l2_regularization_weight=0.001)
 		progress_printer = C.logging.ProgressPrinter(tag='Training')
 		trainer = C.Trainer(model, (loss,error), learner, progress_printer)
 		return model, loss, learner, trainer
@@ -119,7 +116,7 @@ class GRP:
 		for i in range(self._max_iter):
 			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions,velocities,self._batch_size)
 			self._trainer.train_minibatch({self._model.arguments[0]: input_sequence, self._model.arguments[1]: target_sequence, 
-			    self._output: output_sequence, self._output_velocity:velocity_sequence})
+			    self._output:output_sequence,self._output_velocity:velocity_sequence})
 			self._trainer.summarize_training_progress()
 			if i%100 == 0:
 				self._model.save('dnns/GRP.dnn')
@@ -176,11 +173,11 @@ class GRP:
 		batch_target = []
 		batch_output = []
 		batch_veloc  = []
-		_input,_target,_ouput,_vel = self.input_output_sequence_test(data,targets,actions,vel,key)
+		_input,_target,_output,_vel = self.input_output_sequence_test(data,targets,actions,vel,key)
 		for i in range(len(_input)):
 			batch_input.append(_input[i])
 			batch_target.append(_target[i])
-			batch_output.append(_ouput[i])
+			batch_output.append(_output[i])
 			batch_veloc.append(_vel[i])
 		
 		return batch_input,batch_target,batch_output,batch_veloc

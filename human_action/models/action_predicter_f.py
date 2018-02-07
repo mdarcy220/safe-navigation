@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+import sys
 import numpy as np
 from numpy import linalg as LA
 import random
@@ -88,7 +88,7 @@ class action_predicter_f:
 		# Prediction
 		direction = C.layers.Sequential([
 		C.layers.Dense(720, activation=None,name='dense6_a'),
-		C.layers.Dense(360, activation=None,name='dense7_a')
+		C.layers.Dense(360, activation=C.ops.softmax,name='dense7_a')
 		])(model)
 		velocity = C.layers.Sequential([
 		C.layers.Dense(128,activation=C.ops.relu),
@@ -103,7 +103,7 @@ class action_predicter_f:
 			velocity  = model[360]
  
 		print (model)
-		loss = C.cross_entropy_with_softmax(direction, self._output) +  C.squared_error(velocity, self._output_velocity)
+		loss = C.squared_error(direction, self._output) +  C.squared_error(velocity, self._output_velocity)
 		error = C.classification_error(direction, self._output) +   C.squared_error(velocity, self._output_velocity)
 		
 		learner = C.adadelta(model.parameters, l2_regularization_weight=0.001)
@@ -155,22 +155,22 @@ class action_predicter_f:
 				velocity  = value[360]
 				action = np.zeros(360)
 				action[np.argmax(direction)] = 1
-				predicted_seq.append(action)
-				predicted_actions.append(predicted_seq)
+				#predicted_seq.append(action)
+				predicted_actions.append(action)
 				predicted_velocity.append(velocity)
 		count     = 0
 		cl_error   = 0
 		cl_error_2 = 0
 		v_error    = 0
-		for k in range(0,len(predicted_values)):
-			for i in range(0,len(predicted_values[k])):
-				pre_cl  = np.where(predicted_actions[k][i] == 1)[0]
-				real_cl = np.where(output_sequence[k][i].flatten() == 1)[0]
-				cl_error   += 0 if pre_cl == real_cl else 1 
-				cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/180))
-				v_error += np.power(np.array(predicted_velocity[count]) 
-				    -np.array(velocity_sequence[k][i]),2)
-				count += 1
+		for i in range(0,len(predicted_values[0])):
+			pre_cl  = np.where(predicted_actions[i] == 1)[0]
+			real_cl = np.where(output_sequence[i].flatten() == 1)[0]
+			print (pre_cl,real_cl)
+			cl_error   += 0 if pre_cl == real_cl else 1 
+			cl_error_2 += abs(1 - math.cos((max(real_cl,pre_cl) - min(real_cl,pre_cl))*math.pi/180))
+			v_error += np.power(np.array(predicted_velocity[count]) 
+			    -np.array(velocity_sequence[i]),2)
+			count += 1
 		return count, cl_error, cl_error_2, v_error
 
 	def sequence_batch(self, data, targets, actions, vel, key):
@@ -179,11 +179,16 @@ class action_predicter_f:
 		batch_output = []
 		batch_veloc  = []
 		_input,_target,_output,_vel = self.input_output_sequence_test(data,targets,actions,vel,key)
-		batch_input.append(_input)
-		batch_target.append(_target)
-		batch_output.append(_output)
-		batch_veloc.append(_vel)
+		for i in range(len(_input)):
+			batch_input.append(_input[i])
+			batch_target.append(_target[i])
+			batch_output.append(_output[i])
+			batch_veloc.append(_vel[i])
 		
+		batch_input = np.stack(batch_input)
+		batch_target = np.stack(batch_target)
+		batch_output = np.stack(batch_output)
+		batch_veloc = np.stack(batch_veloc)
 		return batch_input,batch_target,batch_output,batch_veloc
 	
 	def sequence_minibatch(self, data, targets, actions, vel, batch_size):
@@ -196,11 +201,15 @@ class action_predicter_f:
 
 		for key in minibatch_keys:
 			_input,_target,_output,_vel = self.input_output_sequence_train(data,targets,actions,vel,key)
-			minibatch_input.append(_input)
-			minibatch_target.append(_target)
-			minibatch_output.append(_output)
-			minibatch_veloc.append(_vel)
-		
+			for i in range(len(_input)):
+				minibatch_input.append(_input[i])
+				minibatch_target.append(_target[i])
+				minibatch_output.append(_output[i])
+				minibatch_veloc.append(_vel[i])
+		minibatch_input = np.stack(minibatch_input)
+		minibatch_target = np.stack(minibatch_target)
+		minibatch_output = np.stack(minibatch_output)
+		minibatch_veloc = np.stack(minibatch_veloc)
 		return minibatch_input,minibatch_target,minibatch_output,minibatch_veloc
 	
 	def input_output_sequence_test(self, data, targets, actions, vel, seq_key):

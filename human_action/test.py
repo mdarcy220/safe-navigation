@@ -14,6 +14,7 @@ import json
 
 from models import action_predicter_f 
 from models import action_predicter 
+from models import action_modified 
 from models import feature_predicter_ours
 from models import GRP
 from models import GRP_f
@@ -21,7 +22,7 @@ from models import GRP_f
 
 ### User inputs ###
 
-network_list = ['action+','action','feature','GRP','GRP+','GRP_feature']
+network_list = ['action+','action','action_m','feature','GRP','GRP+','GRP_feature']
 
 if len(sys.argv) < 2:
 	print("Usage: python3 test.py network_module data_file(optional)")
@@ -151,6 +152,9 @@ elif network == 'action+':
     f1.test_network(data_new,targets,actions,vel)
 elif network == 'action':
     f1 = action_predicter((2,360),(1,361),(1,360),(1,1),True,True,max_velocity)
+    f1.test_network(data_new,targets,actions,vel)
+elif network == 'action_m':
+    f1 = action_modified((2,360),(1,361),(1,360),(1,1),True,True,max_velocity)
     f1.test_network(data_new,targets,actions,vel)
 elif network == 'GRP+':
     f1 = GRP_f((1,360),(1,360),(1,32),(1,1),True,True,max_velocity)
