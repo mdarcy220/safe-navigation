@@ -44,7 +44,7 @@ def vector_to_vector_angle(v1:,v2:C.Tensor[2]):
 """
 class action_modified:
 	
-	def __init__(self, feature_vector, target_vector, action_vector, velocity, load_model = True, testing = False, max_velocity = 0.31, learning_rate = 0.5, name='action_predicter'):
+	def __init__(self, feature_vector, target_vector, action_vector, velocity, load_model = True, testing = False, max_velocity = 0.31, learning_rate = 0.5, name='action_predicter',file_name = 'dnns/action_predicter_m.dnn'):
 		self._load_model  = load_model
 		self._input_size  = feature_vector
 		self._output_size = action_vector
@@ -54,13 +54,14 @@ class action_modified:
 		self._target = C.input_variable(self._target_size)
 		self._output = C.input_variable(self._output_size)
 		self._output_velocity = C.input_variable(self._velocity_size)
+		self._file_name = file_name
 		#self._input           = C.sequence.input_variable(self._input_size)
 		#self._target          = C.sequence.input_variable(self._target_size)
 		#self._output          = C.sequence.input_variable(self._output_size)
 		#self._output_velocity = C.sequence.input_variable(self._velocity_size)
 		self.name = name
 		self._max_velocity = max_velocity
-		self._batch_size = 1
+		self._batch_size = 8
 		self._max_iter = 1000000
 		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.999**i) for i in range(1000)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
 		#self._model,self._loss, self._learner, self._trainer = self.create_model()
@@ -71,7 +72,7 @@ class action_modified:
 		self._predicted = {}
 
 	def load_models(self):
-		action_model = C.load_model('dnns/action_predicter_m.dnn')(self._input,self._target)
+		action_model = C.load_model(self._file_name)(self._input,self._target)
 		action_model = action_model.clone(C.CloneMethod.freeze)
 		print(action_model)
 		node_outputs = C.logging.get_node_outputs(action_model)
@@ -86,10 +87,16 @@ class action_modified:
 		first_input = C.ops.reshape(first_input,(first_input_size[0],1,first_input_size[1]))
 
 		model = C.layers.Convolution2D((1,3), num_filters=8,pad=True, reduction_rank=1,activation=C.ops.tanh)(first_input)
-		print (model)
-		for h in hidden_layers:
+		for i,h in enumerate(hidden_layers):
+			#if i >0:
+				#input_new = C.ops.splice(model,input_new,axis=0)
+			#else:
 			input_new = C.ops.splice(model,first_input,axis=0)
-			model = C.layers.Convolution2D((1,3), num_filters=h,pad=True, reduction_rank=1,activation=C.ops.tanh)(input_new)
+			model1 = C.layers.Convolution2D((1,3), num_filters=int(0.5*h),pad=True, reduction_rank=1,activation=C.ops.tanh)(input_new)
+			model2 = C.layers.Convolution2D((1,5), num_filters=int(0.25*h),pad=True, reduction_rank=1,activation=C.ops.tanh)(input_new)
+			model3 = C.layers.Convolution2D((1,1), num_filters=int(0.25*h),pad=True, reduction_rank=1,activation=C.ops.tanh)(input_new)
+			model = C.ops.splice(model1,model2,model3,axis=0)
+			print (model)
 		"""	
 		model = C.layers.Sequential([
 		# Convolution layers
@@ -118,7 +125,7 @@ class action_modified:
 		model = C.ops.splice(direction,velocity)
 		#model = velocity
 		if self._load_model:
-			model = C.load_model('dnns/action_predicter_m.dnn')
+			model = C.load_model(self._file_name)
 			direction = model[0:360]
 			velocity  = model[360]
 		
@@ -134,7 +141,7 @@ class action_modified:
 		trainer = C.Trainer(model, (loss,error), learner, progress_printer)
 		return model, loss, learner, trainer
 
-	def test_network(self, data, targets, actions, velocities):
+	def test_network(self, data, targets, actions, velocities, printing=False):
 		count      = 0
 		cl_error   = 0
 		cl_error_2 = 0
@@ -145,20 +152,31 @@ class action_modified:
 			cl_error_2 += cl_er_2
 			v_error    += v_er
 			count      += cn
-		print ('average classifiaction error:', cl_error/count, 'for:', count, ' total steps')
-		print ('average angular classifiaction error:', cl_error_2/count, 'for:', count, ' total steps', 'with angle',180*math.acos(1- (cl_error_2/count))/math.pi)
-		print ('rmse normalized velocity error:', math.sqrt(v_error/count), 'for:', count, ' total steps')
-		print ('rmse actual velocity error:', self._max_velocity*math.sqrt(v_error/count), 'for:', count, ' total steps')
-		return cl_error/count,cl_error_2/count
+		if printing:
+			print ('average classifiaction error:', cl_error/count, 'for:', count, ' total steps')
+			print ('average angular classifiaction error:', cl_error_2/count, 'for:', count, ' total steps', 'with angle',180*math.acos(1- (cl_error_2/count))/math.pi)
+			print ('rmse normalized velocity error:', math.sqrt(v_error/count), 'for:', count, ' total steps')
+			print ('rmse actual velocity error:', self._max_velocity*math.sqrt(v_error/count), 'for:', count, ' total steps')
+		return cl_error/count,180*math.acos(1- (cl_error_2/count))/math.pi,self._max_velocity*math.sqrt(v_error/count)
 
-	def train_network(self, data, targets, actions, velocities):
+	def train_network(self, data, targets, actions_prob, velocities,actions):
+		angle_error=360
+		angle_old = float('inf')
 		for i in range(self._max_iter):
 			input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_minibatch(data, targets, actions, velocities,self._batch_size)
 			self._trainer.train_minibatch({self._model.arguments[0]: input_sequence, self._model.arguments[1]: target_sequence, 
 			    self._output:output_sequence,self._output_velocity:velocity_sequence})
 			self._trainer.summarize_training_progress()
 			if i%100 == 0:
-				self._model.save('dnns/action_predicter_m.dnn')
+				c,angle_error_temp,v = self.test_network(data,targets,actions,velocities)
+				if i>5000 and (abs(angle_error_temp - angle_old)<10^-2 or angle_error_temp > angle_old +5 ):
+					break
+				else:
+					angle_old = angle_error_temp
+				if angle_error_temp  <angle_error:
+					angle_error = angle_error_temp
+					self._model.save(self._file_name)
+				print (angle_error_temp, angle_error,angle_old)
 
 	def test_seq(self, data, targets, actions, velocities, key):
 		input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_batch(data, targets, actions, velocities, key)

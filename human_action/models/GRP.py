@@ -34,7 +34,7 @@ class GRP:
 		self.name = name
 		self._file_name = file_name
 		self._max_velocity = max_velocity
-		self._batch_size = 1
+		self._batch_size = 8
 		self._max_iter = 1000000
 		self._lr_schedule = C.learning_rate_schedule([learning_rate * (0.999**i) for i in range(1000)], C.UnitType.sample, epoch_size=self._max_iter*self._batch_size)
 		if testing:
@@ -125,15 +125,15 @@ class GRP:
 			## evaluate the network for all the training data,
 			## save if improving, and stop if highly diverging
 			if i%100 == 0:
-				angle_error_temp = self.test_network(data,targets,actions,vel)
-				if i>5000 and (abs(angle_error_temp - angle_old) < 10^-2 or angle_error_temp > angle_old + 5):
+				c,angle_error_temp,v = self.test_network(data,targets,actions,velocities)
+				if i>5000 and (abs(angle_error_temp - angle_old) < 10^-2 or angle_error_temp > angle_old + 10):
 					break
 				else:
 					angle_old = angle_error_temp
 				if angle_error_temp < angle_error:
 					angle_error = angle_error_temp
-					print (angle_error)
 					self._model.save(self._file_name)
+				print (angle_error_temp, angle_error,angle_old)
 
 	def test_seq(self, data, targets, actions, velocities, key):
 		input_sequence,target_sequence,output_sequence,velocity_sequence = self.sequence_batch(data, targets, actions, velocities, key)
@@ -197,19 +197,19 @@ class GRP:
 		return batch_input,batch_target,batch_output,batch_veloc
 	
 	def input_output_sequence_test(self, data, targets, actions, vel, seq_key): 
-                data_k = data[seq_key] 
-                input_sequence = np.zeros((len(data_k)-1,self._input_size[0],self._input_size[1]), dtype=np.float32) 
-                target_sequence = np.zeros((len(data_k)-1,self._target_size[0],self._target_size[1]), dtype=np.float32) 
-                output_sequence = np.zeros((len(data_k)-1,self._output_size[0],self._output_size[1]), dtype=np.float32) 
-                vel_sequence    = np.zeros((len(data_k)-1,self._velocity_size[0],self._velocity_size[1]), dtype=np.float32) 
+		data_k = data[seq_key]
+		input_sequence = np.zeros((len(data_k)-1,self._input_size[0],self._input_size[1]), dtype=np.float32) 
+		target_sequence = np.zeros((len(data_k)-1,self._target_size[0],self._target_size[1]), dtype=np.float32) 
+		output_sequence = np.zeros((len(data_k)-1,self._output_size[0],self._output_size[1]), dtype=np.float32) 
+		vel_sequence    = np.zeros((len(data_k)-1,self._velocity_size[0],self._velocity_size[1]), dtype=np.float32) 
                  
-                for i in range(0,len(data_k)-1): 
-                        input_sequence [i,0,:] = data_k[i] 
-                        input_sequence [i,1,:] = data_k[i+1] 
-                        target_sequence[i,:,:] = targets[seq_key][i] 
-                        output_sequence[i,0,:] = actions[seq_key][i+1] 
-                        vel_sequence   [i,0,:] = vel[seq_key][i+1] 
-                return input_sequence,target_sequence,output_sequence,vel_sequence 
+		for i in range(0,len(data_k)-1): 
+			input_sequence [i,0,:] = data_k[i] 
+			input_sequence [i,1,:] = data_k[i+1] 
+			target_sequence[i,:,:] = targets[seq_key][i] 
+			output_sequence[i,0,:] = actions[seq_key][i+1] 
+			vel_sequence   [i,0,:] = vel[seq_key][i+1] 
+		return input_sequence,target_sequence,output_sequence,vel_sequence 
          
 	def input_output_sequence_train(self, data, targets, actions, vel, seq_key): 
                 data_k = data[seq_key] 
