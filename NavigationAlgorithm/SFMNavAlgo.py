@@ -32,9 +32,9 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._B = 0.79#B
 		self._d = 0.4#d
 		self._l = 0.59#l
-		self._alpha = 0.7#alpha
-		self._gamma = 0.05#gamma
-		self._delta = 0.05#delta
+		self._alpha = 0.8#alpha
+		self._gamma = 0.06#gamma
+		self._delta = 0.06#delta
 
 		#C.logging.set_trace_level(C.logging.TraceLevel.Error)
 
@@ -80,8 +80,9 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    self._old_position = location
 		force = self.force(v_0,v,np.array([location[0],location[1],theta]) ,humans,obstacles)
 		#force = force*0.306/math.sqrt(np.sum(np.power(force,2)))
+		force_norm = math.sqrt(np.sum(np.power(force,2)))
+		force = force*0.306/force_norm if force_norm>0.306 else force
 		v_next = v + force*1
-		v_next = v_next*0.306*2/math.sqrt(np.sum(np.power(v_next,2)))
 		speed = math.sqrt(np.sum(np.power(v_next,2)))
 		direction = math.atan2(v_next[1],v_next[0])*180/math.pi
 		#print (v,v_next)
@@ -105,7 +106,8 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		radar_data, data_obj, intersections = self._radar.scan_dynamic_obstacles_one_by_one(self._gps.location())
 		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
 		objects = list(set(data_obj))
-		objects.remove(None)
+		if None in objects:
+		    objects.remove(None)
 		#print(objects)
 		data = []
 		data_vect = [i for i,x in enumerate(data_obj) if x != None]
@@ -132,7 +134,8 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		radar_data, data_obj, _ = self._radar.scan_static_obstacles_one_by_one(self._gps.location())
 		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
 		objects = list(set(data_obj))
-		objects.remove(None)
+		if None in objects:
+		    objects.remove(None)
 		data = []
 		data_vect = [i for i,x in enumerate(data_obj) if x != None]
 		for obj in objects:
