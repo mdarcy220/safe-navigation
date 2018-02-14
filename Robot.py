@@ -95,6 +95,8 @@ class Robot:
 
 		self.speed              = cmdargs.robot_speed;
 		self.stats              = RobotStats();
+		self._current_speed     = self.speed
+		self._movement_ang      = 0 
 
 		self._sensors           = {};
 
@@ -144,7 +146,8 @@ class Robot:
 
 		speed = min(control_input.speed, self.speed);
 		movement_ang = control_input.angle;
-
+		self._current_speed = speed
+		self._movement_ang = movement_ang
 		# Update the robot's motion based on the chosen direction
 		# (uses acceleration to prevent the robot from being able
 		# to instantaneously change direction, more realistic)
