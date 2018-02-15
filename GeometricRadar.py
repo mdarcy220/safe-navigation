@@ -4,6 +4,7 @@
 #
 
 import numpy as np
+import math
 import sys
 import Vector
 import Geometry
@@ -159,6 +160,95 @@ class GeometricRadar(Radar):
 		return self.scan_obstacles_list(center, self._env.dynamic_obstacles)
 
 
+	## Produces a radar scan, ignoring static obstacles and including
+	# only dynamic obstacles.
+	#
+	# 
+	# @param center (numpy array)
+	# <br>	Format `[x, y]`
+	# <br>	-- The center point of the scan
+	#
+	# @returns (numpy array)
+	# <br>	Format: `[ang1_val, ang2_val, ..., angn_val]`
+	# <br>	-- An array of relative distances (in the range `[0, 1]`)
+	# 	to the nearest dynamic obstacle for each angle outward from
+	# 	`center`. This starts from angle 0 and increases in increments
+	# 	of the `degree_step` of the `Radar`, so `output[i]` corresponds
+	# 	to angle `i * degree_step`. The size of the output is then
+	# 	equal to `floor(360/degree_step)`.
+	#
+	def scan_static_obstacles_one_by_one(self, center):
+		return self.scan_obstacles_list_to_list(center,  self._env.static_obstacles)
+
+
+	## Produces a radar scan, ignoring static obstacles and including
+	# only dynamic obstacles.
+	#
+	# 
+	# @param center (numpy array)
+	# <br>	Format `[x, y]`
+	# <br>	-- The center point of the scan
+	#
+	# @returns (numpy array)
+	# <br>	Format: `[ang1_val, ang2_val, ..., angn_val]`
+	# <br>	-- An array of relative distances (in the range `[0, 1]`)
+	# 	to the nearest dynamic obstacle for each angle outward from
+	# 	`center`. This starts from angle 0 and increases in increments
+	# 	of the `degree_step` of the `Radar`, so `output[i]` corresponds
+	# 	to angle `i * degree_step`. The size of the output is then
+	# 	equal to `floor(360/degree_step)`.
+	#
+	def scan_dynamic_obstacles_one_by_one(self, center):
+		return self.scan_obstacles_list_to_list(center, self._env.dynamic_obstacles)
+
+
+	## Produces a radar scan, including only obstacles in `obs_list`.
+	## Returns the radar scan and the associated object for each scan.
+	#
+	# 
+	# @param center (numpy array)
+	# <br>	Format `[x, y]`
+	# <br>	-- The center point of the scan
+	#
+	# @param obs_list (list of DynamicObstacle)
+	# <br>  -- The list of obstacles to include in the scan
+	#
+	# @returns (numpy array, list)
+	# <br>	Format: `[ang1_val, ang2_val, ..., angn_val]`	
+	#               `[obj_at_ang1, obj_at_ang2, ..., obj_at_angn]`
+	# <br>	-- An array of relative distances (in the range `[0, 1]`)
+	# 	to the nearest dynamic obstacle for each angle outward from
+	# 	`center`. This starts from angle 0 and increases in increments
+	# 	of the `degree_step` of the `Radar`, so `output[i]` corresponds
+	# 	to angle `i * degree_step`. The size of the output is then
+	# 	equal to `floor(360/degree_step)`.
+	#        -- An array of object instantiations, where each entry
+	#           is the corresponds to the object that is closest
+	#           for the given angle
+	#
+	def scan_obstacles_list_to_list(self, center, obs_list):
+		beams = self._beams
+		radar_data = np.full([self._nPoints], self.radius, dtype=np.float64);
+		print (self._nPoints)
+		data_objects = [None]*self._nPoints
+		intersections = np.zeros((2,self._nPoints), dtype=np.float64)
+
+		for obs in obs_list:
+			index_range = self._get_obs_data_index_range(center, obs);
+			if index_range is None:
+				continue;
+			for i in np.arange(index_range[0], index_range[1], 1):
+				dist = self._obs_dist_along_line(obs, (center, center+beams[i]))
+				radar_data[i] = np.min([radar_data[i], float(dist)]);
+				data_objects[i] = obs
+				theta = math.atan2(beams[i][1],beams[i][0])
+				c = math.cos(theta)
+				s = math.sin(theta)
+				intersections[:,i] = radar_data[i]*np.array([c,s]) + center
+			
+		return radar_data,data_objects, intersections;
+
+
 	## Produces a radar scan, including only obstacles in `obs_list`.
 	#
 	# 
@@ -199,7 +289,7 @@ class GeometricRadar(Radar):
 	# there are no intersections.
 	def _obs_dist_along_line(self, obs, line):
 		if obs.shape == 1:
-			inters = Geometry.circle_line_intersection(obs.coordinate, obs.radius, line);
+		  inters = Geometry.circle_line_intersection(obs.coordinate, obs.radius, line);
 		elif obs.shape == 2:
 			inters = Geometry.rectangle_line_intersection([obs.coordinate, np.array(obs.size)], line);
 		elif obs.shape == 3:
