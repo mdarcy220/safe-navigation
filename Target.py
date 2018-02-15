@@ -8,7 +8,7 @@ import pygame as PG
 ## Represents a target point
 #
 class Target:
-	def __init__(self, position ,radius = 1.5, width = 0, color = (255,0,0)):
+	def __init__(self, position ,radius = 0.75, width = 0, color = (255,0,0)):
 		self.position = position
 		self.radius = radius
 		self._linewidth = width

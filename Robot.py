@@ -209,6 +209,7 @@ class Robot:
 
 			# Draw the robot's sensor observations
 			dtool.set_color((0xaa, 0x55, 0xdd))
+			dtool.set_stroke_width(0.05);
 			self._draw_pdf(dtool, self._sensors['radar'].scan(self._sensors['gps'].location()))
 			dtool.set_color(self._path_color)
 
@@ -216,7 +217,7 @@ class Robot:
 			if self._drawcoll > 0:
 				dtool.set_color((255, 80, 210))
 				dtool.set_stroke_width(0.3);
-				dtool.draw_circle(np.array(self.location, dtype=int), 1.2)
+				dtool.draw_circle(np.array(self.location), 1.2)
 				self._drawcoll = self._drawcoll - 1
 
 			# Draw static mapper data

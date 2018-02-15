@@ -92,7 +92,7 @@ class GeometricEnvironment(Environment):
 	def _draw_static_obstacles(self, dtool):
 		# Draw the background
 		dtool.set_color((0xFF, 0xFF, 0xFF))
-		dtool.draw_rect([0,0], [self.width, self.height])
+		dtool.draw_rect([-20,-20], [self.width, self.height])
 
 		# Draw static obstacles
 		for obs in self.static_obstacles:

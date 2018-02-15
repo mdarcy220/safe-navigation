@@ -35,7 +35,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._radar = self._sensors['radar'];
 
 		if net_type == 'perl':
-			feature_vector, target_vector, action_vector, velocity = (2,360), (1,32), (1,32), (1,1)
+			feature_vector, target_vector, action_vector, velocity = (2,360), (1,360), (1,360), (1,1)
 			self._input_size    = feature_vector
 			self._output_size   = action_vector
 			self._target_size   = target_vector
@@ -47,7 +47,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 			self._model = self._create_perl_model()
 		elif net_type == 'grp':
-			feature_vector, target_features, action_vector, velocity = (1,360), (1,32), (1,32), (1,1)
+			feature_vector, target_features, action_vector, velocity = (2,360), (1,361), (1,360), (1,1)
 			self._input_size    = feature_vector
 			self._output_size   = action_vector
 			self._velocity_size = velocity
@@ -87,8 +87,8 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 			input_dict = self._create_grp_input_data()
 			predicted_values = self._model.eval(input_dict)[0]
 
-		direction = np.argmax(predicted_values[0:32])*360/31
-		speed = predicted_values[32]
+		direction = np.argmax(predicted_values[0:360])*360/359
+		speed = predicted_values[360]
 		#print(self._gps.location(), direction, speed, True if Vector.distance_between(self._gps.location(), self._start_pos) < 0.01 else False)
 		return RobotControlInput(speed, direction);
 
@@ -98,8 +98,8 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 		target_angle  = np.arctan2(target_vec[1], target_vec[0])
 		target_angle  = target_angle * 180 / np.pi
 		target_angle  = (target_angle+360) % 360
-		target_action = np.zeros((1,32), dtype=np.float32)
-		target_angle  = int(round(target_angle*31/360))
+		target_action = np.zeros((1,360), dtype=np.float32)
+		target_angle  = int(round(target_angle*359/360))
 		target_action[0,target_angle] = 1
 		return target_action
 
@@ -130,28 +130,34 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 		radar_data = self._radar.scan(self._gps.location())
 		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
 
-		#target_radar_data = self._radar.scan(self._target.position)
-		target_radar_data = np.zeros((1,32), dtype=np.float32)
-		target_radar_data[0][int(round(self._gps.angle_to(self._target.position)*31/360))] = 1
+		radar_input_data = np.stack((self._last_radar_data, radar_data), axis=0)
+		radar_input_data = np.expand_dims(radar_input_data, 0).astype(np.float32)
 
-		radar_input_data = np.expand_dims(radar_data, 0).astype(np.float32)
+		#target_radar_data = self._radar.scan(self._target.position)
+		target_radar_data = np.zeros((1,361), dtype=np.float32)
+		target_radar_data[0][int(round(self._gps.angle_to(self._target.position)*359/360))] = 1
+		target_radar_data[0][360] = self._gps.distance_to(self._target.position)/3
+
+		#radar_input_data = np.expand_dims(radar_data, 0).astype(np.float32)
 		target_radar_input_data = np.expand_dims(target_radar_data, 0).astype(np.float32)
 
 		input_dict = {
 			self._model.arguments[0]: radar_input_data, 
 			self._model.arguments[1]: target_radar_input_data,
 		}
+		self._last_radar_data = radar_data
 		return input_dict
 
 
 	## Copied from direction_predictor/complete_model.py
 	#
 	def _create_perl_model(self):
-		feature_model = C.load_model('./feature_predicter/feature_predicter.dnn')(self._input, self._target_inputvar)
+		feature_model = C.load_model('./human_action/dnns/feature_predicter.dnn')(self._input, self._target_inputvar)
 		feature_model = feature_model.clone(C.CloneMethod.freeze)
 
-		inputs = C.ops.splice(self._input,feature_model,axis=0)
-		action_model = C.load_model('./direction_predicter/action_predicter.dnn')(inputs, self._target_inputvar)
+		#inputs = C.ops.splice(self._input,feature_model,axis=0)
+		inputs = self._input
+		action_model = C.load_model('./human_action/dnns/action_predicter.dnn')(inputs, self._target_inputvar)
 		action_model = action_model.clone(C.CloneMethod.freeze)
 
 		return action_model
@@ -160,7 +166,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 	## Copied from GRP/complete_model.py
 	#
 	def _create_grp_model(self):
-		action_model = C.load_model('./GRP/GRP.dnn')(self._input, self._target_input)
+		action_model = C.load_model('./human_action/dnns/GRP.dnn')(self._input, self._target_input)
 		action_model = action_model.clone(C.CloneMethod.freeze)
 
 		return action_model
