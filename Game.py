@@ -90,6 +90,8 @@ class Game:
 		self._start_point = Target((start_human_obs['pos_y'], start_human_obs['pos_x']), color=0x00FF00)
 		self._target = Target((end_human_obs['pos_y'], end_human_obs['pos_x']))#(760,50)
 
+		self._env.non_interactive_objects += [self._start_point, self._target]
+
 		# Init robots
 		radar = GeometricRadar(self._env, radius = cmdargs.radar_range);
 		initial_position = np.array(self._start_point.position);
@@ -171,8 +173,6 @@ class Game:
 					robot.draw_radar_mask(self._mask_layer);
 				self._gameDisplay.blit(self._mask_layer, (0,0));
 
-			self._start_point.draw(dtool)
-			self._target.draw(dtool)
 			for robot in self._robot_list:
 				robot.draw(dtool)
 

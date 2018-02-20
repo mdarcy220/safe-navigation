@@ -27,3 +27,4 @@ class Target:
 		dtool.draw_circle(self.position, (self.radius/1.5))
 		dtool.set_color(self._color);
 		dtool.draw_circle(self.position, (self.radius/4))
+

@@ -30,6 +30,7 @@ class Environment:
 		self.width = width
 		self.height = height
 		self.dynamic_obstacles = []
+		self.non_interactive_objects = []
 		self._speed_mode = cmdargs.speedmode
 
 

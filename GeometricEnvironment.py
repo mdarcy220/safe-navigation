@@ -84,6 +84,10 @@ class GeometricEnvironment(Environment):
 	def update_display(self, dtool):
 		dtool.set_stroke_width(0);
 		self._draw_static_obstacles(dtool)
+
+		for obj in self.non_interactive_objects:
+			obj.draw(dtool)
+
 		for obs in self.dynamic_obstacles:
 			dtool.set_color(obs.fillcolor);
 			self._draw_obstacle(dtool, obs)
