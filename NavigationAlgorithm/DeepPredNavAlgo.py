@@ -35,7 +35,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._radar = self._sensors['radar'];
 
 		if net_type == 'perl':
-			feature_vector, target_vector, action_vector, velocity = (2,360), (1,360), (1,360), (1,1)
+			feature_vector, target_vector, action_vector, velocity = (2,360), (1,361), (1,360), (1,1)
 			self._input_size    = feature_vector
 			self._output_size   = action_vector
 			self._target_size   = target_vector
@@ -112,15 +112,20 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 		radar_data = self._radar.scan(self._gps.location())
 		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
 
-		radar_input_data = np.stack((radar_data, self._last_radar_data), axis=0)
+		radar_input_data = np.stack((self._last_radar_data, radar_data), axis=0)
 		radar_input_data = np.expand_dims(radar_input_data, 0).astype(np.float32)
-		target_direction_input_data = np.expand_dims(self._get_target_direction_input_data(), 0).astype(np.float32)
+
+		#target_radar_data = self._radar.scan(self._target.position)
+		target_radar_data = np.zeros((1,361), dtype=np.float32)
+		target_radar_data[0][int(round(self._gps.angle_to(self._target.position)*359/360))] = 1
+		target_radar_data[0][360] = self._gps.distance_to(self._target.position)/3
+
+		#radar_input_data = np.expand_dims(radar_data, 0).astype(np.float32)
+		target_radar_input_data = np.expand_dims(target_radar_data, 0).astype(np.float32)
 
 		input_dict = {
-			self._model.arguments[0]: radar_input_data, 
-			self._model.arguments[1]: radar_input_data,
-			self._model.arguments[2]: target_direction_input_data,
-			self._model.arguments[3]: target_direction_input_data,
+			self._model.arguments[0]: [radar_input_data], 
+			self._model.arguments[1]: [target_radar_input_data],
 		}
 		self._last_radar_data = radar_data
 		return input_dict
@@ -152,8 +157,8 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 	## Copied from direction_predictor/complete_model.py
 	#
 	def _create_perl_model(self):
-		feature_model = C.load_model('./human_action/dnns/feature_predicter.dnn')(self._input, self._target_inputvar)
-		feature_model = feature_model.clone(C.CloneMethod.freeze)
+		#feature_model = C.load_model('./human_action/dnns/feature_predicter.dnn')(self._input, self._target_inputvar)
+		#feature_model = feature_model.clone(C.CloneMethod.freeze)
 
 		#inputs = C.ops.splice(self._input,feature_model,axis=0)
 		inputs = self._input
