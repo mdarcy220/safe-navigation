@@ -27,14 +27,16 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
-		self._kappa = 2.3#kappa
-		self._A = 2.66#A
-		self._B = 0.79#B
-		self._d = 0.4#d
-		self._l = 0.59#l
-		self._alpha = 0.8#alpha
-		self._gamma = 0.06#gamma
-		self._delta = 0.06#delta
+
+		# Parameters from paper
+		self._kappa = 2.3
+		self._A = 2.66
+		self._B = 0.79
+		self._d = 0.4
+		self._l = 0.59
+		self._alpha = 0.6
+		self._gamma = 0.02
+		self._delta = 0.02
 
 		#C.logging.set_trace_level(C.logging.TraceLevel.Error)
 
@@ -69,9 +71,8 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		## we might need to limit te magnitude of this vector
 		v_0 = self._get_target_direction_input_data()
 		v_0 = v_0*0.306/math.sqrt(np.sum(np.power(v_0,2)))
-		print (v_0)	
 		if self.count == 0:
-		    v = [0,0]
+		    v = 0.05*Vector.unit_vec_from_radians(Vector.radians_between(location, self._target.position))
 		    theta = math.atan2(v[1],v[0])
 		    self._old_position = self._start_pos
 		else:
@@ -85,7 +86,6 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		v_next = v + force*1
 		speed = math.sqrt(np.sum(np.power(v_next,2)))
 		direction = math.atan2(v_next[1],v_next[0])*180/math.pi
-		#print (v,v_next)
 		self.count += 1
 
 		
@@ -103,12 +103,11 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _create_obstacles_data(self):
 		## humans
-		radar_data, data_obj, intersections = self._radar.scan_dynamic_obstacles_one_by_one(self._gps.location())
+		radar_data, data_obj, intersections = self._radar.scan_static_obstacles_one_by_one(self._gps.location())
 		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
 		objects = list(set(data_obj))
 		if None in objects:
 		    objects.remove(None)
-		#print(objects)
 		data = []
 		data_vect = [i for i,x in enumerate(data_obj) if x != None]
 		for obj in objects:
@@ -126,12 +125,11 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    data_object['distance'] = radar_data[the_min] 
 		    data_object['position'] = intersections[:,the_min]
 		    data.append(data_object)
-		#print (data)
 		return data
 
 	def _create_human_data(self):
 		## humans
-		radar_data, data_obj, _ = self._radar.scan_static_obstacles_one_by_one(self._gps.location())
+		radar_data, data_obj, _ = self._radar.scan_dynamic_obstacles_one_by_one(self._gps.location())
 		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
 		objects = list(set(data_obj))
 		if None in objects:
@@ -167,9 +165,7 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    f = self._A * math.exp(self._d - dis)/self._B
 		    direction = pos - pose[0:2]
 		    direction = direction /math.sqrt(np.sum(np.power(direction,2)))
-		    print (f,direction)
 		    force -= self._gamma*f*direction*w
-		    #print (f*direction*w)
 	    for obj in objs:
 		    pos = obj['position']
 		    dis = obj['distance']
@@ -177,9 +173,7 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 		    f = self._A * math.exp(self._d - dis)/self._B
 		    direction = pos - pose[0:2]
 		    direction = direction /math.sqrt(np.sum(np.power(direction,2)))
-		    print (f,direction)
 		    force -= self._delta*f*direction*w
-		    #print (f*direction*w)
 	    force += force_to_target
 
 	    return force
