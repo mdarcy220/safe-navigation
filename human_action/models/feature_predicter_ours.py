@@ -115,10 +115,13 @@ class feature_predicter_ours:
 
 		for key in minibatch_keys:
 			_input,_target,_ouput = self.input_output_sequence(data,targets,key)
-			minibatch_input.append(_input)
-			minibatch_target.append(_target)
-			minibatch_output.append(_ouput)
-		
+			for i in range(len(_input)):
+				minibatch_input.append(_input[i])
+				minibatch_target.append(_target[i])
+				minibatch_output.append(_ouput[i])
+		minibatch_input = np.stack(minibatch_input)
+		minibatch_target = np.stack(minibatch_target)
+		minibatch_output = np.stack(minibatch_output)
 		return minibatch_input,minibatch_target,minibatch_output
 	
 	def input_output_sequence(self, data, targets, seq_key):
@@ -130,7 +133,7 @@ class feature_predicter_ours:
 		for i in range(0,len(data_k)-2):
 			input_sequence[i,0,:]  = data_k[i]
 			input_sequence[i,1,:]  = data_k[i+1]
-			target_sequence[i,:,:] = targets[seq_key][i]
+			target_sequence[i,:,:] = targets[seq_key][i+1]
 			output_sequence[i,0,:] = data_k[i+2]
 		return input_sequence,target_sequence,output_sequence
 

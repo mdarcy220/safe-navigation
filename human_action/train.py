@@ -12,9 +12,11 @@ import cntk as C
 import sys
 import json
 import argparse
+import scipy.stats
 
 from models import action_predicter_f 
 from models import action_predicter 
+from models import action_modified
 from models import feature_predicter_ours
 from models import GRP
 from models import GRP_f
@@ -22,7 +24,7 @@ from models import feature_predicter_GRP
 
 ### User inputs ###
 
-network_list = ['action+','action','feature','GRP','GRP+','GRP_feature']
+network_list = ['action+','action','action_m','feature','GRP','GRP+','GRP_feature']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('model_type', type=str, action='store', choices=network_list, help='The type of model to use')
@@ -61,11 +63,20 @@ actions         = {}
 cosined_actions = {}
 targets         = {}
 vel             = {}
-confidence = [0.325,0.6065,0.8825,1,0.8825,0.6065,0.325]
-for i in range(360-7):
+angle_tol = 5
+confidence = list()
+confidence_divider = scipy.stats.norm(0,angle_tol).pdf(0)
+for i in range(angle_tol):
+	confidence.append(scipy.stats.norm(0,angle_tol).pdf(angle_tol-i)/confidence_divider)
+confidence.append(1)
+for i in range(angle_tol):
+	confidence.append(scipy.stats.norm(0,angle_tol).pdf(i+1)/confidence_divider)
+#confidence = [0.325,0.6065,0.8825,1,0.8825,0.6065,0.325]
+print (confidence)
+for i in range(360-angle_tol*2-1):
 	confidence.append(0)
 confidence = np.reshape(np.array(confidence,dtype=np.float32),(1,360))
-confidence = np.roll(confidence,-3)
+confidence = np.roll(confidence,-angle_tol)
 # confidence is calculated as the gaussian distribution
 # centered in the middle with standard deviation 3
 # This vector has been reweighted to give a value of 1 at the mean
@@ -156,6 +167,9 @@ elif network == 'action+':
 elif network == 'action':
     f1 = action_predicter((2,360),(1,361),(1,360),(1,1),load_network,False,max_velocity)
     f1.train_network(data_new,targets,cosined_actions,vel)
+elif network == 'action_m':
+    f1 = action_modified((2,360),(1,361),(1,360),(1,1),load_network,False,max_velocity)
+    f1.train_network(data_new,targets,actions,vel)
 elif network == 'feature':
     f1 = feature_predicter_ours((2,360),(1,361),load_network,False,0.7)
     f1.train_network(data_new,targets)
