@@ -112,13 +112,13 @@ class Game:
 		self._robot_list.append(self._normal_robot);
 
 
-		#self._safe_robot    = Robot(initial_position, cmdargs, path_color=(0xf3,0x91,0x12), name="SafeRobot");
-		#self._safe_robot.put_sensor('radar', radar);
-		#self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
-		#self._safe_robot.put_sensor('debug', {'name': 'safe'});
+		self._safe_robot    = Robot(initial_position, cmdargs, path_color=(0xf3,0x91,0x12), name="SafeRobot");
+		self._safe_robot.put_sensor('radar', radar);
+		self._safe_robot.put_sensor('gps', GpsSensor(self._safe_robot));
+		self._safe_robot.put_sensor('debug', {'name': 'safe'});
 		#self._safe_robot.set_nav_algo(GlobalLocalNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
-		#self._safe_robot.set_nav_algo(DeepPredNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, net_type='perl'));
-		#self._robot_list.append(self._safe_robot);
+		self._safe_robot.set_nav_algo(DeepPredNavigationAlgorithm(self._safe_robot.get_sensors(), self._target, cmdargs, net_type='perl'));
+		self._robot_list.append(self._safe_robot);
 
 		# Set window title
 		PG.display.set_caption(cmdargs.window_title)
