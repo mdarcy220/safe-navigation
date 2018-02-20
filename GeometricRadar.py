@@ -229,7 +229,6 @@ class GeometricRadar(Radar):
 	def scan_obstacles_list_to_list(self, center, obs_list):
 		beams = self._beams
 		radar_data = np.full([self._nPoints], self.radius, dtype=np.float64);
-		print (self._nPoints)
 		data_objects = [None]*self._nPoints
 		intersections = np.zeros((2,self._nPoints), dtype=np.float64)
 
@@ -289,7 +288,7 @@ class GeometricRadar(Radar):
 	# there are no intersections.
 	def _obs_dist_along_line(self, obs, line):
 		if obs.shape == 1:
-		  inters = Geometry.circle_line_intersection(obs.coordinate, obs.radius, line);
+			inters = Geometry.circle_line_intersection(obs.coordinate, obs.radius, line);
 		elif obs.shape == 2:
 			inters = Geometry.rectangle_line_intersection([obs.coordinate, np.array(obs.size)], line);
 		elif obs.shape == 3:
