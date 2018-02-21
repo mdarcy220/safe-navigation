@@ -21,6 +21,8 @@ from MDPAdapterSensor import MDPAdapterSensor
 import os
 import json
 
+from NavigationObjective import NavigationObjective
+
 from NavigationAlgorithm import DeepQNavigationAlgorithm
 from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
 from NavigationAlgorithm import FuzzyNavigationAlgorithm
@@ -89,6 +91,7 @@ class Game:
 		self._env = GeometricEnvironment(self._gameDisplay.get_width(), self._gameDisplay.get_height(), cmdargs.map_name, cmdargs=cmdargs)
 		self._start_point = Target((start_human_obs['pos_y'], start_human_obs['pos_x']), color=0x00FF00)
 		self._target = Target((end_human_obs['pos_y'], end_human_obs['pos_x']))#(760,50)
+		self._objective = NavigationObjective(self._target, self._env)
 
 		self._env.non_interactive_objects += [self._start_point, self._target]
 
@@ -222,7 +225,7 @@ class Game:
 				if robot.has_given_up():
 					anyRobotQuit = True;
 					break;
-				if not (self.check_robot_at_target(robot)):
+				if not (self._objective.test(robot)):
 					allBotsAtTarget = False
 					robot.NextStep(self._env)
 
@@ -294,11 +297,11 @@ class Game:
 		output_csv += str(normal_robot_stats.num_static_collisions) + ","
 		output_csv += str(safe_robot_stats.num_static_collisions) + ","
 
-		output_csv += str(self._normal_robot.stepNum if self.check_robot_at_target(self._normal_robot) else "") + ","
-		output_csv += str(self._safe_robot.stepNum if self.check_robot_at_target(self._safe_robot) else "") + ","
+		output_csv += str(self._normal_robot.stepNum if self._objective.test(self._normal_robot) else "") + ","
+		output_csv += str(self._safe_robot.stepNum if self._objective.test(self._safe_robot) else "") + ","
 
-		output_csv += str(0 if self.check_robot_at_target(self._normal_robot) else 1) + ","
-		output_csv += str(0 if self.check_robot_at_target(self._safe_robot) else 1) + ","
+		output_csv += str(0 if self._objective.test(self._normal_robot) else 1) + ","
+		output_csv += str(0 if self._objective.test(self._safe_robot) else 1) + ","
 		if self._cmdargs.output_prng_state:
 			output_csv += str(self._initial_random_state)
 		else:
@@ -309,16 +312,6 @@ class Game:
 
 
 		return output_csv
-
-
-	## Checks if the robot is at the target
-	#
-	# @returns (boolean)
-	# <br>	-- `True` if the robot is in the target zone, `False`
-	# 	otherwise.
-	#
-	def check_robot_at_target(self, robot):
-		return (Vector.distance_between(robot.location, self._target.position) < 0.5);
 
 
 	## Runs the game
