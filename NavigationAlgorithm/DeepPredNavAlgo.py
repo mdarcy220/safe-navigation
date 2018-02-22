@@ -64,7 +64,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._last_radar_data = self._radar.scan(self._gps.location())
 
-		self.debug_info = {'min_proximity': sys.maxsize};
+		self.debug_info = {'min_proximities': []};
 
 
 	## Select the next action for the robot
@@ -110,7 +110,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _create_perl_input_data(self):
 		radar_data = self._radar.scan(self._gps.location())
-		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
+		self.debug_info['min_proximities'].append(np.min(radar_data))
 
 		radar_input_data = np.stack((self._last_radar_data, radar_data), axis=0)
 		radar_input_data = np.expand_dims(radar_input_data, 0).astype(np.float32)
@@ -133,7 +133,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _create_grp_input_data(self):
 		radar_data = self._radar.scan(self._gps.location())
-		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
+		self.debug_info['min_proximities'].append(np.min(radar_data))
 
 		radar_input_data = np.stack((self._last_radar_data, radar_data), axis=0)
 		radar_input_data = np.expand_dims(radar_input_data, 0).astype(np.float32)

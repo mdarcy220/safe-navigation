@@ -19,7 +19,11 @@ import time
 import Vector
 from MDPAdapterSensor import MDPAdapterSensor
 import os
+import sys
 import json
+import datetime
+import binascii
+import random
 
 from NavigationObjective import NavigationObjective
 
@@ -66,6 +70,10 @@ class Game:
 		self._display_every_frame = True
 		if cmdargs.batch_mode and not cmdargs.display_every_frame:
 			self._display_every_frame = False
+
+		self._unique_id = cmdargs.unique_id
+		if cmdargs.unique_id == '':
+			self._unique_id = self._generate_unique_id()
 
 		self._display_robot_perspective = cmdargs.display_robot_perspective;
 		self._mask_layer = None;
@@ -127,6 +135,10 @@ class Game:
 
 		# Set window title
 		PG.display.set_caption(cmdargs.window_title)
+
+
+	def _generate_unique_id(self):
+		return datetime.datetime.now().isoformat() + '_' + binascii.hexlify(bytearray(random.getrandbits(8) for _ in range(4))).decode()
 
 
 	## Handles pygame events.
@@ -255,63 +267,50 @@ class Game:
 	# @returns (string)
 	# <br>	Format: field1,field2,...,fieldn
 	# <br>	-- A CSV-formatted collection of fields representing
-	# 	information about the run.
+	# 	information about the run for the given robot.
 	#
-	def make_csv_line(self):
-		output_csv = str(self._cmdargs.speedmode) + ','
-		output_csv += str(self._cmdargs.radar_resolution) +','
-		output_csv += str(self._cmdargs.radar_noise_level) +','
-		output_csv += str(self._cmdargs.robot_movement_momentum) +','
-		output_csv += str(self._cmdargs.robot_memory_sigma) +','
-		output_csv += str(self._cmdargs.robot_memory_decay) +','
-		output_csv += str(self._cmdargs.robot_memory_size) +','
+	def make_csv_robot_line(self, robot):
 
+		# Quick helper function for strings
+		def sanitize_str_obj(obj):
+			return '"' + str(obj).replace("\"", "\"\"") + '"'
 
-		def make_extra_data(robot):
-			extra_data = dict()
-			extra_data['min_proximity'] = robot.debug_info['min_proximity']
-			extra_data['trajectory'] = [loc.tolist() for loc in robot._visited_points]
-			extra_data['ped_id'] = robot.debug_info['ped_id']
-			extra_data['map_name'] = self._cmdargs.map_name
-			return extra_data
+		csv_fields = []
 
-		extra_data = {
-			'normal_bot': make_extra_data(self._normal_robot),
-			'safe_bot': make_extra_data(self._safe_robot)
-		}
-		extra_data_str = "\"" + json.dumps(extra_data).replace("\"", "\"\"") + "\""
+		csv_fields.append(sanitize_str_obj(self._unique_id))
+		csv_fields.append(sanitize_str_obj(robot.name))
 
-		output_csv += str(extra_data_str) +','
+		csv_fields.append(str(self._cmdargs.speedmode))
+		csv_fields.append(str(self._cmdargs.radar_resolution))
+		csv_fields.append(str(self._cmdargs.radar_noise_level))
+		csv_fields.append(str(self._cmdargs.robot_movement_momentum))
 
+		csv_fields.append(sanitize_str_obj(self._cmdargs.map_name))
 
-		output_csv += str(self._cmdargs.map_modifier_num) +','
-		output_csv += str(self._cmdargs.target_distribution_type) +','
-		output_csv += str(self._cmdargs.use_integer_robot_location) +','
+		csv_fields.append(str(self._cmdargs.map_modifier_num))
+		csv_fields.append(str(self._cmdargs.use_integer_robot_location))
 
-		normal_robot_stats = self._normal_robot.get_stats()
-		safe_robot_stats = self._safe_robot.get_stats()
+		csv_fields.append(str(robot.get_stats().num_dynamic_collisions))
+		csv_fields.append(str(robot.get_stats().num_static_collisions))
 
-		output_csv += str(normal_robot_stats.num_dynamic_collisions) + ","
-		output_csv += str(safe_robot_stats.num_dynamic_collisions) + ","
+		csv_fields.append(str(robot.stepNum if self._objective.test(robot) else ""))
 
-		output_csv += str(normal_robot_stats.num_static_collisions) + ","
-		output_csv += str(safe_robot_stats.num_static_collisions) + ","
+		csv_fields.append(str(0 if self._objective.test(robot) else 1))
 
-		output_csv += str(self._normal_robot.stepNum if self._objective.test(self._normal_robot) else "") + ","
-		output_csv += str(self._safe_robot.stepNum if self._objective.test(self._safe_robot) else "") + ","
+		csv_fields.append(str(robot.get_stats().avg_decision_time()))
 
-		output_csv += str(0 if self._objective.test(self._normal_robot) else 1) + ","
-		output_csv += str(0 if self._objective.test(self._safe_robot) else 1) + ","
+		extra_data = dict()
+		extra_data['min_proximities'] = robot.debug_info['min_proximities']
+		extra_data['trajectory'] = [loc.tolist() for loc in robot._visited_points]
+		extra_data['ped_id'] = robot.debug_info['ped_id']
 		if self._cmdargs.output_prng_state:
-			output_csv += str(self._initial_random_state)
-		else:
-			output_csv += ","
+			extra_data['prng_state'] = str(self._initial_random_state)
 
-		output_csv += str(normal_robot_stats.avg_decision_time()) + ","
-		output_csv += str(safe_robot_stats.avg_decision_time())
+		extra_data_str = sanitize_str_obj(json.dumps(extra_data))
 
+		csv_fields.append(extra_data_str)
 
-		return output_csv
+		return ','.join(csv_fields)
 
 
 	## Runs the game
@@ -325,7 +324,9 @@ class Game:
 
 		self.standard_game_loop()
 
-		print(self.make_csv_line());
+		for robot in self._robot_list:
+			sys.stdout.write(self.make_csv_robot_line(robot) + '\n');
 
 		PG.quit()
 		return 0
+
