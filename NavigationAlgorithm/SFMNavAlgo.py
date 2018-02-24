@@ -48,7 +48,8 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._last_radar_data = self._radar.scan(self._gps.location())
 
-		self.debug_info = {'min_proximity': sys.maxsize};
+		self.debug_info = {'min_proximities': []};
+		self._min_cur_radar_scans = sys.maxsize
 
 		self.count = 0
 		self._old_position = None
@@ -65,8 +66,10 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 	# 	should take.
 	#
 	def select_next_action(self):
+		self._min_cur_radar_scans = sys.maxsize
 		humans = self._create_human_data()
 		obstacles = self._create_obstacles_data()
+		self.debug_info['min_proximities'].append(self._min_cur_radar_scans)
 		location = self._gps.location()
 		## we might need to limit te magnitude of this vector
 		v_0 = self._get_target_direction_input_data()
@@ -104,7 +107,7 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _create_obstacles_data(self):
 		## humans
 		radar_data, data_obj, intersections = self._radar.scan_static_obstacles_one_by_one(self._gps.location())
-		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
+		self._min_cur_radar_scans = min(np.min(radar_data), self._min_cur_radar_scans)
 		objects = list(set(data_obj))
 		if None in objects:
 		    objects.remove(None)
@@ -130,7 +133,7 @@ class SFMNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _create_human_data(self):
 		## humans
 		radar_data, data_obj, _ = self._radar.scan_dynamic_obstacles_one_by_one(self._gps.location())
-		self.debug_info['min_proximity'] = min(np.min(radar_data), self.debug_info['min_proximity'])
+		self._min_cur_radar_scans = min(np.min(radar_data), self._min_cur_radar_scans)
 		objects = list(set(data_obj))
 		if None in objects:
 		    objects.remove(None)

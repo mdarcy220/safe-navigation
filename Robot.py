@@ -112,7 +112,7 @@ class Robot:
 		self.debug_info = {
 			'ped_id': cmdargs.ped_id_to_replace,
 			'trajectory': self._visited_points,
-			'min_proximity': sys.maxsize
+			'min_proximities': []
 		}
 
 		# Number of steps taken in the navigation
@@ -142,7 +142,7 @@ class Robot:
 		control_input = self._nav_algo.select_next_action();
 		self.stats.decision_times.append(time.perf_counter() - start_decision_time)
 
-		self.debug_info['min_proximity'] = self._nav_algo.debug_info['min_proximity']
+		self.debug_info['min_proximities'] = self._nav_algo.debug_info['min_proximities']
 
 		speed = min(control_input.speed, self.speed);
 		movement_ang = control_input.angle;

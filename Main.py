@@ -52,6 +52,12 @@ def get_cmdline_args():
 			default=False,
 			action='store_true'
 	);
+	parser.add_argument('--unique-id',
+			help='A unique identifier for this simulation (printed in the CSV output). If omitted, a random identifier is generated.',
+			dest='unique_id',
+			default='',
+			action='store'
+	);
 	parser.add_argument('--target-distribution-type',
 			help='Type of target distribution to use',
 			dest='target_distribution_type',
