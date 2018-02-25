@@ -19,7 +19,7 @@ class Broadcaster:
 	# <br>  -- The range of this broadcaster. Robots outside the range will
 	#          not receive the message.
 	#
-	def __init__(self, channel, bcast_range=float('inf')):
+	def __init__(self, robot, channel, bcast_range=float('inf')):
 		self._robot = robot;
 		self._channel = channel
 		self._bcast_range = bcast_range

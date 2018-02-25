@@ -15,7 +15,7 @@ class ReceiverSensor:
 	# @param channel
 	# <br>  -- The BroadcastChannel object on which to listen for broadcasts.
 	#
-	def __init__(self, channel):
+	def __init__(self, robot, channel):
 		self._robot = robot;
 		self._channel = channel
 
