@@ -132,6 +132,7 @@ class PathMovement(ParametricPathMovement):
 		if path_type == 'fixed_speed' and speed == 0:
 			# Special case when speed == 0, to avoid divide-by-zero
 			new_path = [(self._path_list[0][0], self._path_list[0][1], 0.0), (self._path_list[0][0], self._path_list[0][1], 1.0)]
+			self._path_list = np.array(new_path)
 		elif path_type == 'fixed_speed':
 			new_path = [(self._path_list[0][0], self._path_list[0][1], 0.0)]
 			last_point = new_path[0]

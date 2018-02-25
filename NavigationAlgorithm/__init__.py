@@ -23,3 +23,4 @@ from .DeepQIRLNavAlgo import DeepQIRLAlgorithm # this file is kept as a referenc
 from .DQNIRLNavAlgo import DeepQIRLAlgorithm
 from .DeepPredNavAlgo import DeepPredNavigationAlgorithm
 from .SFMNavAlgo import SFMNavigationAlgorithm
+from .MovementPatternNavAlgo import MovementPatternNavigationAlgorithm
