@@ -8,6 +8,7 @@ import copy
 class BroadcastChannel:
 	def __init__(self):
 		self._msg_queue = []
+		self._step_num = 0
 
 
 	def add_message(self, message, bcast_location, bcast_range, bcast_time):
@@ -39,6 +40,15 @@ class BroadcastChannel:
 				messages.append(copy.deepcopy(msg))
 		return messages
 
-	def step(self):
-		pass
+	def step(self, timestep):
+		self._step_num += timestep
+
+		# Rebuild the message queue to only contain "active" messages
+		# (get rid of "stale" messages that are too old to be received)
+		active_messages = []
+		for message in self._msg_queue:
+			if self._step_num - 3 < message['time']:
+				active_messages.append(message)
+
+		self._msg_queue = active_messages
 
