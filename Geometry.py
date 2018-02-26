@@ -184,19 +184,34 @@ def circle_line_intersection(circle_center, circle_radius, line):
 # 	otherwise
 #
 def line_line_intersection(line1, line2):
-	vec_line1 = line1[1] - line1[0];
-	vec_line2 = line2[1] - line2[0];
-	crossProd = np.cross(vec_line1, vec_line2)
 
-	if crossProd == 0:
-		return None;
+	# Super-optimized version from LeMothes book:
+	p0_x = line1[0][0]
+	p0_y = line1[0][1]
+	p1_x = line1[1][0]
+	p1_y = line1[1][1]
+	p2_x = line2[0][0]
+	p2_y = line2[0][1]
+	p3_x = line2[1][0]
+	p3_y = line2[1][1]
+	s1_x = p1_x - p0_x; s1_y = p1_y - p0_y;
+	s2_x = p3_x - p2_x; s2_y = p3_y - p2_y;
 
-	t = np.cross(line2[0] - line1[0], vec_line2) / crossProd
-	u = np.cross(line2[0] - line1[0], vec_line1) / crossProd
+	s_denom = (-s2_x * s1_y + s1_x * s2_y)
+	if s_denom == 0:
+		return None
 
-	if 0 <= t and t <= 1 and 0 <= u and u <= 1:
-		return line1[0] + (t * vec_line1);
-	return None;
+	t_denom = (-s2_x * s1_y + s1_x * s2_y)
+	if t_denom == 0:
+		return None
+
+	s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / s_denom;
+	t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / t_denom;
+
+	if (s >= 0 and s <= 1 and t >= 0 and t <= 1):
+		return np.array([p0_x + (t * s1_x), p0_y + (t * s1_y)])
+
+	return None
 
 
 ## Returns the points of intersection of the given rectangle and line.
