@@ -30,11 +30,18 @@ class GraphNode:
 		return self._neighbors
 
 
+	def __lt__(self, other):
+		if not isinstance(other, GraphNode):
+			return True
+		return id(self) < id(other)
+
+
 ## Holds a graph that represents a roadmap of the environment.
 # 
 class GraphRoadmap:
 	def __init__(self):
 		self._nodes = set()
+		self._path_cache = dict()
 
 
 	## Add a node to this graph
@@ -77,6 +84,13 @@ class GraphRoadmap:
 		return []
 
 
+	## Finds a path between two nodes
+	#
+	# @return path_list
+	# <br>  Format: `[node1, node2, ...]`
+	# <br>  -- A path consisting of a list of nodes. Note that the path
+	#          does not include start_node, but does include end_node.
+	#
 	def find_path(self, start_node, end_node):
 		def euclidean_heuristic(node):
 			return Vector.magnitudeOf(np.subtract(end_node.location, node.location))
@@ -84,5 +98,45 @@ class GraphRoadmap:
 		def goal_test(node):
 			return node == end_node
 
-		return GraphRoadmap.graph_search(start_node, goal_test, euclidean_heuristic)
+		if start_node not in self._path_cache:
+			self._path_cache[start_node] = dict()
+
+		if end_node not in self._path_cache[start_node]:
+			self._path_cache[start_node][end_node] = GraphRoadmap.graph_search(start_node, goal_test, euclidean_heuristic)
+
+		# Make sure to do a copy here, since the caller may modify the
+		# returned path
+		return [node for node in self._path_cache[start_node][end_node]]
+
+
+
+	def path_cost(self, path, start_loc=None):
+		if len(path) == 0:
+			return 0
+
+		if start_loc is None:
+			start_loc = path[0].location
+
+		cost = Vector.distance_between(start_loc, path[0].location)
+		prev_node = path[0]
+		for node in path:
+			# Assume node is in the neighbors of prev_node. This is
+			# a bit unsafe, but it is the caller's job to make sure
+			# the path is valid.
+			cost += prev_node.get_neighbors()[node]
+			prev_node = node
+
+		return cost
+
+
+	def draw(self, dtool):
+		dtool.set_color((30,30,60));
+		for node in self.get_nodes():
+			x = node.location[0]
+			y = node.location[1]
+			dtool.set_stroke_width(0);
+			dtool.draw_circle((x,y), 3)
+			dtool.set_stroke_width(1);
+			for neighbor in node.get_neighbors():
+				dtool.draw_line((x,y), (neighbor.location[0], neighbor.location[1]))
 
