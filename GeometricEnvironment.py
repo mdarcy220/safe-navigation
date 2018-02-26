@@ -127,7 +127,7 @@ class GeometricEnvironment(Environment):
 		flags = 0x00000000
 		for obs in self.dynamic_obstacles:
 			vec = np.subtract(location, obs.coordinate)
-			if (obs.shape == 1 and np.dot(vec, vec) < obs.radius) \
+			if (obs.shape == 1 and np.dot(vec, vec) < obs.radius*obs.radius) \
 				or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
 				or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
 				or (obs.shape == 4 and obs.polygon.contains_point(location)):
@@ -136,7 +136,7 @@ class GeometricEnvironment(Environment):
 
 		for obs in self.static_obstacles:
 			vec = np.subtract(location, obs.coordinate)
-			if (obs.shape == 1 and np.dot(vec, vec) < obs.radius) \
+			if (obs.shape == 1 and np.dot(vec, vec) < obs.radius*obs.radius) \
 				or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
 				or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
 				or (obs.shape == 4 and obs.polygon.contains_point(location)):
