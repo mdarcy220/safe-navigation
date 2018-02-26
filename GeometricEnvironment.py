@@ -28,6 +28,9 @@ class GeometricEnvironment(Environment):
 		self.dynamic_obstacles = []
 		self.static_obstacles = []
 
+		self._triggers['pre_draw'] = []
+		self._triggers['post_draw'] = []
+
 		# Note: Order is important here:
 		#  - init_map_modifiers() MUST be called BEFORE
 		#    loading and initilizing the map, or else the modifiers
@@ -82,6 +85,9 @@ class GeometricEnvironment(Environment):
 	# <br>	-- The DrawTool to draw onto
 	#
 	def update_display(self, dtool):
+		for trigger in self._triggers['pre_draw']:
+			trigger(dtool)
+
 		dtool.set_stroke_width(0);
 		self._draw_static_obstacles(dtool)
 
@@ -92,11 +98,14 @@ class GeometricEnvironment(Environment):
 			dtool.set_color(obs.fillcolor);
 			self._draw_obstacle(dtool, obs)
 
+		for trigger in self._triggers['post_draw']:
+			trigger(dtool)
+
 
 	def _draw_static_obstacles(self, dtool):
 		# Draw the background
 		dtool.set_color((0xFF, 0xFF, 0xFF))
-		dtool.draw_rect([-20,-20], [self.width, self.height])
+		dtool.draw_rect([-20,-20], [self.width+40, self.height+40])
 
 		# Draw static obstacles
 		for obs in self.static_obstacles:
