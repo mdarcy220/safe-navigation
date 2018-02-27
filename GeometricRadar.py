@@ -302,15 +302,8 @@ class GeometricRadar(Radar):
 			return float('inf')
 
 		inters_rel = np.array(inters) - line[0];
-		dist = float('inf')
-		if len(inters) == 1:
-			dist = Vector.magnitudeOf(inters_rel[0]);
-		elif np.dot(inters_rel[0], inters_rel[0]) < np.dot(inters_rel[1], inters_rel[1]):
-			dist = Vector.magnitudeOf(inters_rel[0]);
-		else:
-			dist = Vector.magnitudeOf(inters_rel[1]);
 
-		return dist
+		return np.sqrt(min(np.dot(inter, inter) for inter in inters_rel))
 
 
 	## Gets the `DynamicObstacle` object corresponding to the nearest
