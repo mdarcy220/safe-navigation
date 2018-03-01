@@ -26,6 +26,16 @@ class GraphNode:
 			node.add_neighbor(self, cost)
 
 
+	def remove_neighbor(self, neighbor):
+		if neighbor not in self._neighbors:
+			return
+
+		if self in neighbor._neighbors:
+			del neighbor._neighbors[self]
+
+		del self._neighbors[neighbor]
+
+
 	def get_neighbors(self):
 		return self._neighbors
 
@@ -48,6 +58,14 @@ class GraphRoadmap:
 	# 
 	def add_node(self, node):
 		self._nodes.add(node)
+
+
+	def remove_node(self, node):
+		for neighbor in node.get_neighbors():
+			node.remove_neighbor(neighbor)
+
+		self._nodes.remove(node)
+
 
 	def get_nodes(self):
 		return self._nodes
@@ -136,7 +154,7 @@ class GraphRoadmap:
 			y = node.location[1]
 			dtool.set_stroke_width(0);
 			dtool.draw_circle((x,y), 3)
-			dtool.set_stroke_width(1);
-			for neighbor in node.get_neighbors():
-				dtool.draw_line((x,y), (neighbor.location[0], neighbor.location[1]))
+			#dtool.set_stroke_width(1);
+			#for neighbor in node.get_neighbors():
+			#	dtool.draw_line((x,y), (neighbor.location[0], neighbor.location[1]))
 
