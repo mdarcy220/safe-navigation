@@ -95,7 +95,7 @@ class DeepPredNavigationAlgorithm(AbstractNavigationAlgorithm):
 			predicted_values = self._model.eval(input_dict)[0]
 
 		direction = np.argmax(predicted_values[0:360])*360/359
-		speed = predicted_values[360]
+		speed = predicted_values[360]*0.31
 		#print(self._gps.location(), direction, speed, True if Vector.distance_between(self._gps.location(), self._start_pos) < 0.01 else False)
 		return RobotControlInput(speed, direction);
 
