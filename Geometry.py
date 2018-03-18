@@ -8,6 +8,7 @@
 
 import numpy as np
 import Vector
+import cython
 
 
 ## Factor to multiply by to convert degrees to radians
@@ -96,6 +97,7 @@ def circle_circle_intersection(circle1_center, circle1_radius, circle2_center, c
 # 	intersection points, an empty list will be returned. If an error
 # 	occurs, `None` is returned.
 #
+@cython.locals(x1=cython.double, y1=cython.double, x2=cython.double, y2=cython.double, circle_radius=cython.double)
 def circle_line_intersection(circle_center, circle_radius, line):
 
 	# Make things easier by shifting the coordinate system so the circle
@@ -183,6 +185,7 @@ def circle_line_intersection(circle_center, circle_radius, line):
 # <br>	-- coordinate of intersection if the lines intersect, `None`
 # 	otherwise
 #
+@cython.locals(p0_x=cython.double, p0_y=cython.double, p1_x=cython.double, p1_y=cython.double, p2_x=cython.double, p2_y=cython.double, p3_x=cython.double, p3_y=cython.double, s1_x=cython.double, s2_x=cython.double)
 def line_line_intersection(line1, line2):
 
 	# Super-optimized version from LeMothes book:
@@ -518,7 +521,7 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 	for i in range(4):
 		rect_line = rect_lines[i];
 		rect_point = rect_points[i];
-		if Vector.getDistanceBetweenPoints(rect_point, circle_center) < circle_radius:
+		if Vector.distance_between(rect_point, circle_center) < circle_radius:
 			has_inter = True
 			break;
 		inters = circle_line_intersection(circle_center, circle_radius, rect_line);
@@ -541,7 +544,9 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 #          rotation of `x` about the origin
 #
 def make_rot_matrix(angle):
-	return np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+	cosang = np.cos(angle)
+	sinang = np.sin(angle)
+	return np.array([[cosang, -sinang], [sinang, cosang]])
 
 
 ## Returns the point(s) of intersection of the given ellipse
@@ -570,6 +575,7 @@ def make_rot_matrix(angle):
 # 	intersection points, an empty list will be returned. If an error
 # 	occurs, `None` is returned.
 #
+@cython.locals(ellipse_width=cython.double, ellipse_height=cython.double, ellipse_angle=cython.double, ellipse_rx=cython.double, ellipse_ry=cython.double)
 def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ellipse_angle, line):
 
 	# Use radii instead of diameters
