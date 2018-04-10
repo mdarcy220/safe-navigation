@@ -58,10 +58,13 @@ class PygameDrawTool(DrawTool):
 
 
 	def draw_circle(self, center, radius):
-		PG.draw.circle(self._pg_surface, self._color, np.array(center, dtype=int), radius, self._stroke_width);
+		PG.draw.circle(self._pg_surface, self._color, np.array(center, dtype=int), int(radius), int(self._stroke_width));
 
 
 	def draw_ellipse(self, center, width, height, angle):
+		center = np.array(center, dtype=int)
+		width = max(int(width), 1)
+		height = max(int(height), 1)
 		surface = PG.Surface((width, height), PG.SRCALPHA, 32).convert_alpha()
 		PG.draw.ellipse(surface, self._color,(0,0,width,height),0)
 		rot_surface = PG.transform.rotate(surface, angle*180/np.pi)
@@ -70,11 +73,11 @@ class PygameDrawTool(DrawTool):
 
 
 	def draw_poly(self, points):
-		PG.draw.polygon(self._pg_surface, self._color, points, self._stroke_width);
+		PG.draw.polygon(self._pg_surface, self._color, np.array(points, dtype=int), int(self._stroke_width));
 
 
 	def draw_lineseries(self, points, closed=False):
-		PG.draw.lines(self._pg_surface, self._color, closed, points, self._stroke_width);
+		PG.draw.lines(self._pg_surface, self._color, closed, np.array(points, dtype=int), int(self._stroke_width));
 
 
 	def draw_line(self, point1, point2):
