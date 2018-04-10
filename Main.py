@@ -16,12 +16,6 @@ def get_cmdline_args():
 			default=False,
 			action='store_true'
 	);
-	parser.add_argument('--batch-mode',
-			help='Enable batch mode (no output except csv line)',
-			dest='batch_mode',
-			default=False,
-			action='store_true'
-	);
 	parser.add_argument('--enable-pdf-smoothing-filter',
 			help='Run a filter to smooth the combined distribution',
 			dest='enable_pdf_smoothing_filter',
@@ -43,12 +37,6 @@ def get_cmdline_args():
 	parser.add_argument('--display-every-frame',
 			help='Display every frame ',
 			dest='display_every_frame',
-			default=False,
-			action='store_true'
-	);
-	parser.add_argument('--display-robot-perspective',
-			help='Display robot\'s perspective (only show obstacles within radar range) ',
-			dest='display_robot_perspective',
 			default=False,
 			action='store_true'
 	);
@@ -199,7 +187,3 @@ def get_cmdline_args():
 	);
 	return parser.parse_args(sys.argv[1:])
 
-
-if __name__ == '__main__':
-	Game = Game(get_cmdline_args())
-	Game.GameLoop()
