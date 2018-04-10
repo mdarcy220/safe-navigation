@@ -19,7 +19,7 @@ simulator_args+=( --display-every-frame );
 simulator_args+=( --ped-id-to-replace 7  );
 
 
-time python3 ${python_args[@]} run.py ${simulator_args[@]};
+time python3 ${python_args[@]} run_default.py ${simulator_args[@]};
 
 gprof2dot -f pstats /tmp/safenav_profile1.profile -o /tmp/safenav_profile1.dot;
 dot -T svg /tmp/safenav_profile1.dot > /tmp/safenav_profile1.svg;

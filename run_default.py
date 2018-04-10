@@ -48,7 +48,6 @@ from NavigationAlgorithm import SFMNavigationAlgorithm
 
 from Main import get_cmdline_args
 
-
 cmdargs = get_cmdline_args()
 
 #env_size = (800, 600)
@@ -78,16 +77,7 @@ robot_list = [];
 robot = Robot(initial_position, cmdargs, path_color=(0,0,255), name="NormalRobot");
 robot.put_sensor('radar', radar);
 robot.put_sensor('gps', GpsSensor(robot));
-#robot.put_sensor('mdp', MDPAdapterSensor(env, startpoint.position, target.position, unique_id=os.path.basename(cmdargs.map_name)));
 robot.put_sensor('debug', {'name': 'normal'});
-#robot.set_nav_algo(DeepIRLAlgorithm(robot.get_sensors(), target, cmdargs));
-#robot.set_nav_algo(DeepQIRLAlgorithm(robot.get_sensors(), target, cmdargs));
-#robot.set_nav_algo(InverseRLNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
-#robot.set_nav_algo(DeepQNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
-#robot.set_nav_algo(ValueIterationNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
-#robot.set_nav_algo(DynamicRrtNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
-#robot.set_nav_algo(LinearNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
-#robot.set_nav_algo(DeepPredNavigationAlgorithm(robot.get_sensors(), target, cmdargs, net_type='grp'));
 robot.set_nav_algo(SFMNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
 robot_list.append(robot);
 
@@ -106,39 +96,39 @@ simulator.add_robots(robot_list)
 
 
 # If using PyGame for display, the following may be desirable
-
-PG.init()
-gameDisplay = PG.display.set_mode(env_size)
-PG.display.set_caption(cmdargs.window_title)
-def render_pygame(*args):
-	PG.display.update()
-simulator.add_trigger('post_update_display', render_pygame)
-
-## Handles pygame events.
 #
-# Processes any received keypresses or mouse clicks.
+#PG.init()
+#gameDisplay = PG.display.set_mode(env_size)
+#PG.display.set_caption(cmdargs.window_title)
+#def render_pygame(*args):
+#	PG.display.update()
+#simulator.add_trigger('post_update_display', render_pygame)
 #
-def handle_pygame_events():
-	for event in PG.event.get():
-		if event.type == PG.QUIT:
-			simulator.quit()
-		elif event.type == PG.KEYDOWN:
-			if event.key == PG.K_u:
-				self.update_game_image()
-			elif event.key == PG.K_q:
-				simulator.quit()
-			elif event.key == PG.K_e:
-				simulator_display_every_frame = (not simulator._display_every_frame)
-			elif event.key == PG.K_p:
-				simulator.pause()
-			elif event.key == PG.K_s:
-				simulator.step()
-simulator.add_trigger('pre_frame', handle_pygame_events)
+### Handles pygame events.
+##
+## Processes any received keypresses or mouse clicks.
+##
+#def handle_pygame_events():
+#	for event in PG.event.get():
+#		if event.type == PG.QUIT:
+#			simulator.quit()
+#		elif event.type == PG.KEYDOWN:
+#			if event.key == PG.K_u:
+#				self.update_game_image()
+#			elif event.key == PG.K_q:
+#				simulator.quit()
+#			elif event.key == PG.K_e:
+#				simulator_display_every_frame = (not simulator._display_every_frame)
+#			elif event.key == PG.K_p:
+#				simulator.pause()
+#			elif event.key == PG.K_s:
+#				simulator.step()
+#simulator.add_trigger('pre_frame', handle_pygame_events)
 
 
 def construct_DrawTool():
 	dtool = DrawTool.MultiDrawTool();
-	dtool.dtools.append(DrawTool.PygameDrawTool(gameDisplay));
+	#dtool.dtools.append(DrawTool.PygameDrawTool(gameDisplay));
 	dtool.dtools.append(DrawTool.SvgDrawTool());
 	#dtool = DrawTool.PygameDrawTool(gameDisplay);
 	return dtool
