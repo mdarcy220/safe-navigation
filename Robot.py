@@ -142,7 +142,7 @@ class Robot:
 		control_input = self._nav_algo.select_next_action();
 		self.stats.decision_times.append(time.perf_counter() - start_decision_time)
 
-		self.debug_info['min_proximities'] = self._nav_algo.debug_info['min_proximities']
+		self.debug_info['min_proximities'] = self._nav_algo.debug_info['min_proximities'] if 'min_proximities' in self._nav_algo.debug_info else []
 
 		speed = min(control_input.speed, self.speed);
 		movement_ang = control_input.angle;
@@ -162,8 +162,6 @@ class Robot:
 		new_location = np.add(self.location, movement_vec)
 		if (env.get_obsflags(new_location) & ObsFlag.ANY_OBSTACLE):
 			if self.stepNum - self._last_collision_step > 1:
-				if not self._cmdargs.batch_mode:
-					print('Robot ({}) glitched into obstacle!'.format(self.name))
 				self._drawcoll = 10
 				if env.get_obsflags(new_location) & ObsFlag.DYNAMIC_OBSTACLE:
 					self.stats.num_dynamic_collisions += 1
@@ -203,8 +201,7 @@ class Robot:
 	#
 	def draw(self, dtool):
 		dtool.set_color(self._path_color);
-		dtool.set_stroke_width(0.2);
-		dtool.draw_lineseries(self._visited_points[-1500:])
+		dtool.set_stroke_width(2);
 		if (0 < self._cmdargs.debug_level):
 
 			# Draw circle representing radar range
@@ -212,7 +209,7 @@ class Robot:
 
 			# Draw the robot's sensor observations
 			dtool.set_color((0xaa, 0x55, 0xdd))
-			dtool.set_stroke_width(0.05);
+			dtool.set_stroke_width(2);
 			self._draw_pdf(dtool, self._sensors['radar'].scan(self._sensors['gps'].location()))
 			dtool.set_color(self._path_color)
 
