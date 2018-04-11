@@ -16,5 +16,5 @@ class NavigationObjective(Objective):
 		self._env = env
 
 	def test(self, robot):
-		return (Vector.distance_between(robot.location, self._target.position) < 0.5)
+		return (Vector.distance_between(robot.location, self._target.position) < self._target.radius)
 		
