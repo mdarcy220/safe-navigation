@@ -63,8 +63,8 @@ class PygameDrawTool(DrawTool):
 
 	def draw_ellipse(self, center, width, height, angle):
 		center = np.array(center, dtype=int)
-		width = max(int(width), 1)
-		height = max(int(height), 1)
+		width = int(width)+1
+		height = int(height)+1
 		surface = PG.Surface((width, height), PG.SRCALPHA, 32).convert_alpha()
 		PG.draw.ellipse(surface, self._color,(0,0,width,height),0)
 		rot_surface = PG.transform.rotate(surface, angle*180/np.pi)
@@ -73,15 +73,15 @@ class PygameDrawTool(DrawTool):
 
 
 	def draw_poly(self, points):
-		PG.draw.polygon(self._pg_surface, self._color, np.array(points, dtype=int), int(self._stroke_width));
+		PG.draw.polygon(self._pg_surface, self._color, points, int(self._stroke_width))
 
 
 	def draw_lineseries(self, points, closed=False):
-		PG.draw.lines(self._pg_surface, self._color, closed, np.array(points, dtype=int), int(self._stroke_width));
+		PG.draw.lines(self._pg_surface, self._color, closed, points, int(self._stroke_width));
 
 
 	def draw_line(self, point1, point2):
-		PG.draw.line(self._pg_surface, self._color, point1, point2, self._stroke_width);
+		PG.draw.line(self._pg_surface, self._color, point1, point2, int(self._stroke_width));
 
 
 	def draw_rect(self, point, dimension):
@@ -105,8 +105,8 @@ def _color_to_int(color_tuple):
 ## Draws to SVG markup
 #
 class SvgDrawTool(DrawTool):
-	def __init__(self):
-		self._svg_template_xml = """<svg width="1600px" height="900px" viewBox="-15 -3 6.3292717 11.292512"><g id="layer1" transform="rotate(90,-2.4945089,-5.5210241)">{}</g></svg>""";
+	def __init__(self, viewbox_rect=(0, 0, 800, 600), img_size=(800, 600), svg_transform=""):
+		self._svg_template_xml = """<svg width="{:d}px" height="{:d}px" viewBox="{:d} {:d} {:d} {:d}"><g id="layer1" transform="{}">{{}}</g></svg>""".format(img_size[0], img_size[1], viewbox_rect[0], viewbox_rect[1], viewbox_rect[2], viewbox_rect[3], svg_transform);
 		self._elems = [];
 		self._color = 0;
 		self._stroke_width = 1
