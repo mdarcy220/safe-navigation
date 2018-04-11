@@ -65,7 +65,7 @@ class GeometricEnvironment(Environment):
 
 
 	def load_map(self, map_filename):
-		StaticGeometricMaps._create_map_1(self)
+		self.static_obstacles = StaticGeometricMaps.load_map_file(self.cmdargs.map_name)
 
 
 	def apply_map_modifier_by_number(self, modifier_num):

@@ -333,6 +333,5 @@ class Game:
 		for robot in self._robot_list:
 			sys.stdout.write(self.make_csv_robot_line(robot) + '\n');
 
-		#PG.quit()
 		return 0
 

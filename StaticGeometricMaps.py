@@ -13,65 +13,32 @@ from Polygon import Polygon
 import json
 
 
-def _create_map_1(env):
-	#obs_movement = MovementPattern.StaticMovement((0,0))
-	#obs = DynamicObstacle(obs_movement)
-	#obs.fillcolor = (0x55, 0x55, 0x55)
-	#obs.shape = 4
-	#obs.polygon = Polygon([
-	#	(640, 80),
-	#	(640, 480),
-	#	(445, 450),
-	#	(408, 300),
-	#	(408, 165),
-	#	(460, 108),
-	#	(490, 104),
-	#	(490, 91),
-	#	(640, 80),
-	#]);
-	with open('obs2.json') as f:
-		obslist = json.load(f)
+def _create_obs_from_spec(obs_spec):
+	obs_movement = MovementPattern.StaticMovement((0,0))
+	if obs_spec['type'] == 'circle':
+		obs_movement = MovementPattern.StaticMovement(obs_spec['center'])
+		new_obs = DynamicObstacle(obs_movement)
+		new_obs.shape = 1
+		new_obs.radius = obs_spec['radius']
+		new_obs.fillcolor = (0x55, 0x55, 0x55)
+		return new_obs
 
-	for obs in obslist:
-		obs_movement = MovementPattern.StaticMovement((0,0))
-		if obs['type'] == 'circle':
-			obs_movement = MovementPattern.StaticMovement(obs['center'])
-			obs2 = DynamicObstacle(obs_movement)
-			obs2.shape = 1
-			obs2.radius = obs['radius']
-			obs2.fillcolor = (0x55, 0x55, 0x55)
-			env.static_obstacles.append(obs2)
-			continue
-		polygon = Polygon(np.array(obs['points']))
-		obs2 = DynamicObstacle(obs_movement)
-		obs2.shape = 4
-		obs2.polygon = polygon
-		obs2.fillcolor = (0x55, 0x55, 0x55)
-		env.static_obstacles.append(obs2)
-
-	#env.static_obstacles.append(obs)
+	polygon = Polygon(np.array(obs_spec['points']))
+	new_obs = DynamicObstacle(obs_movement)
+	new_obs.shape = 4
+	new_obs.polygon = polygon
+	new_obs.fillcolor = (0x55, 0x55, 0x55)
+	return new_obs
 
 
-def _create_map_2(env):
-	with open('obs2.json') as f:
-		obslist = json.load(f)
+def load_map_file(map_filename):
+	obs_list = []
+	obs_spec_list = []
+	with open(map_filename) as f:
+		obs_spec_list = json.load(f)
 
-	for obs in obslist:
-		obs_movement = MovementPattern.StaticMovement((0,0))
-		if obs['type'] == 'circle':
-			obs_movement = MovementPattern.StaticMovement(obs['center'])
-			obs2 = DynamicObstacle(obs_movement)
-			obs2.shape = 1
-			obs2.radius = obs['radius']
-			obs2.fillcolor = (0x55, 0x55, 0x55)
-			env.static_obstacles.append(obs2)
-			continue
-		polygon = Polygon(np.array(obs['points']))
-		obs2 = DynamicObstacle(obs_movement)
-		obs2.shape = 4
-		obs2.polygon = polygon
-		obs2.fillcolor = (0x55, 0x55, 0x55)
-		env.static_obstacles.append(obs2)
+	for obs_spec in obs_spec_list:
+		obs_list.append(_create_obs_from_spec(obs_spec))
 
-	#env.static_obstacles.append(obs)
+	return obs_list
 
