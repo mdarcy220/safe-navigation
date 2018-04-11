@@ -32,6 +32,9 @@ def _create_obs_from_spec(obs_spec):
 
 
 def load_map_file(map_filename):
+	if map_filename == '':
+		return []
+
 	obs_list = []
 	obs_spec_list = []
 	with open(map_filename) as f:

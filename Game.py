@@ -139,9 +139,9 @@ class Game:
 
 
 	def remove_robot_by_name(self, robot_name):
-		for robot in robot_list:
+		for robot in self._robot_list:
 			if robot.name == robot_name:
-				robot_list.remove(robot)
+				self._robot_list.remove(robot)
 				return
 
 	def add_trigger(self, trigger_type, trigger):
