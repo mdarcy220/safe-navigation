@@ -93,7 +93,7 @@ def create_default_cmdline_parser():
 	parser.add_argument('--robot-speed',
 			help='Base speed of the robot',
 			dest='robot_speed',
-			type=int,
+			type=float,
 			default=6,
 			action='store'
 	);
