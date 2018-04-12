@@ -288,7 +288,7 @@ class Game:
 
 		csv_fields.append(str(self._cmdargs.speedmode))
 		csv_fields.append(str(self._cmdargs.radar_resolution))
-		csv_fields.append(str(self._cmdargs.radar_noise_level))
+		csv_fields.append('0.0') # TODO: This was the old radar_noise_level. Remove field eventually.
 		csv_fields.append(str(self._cmdargs.robot_movement_momentum))
 
 		csv_fields.append(sanitize_str_obj(self._cmdargs.map_name))

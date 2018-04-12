@@ -37,6 +37,13 @@ cmdarg_parser.add_argument('--net-load-filename',
 		default='',
 		action='store'
 );
+cmdarg_parser.add_argument('--ped-id-to-replace',
+		help='The pedestrian ID to swap for the robot',
+		dest='ped_id_to_replace',
+		type=int,
+		default=0,
+		action='store'
+);
 cmdargs = cmdarg_parser.parse_args(sys.argv[1:])
 
 with open('obsmat.json', 'r') as f:

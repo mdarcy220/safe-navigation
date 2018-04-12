@@ -45,18 +45,6 @@ def setup_pygame_window(sim, env_size, window_title='Pygame Window'):
 
 def create_default_cmdline_parser():
 	parser = argparse.ArgumentParser(description="Safe Navigation simulator", prog=sys.argv[0])
-	parser.add_argument('--enable-memory',
-			help='Enable memory for the robot',
-			dest='enable_memory',
-			default=False,
-			action='store_true'
-	);
-	parser.add_argument('--enable-pdf-smoothing-filter',
-			help='Run a filter to smooth the combined distribution',
-			dest='enable_pdf_smoothing_filter',
-			default=False,
-			action='store_true'
-	);
 	parser.add_argument('--show-real-time-plot',
 			help='Show a real-time plot of PDFs',
 			dest='show_real_time_plot',
@@ -81,46 +69,11 @@ def create_default_cmdline_parser():
 			default='',
 			action='store'
 	);
-	parser.add_argument('--target-distribution-type',
-			help='Type of target distribution to use',
-			dest='target_distribution_type',
-			choices=['gaussian', 'rectangular', 'dotproduct'],
-			default='gaussian',
-			action='store'
-	);
 	parser.add_argument('--robot-movement-momentum',
 			help='Momentum for robot movement (range 0 to 1, 0 means no momentum)',
 			dest='robot_movement_momentum',
 			type=float,
 			default=0.0,
-			action='store'
-	);
-	parser.add_argument('--robot-memory-size',
-			help='Maximum number of visited points to store in memory',
-			dest='robot_memory_size',
-			type=int,
-			default=500,
-			action='store'
-	);
-	parser.add_argument('--robot-memory-sigma',
-			help='Sigma of the robot memory gaussian',
-			dest='robot_memory_sigma',
-			type=float,
-			default=25,
-			action='store'
-	);
-	parser.add_argument('--robot-memory-decay',
-			help='Decay factor for the effect of remembered points over time',
-			dest='robot_memory_decay',
-			type=float,
-			default=1,
-			action='store'
-	);
-	parser.add_argument('--ped-id-to-replace',
-			help='The pedestrian ID to swap for the robot',
-			dest='ped_id_to_replace',
-			type=int,
-			default=0,
 			action='store'
 	);
 	parser.add_argument('--max-fps',
@@ -170,13 +123,6 @@ def create_default_cmdline_parser():
 			dest='radar_resolution',
 			type=float,
 			default=4,
-			action='store'
-	);
-	parser.add_argument('--radar-noise-level',
-			help='Width of Gaussian for radar noise',
-			dest='radar_noise_level',
-			type=float,
-			default=0.02,
 			action='store'
 	);
 	parser.add_argument('--map-name',
