@@ -106,7 +106,7 @@ def _color_to_int(color_tuple):
 #
 class SvgDrawTool(DrawTool):
 	def __init__(self, viewbox_rect=(0, 0, 800, 600), img_size=(800, 600), svg_transform=""):
-		self._svg_template_xml = """<svg width="{:d}px" height="{:d}px" viewBox="{:d} {:d} {:d} {:d}"><g id="layer1" transform="{}">{{}}</g></svg>""".format(img_size[0], img_size[1], viewbox_rect[0], viewbox_rect[1], viewbox_rect[2], viewbox_rect[3], svg_transform);
+		self._svg_template_xml = """<svg width="{:d}px" height="{:d}px" viewBox="{:f} {:f} {:f} {:f}"><g id="layer1" transform="{}">{{}}</g></svg>""".format(img_size[0], img_size[1], viewbox_rect[0], viewbox_rect[1], viewbox_rect[2], viewbox_rect[3], svg_transform);
 		self._elems = [];
 		self._color = 0;
 		self._stroke_width = 1
