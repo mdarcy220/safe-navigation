@@ -1,6 +1,7 @@
 
 
 import Vector
+from GeometricRadar import GeometricRadar
 
 ## @package EventSensor
 #
@@ -19,19 +20,28 @@ class EventSensor:
 	# @param detection_range
 	# <br>  -- The range of this detector. Only events within this range of the robot will be detected/handled by the sensor.
 	#
-	def __init__(self, robot, event_map, detection_range=float('inf')):
+	def __init__(self, robot, event_map, env, detection_range=float('inf')):
 		self._robot = robot;
 		self._event_map = event_map
+		self._env = env
+		self._radar = GeometricRadar(env)
 		self._detection_range = detection_range
 
 
 	def get_events(self):
 		events = []
 		for event in self._event_map.get_events():
-			if Vector.distance_between(event.location, self._robot.location) <= self._detection_range:
+			if Vector.distance_between(event.location, self._robot.location) <= self._detection_range and not self._obs_on_line([event.location, self._robot.location]):
 				events.append(event)
 
 		return events
+
+
+	def _obs_on_line(self, line):
+		for obs in self._env.static_obstacles:
+			if self._radar._obs_dist_along_line(obs, line) < float('inf'):
+				return True
+		return False
 
 
 	## Clears events within the detection range
@@ -41,11 +51,7 @@ class EventSensor:
 	# cease to see the handled events.
 	#
 	def handle_all_events(self):
-		removal_set = set()
-		for event in self._event_map.get_events():
-			if Vector.distance_between(event.location, self._robot.location) <= self._detection_range:
-				removal_set.add(event)
-		for event in removal_set:
+		for event in self.get_events():
 			self._event_map.remove_event(event)
 
 

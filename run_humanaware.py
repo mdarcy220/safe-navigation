@@ -75,6 +75,7 @@ def make_default_robot(robot_name, path_color, debug_name=None):
 	robot.put_sensor('radar', radar);
 	robot.put_sensor('gps', GpsSensor(robot));
 	robot.put_sensor('debug', {'name': debug_name});
+	robot.debug_info['ped_id'] = cmdargs.ped_id_to_replace;
 
 	return robot
 

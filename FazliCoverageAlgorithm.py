@@ -24,7 +24,7 @@ class FazliCoverageAlgorithm:
 		self._sensors = sensors;
 		self._cmdargs = cmdargs;
 
-		self._alpha = 0.9
+		self._alpha = 0.99
 
 		self._gps = sensors['gps']
 
@@ -34,7 +34,7 @@ class FazliCoverageAlgorithm:
 
 		self._node_props = dict()
 		for node in self._sensors['roadmap'].get_nodes():
-			self._node_props[node] = {'expected_reward': 0, 'RAR': np.random.uniform(0.1, 2.0), 'last_visit': 0}
+			self._node_props[node] = {'expected_reward': 0, 'RAR': np.random.uniform(0.1, 0.5), 'last_visit': 0}
 
 		self.debug_info = {'min_proximities': []}
 
@@ -68,7 +68,7 @@ class FazliCoverageAlgorithm:
 				self._choose_next_path(nearest_node=final_node)
 
 		direction = self._gps.angle_to(self._cur_path[-1].location)
-		speed = min(self._gps.distance_to(self._cur_path[-1].location), 5)
+		speed = min(self._gps.distance_to(self._cur_path[-1].location), 15)
 
 		return RobotControlInput(speed, direction)
 

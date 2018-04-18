@@ -308,7 +308,8 @@ class Game:
 		extra_data = dict()
 		extra_data['min_proximities'] = robot.debug_info['min_proximities']
 		extra_data['trajectory'] = [loc.tolist() for loc in robot._visited_points]
-		extra_data['ped_id'] = robot.debug_info['ped_id']
+		if 'ped_id' in robot.debug_info:
+			extra_data['ped_id'] = robot.debug_info['ped_id']
 		if self._cmdargs.output_prng_state:
 			extra_data['prng_state'] = str(self._initial_random_state)
 
