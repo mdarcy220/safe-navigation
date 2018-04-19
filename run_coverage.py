@@ -55,7 +55,6 @@ env_size = (800, 600)
 env = GeometricEnvironment(env_size[0], env_size[1], cmdargs.map_name, cmdargs=cmdargs)
 start_point = Target((50, 550), radius=20, color=0x00FF00)
 target = Target((760, 50), radius=20)
-objective = NavigationObjective(target, env)
 
 env.non_interactive_objects += [start_point, target]
 
@@ -182,7 +181,7 @@ for i in range(10):
 	robot_list.append(robot);
 
 # Create the simulator
-simulator = Game.Game(cmdargs, env, objective)
+simulator = Game.Game(cmdargs, env)
 simulator.add_robots(robot_list)
 
 # Set up Pygame display

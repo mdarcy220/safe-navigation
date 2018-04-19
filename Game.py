@@ -72,19 +72,14 @@ class Game:
 	# @param env (Environment object)
 	# <br>	-- `Environment` object to use for simulation
 	#
-	# @param objective (Objective object)
-	# <br>	-- `Objective` object to use for simulator end condition (e.g.,
-	#          a `NavigationObjective` object)
-	#
 	# @param dtool_constructor (function)
 	# <br>	-- Function to construct DrawTool for drawing. It is called
 	#          with no arguments. The default is the base DrawTool
 	#          constructor, which does not draw anything.
 	#
-	def __init__(self, cmdargs, env, objective, dtool_constructor=DrawTool.DrawTool):
+	def __init__(self, cmdargs, env, dtool_constructor=DrawTool.DrawTool):
 		self._cmdargs = cmdargs
 		self._env = env
-		self._objective = objective
 		self._dtool_constructor = dtool_constructor
 
 		# Init trigger table
@@ -199,7 +194,7 @@ class Game:
 			if robot.has_given_up():
 				anyRobotQuit = True;
 				break;
-			if not (self._objective.test(robot)):
+			if not (robot.test_objective()):
 				allBotsAtTarget = False
 				robot.NextStep(self._env)
 
@@ -299,9 +294,9 @@ class Game:
 		csv_fields.append(str(robot.get_stats().num_dynamic_collisions))
 		csv_fields.append(str(robot.get_stats().num_static_collisions))
 
-		csv_fields.append(str(robot.stepNum if self._objective.test(robot) else ""))
+		csv_fields.append(str(robot.stepNum if robot.test_objective() else ""))
 
-		csv_fields.append(str(0 if self._objective.test(robot) else 1))
+		csv_fields.append(str(0 if robot.test_objective() else 1))
 
 		csv_fields.append(str(robot.get_stats().avg_decision_time()))
 

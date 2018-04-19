@@ -38,25 +38,24 @@ env_size = (800, 600)
 
 # Init environment
 env = GeometricEnvironment(env_size[0], env_size[1], cmdargs.map_name, cmdargs=cmdargs)
-start_point = Target((50, 550), radius=20, color=0x00FF00)
-target = Target((760, 50), radius=20)
-objective = NavigationObjective(target, env)
 
-env.non_interactive_objects += [start_point, target]
 
 # Init robots
 radar = GeometricRadar(env, radius = cmdargs.radar_range);
-initial_position = np.array(start_point.position);
 robot_list = [];
 
 def make_default_robot(robot_name, path_color, debug_name=None):
 	if debug_name is None:
 		debug_name = robot_name
 
-	start_point = Target((50, np.random.randint(450, 550)), radius=20, color=0x00FF00)
+	start_point = Target((np.random.randint(50, 350), np.random.randint(350, 550)), radius=20, color=0x00FF00)
 	initial_position = np.array(start_point.position);
+	target = Target((np.random.randint(600, 760), np.random.randint(50, 250)), radius=20)
+	objective = NavigationObjective(target, env)
 
-	robot = Robot(initial_position, cmdargs, path_color=path_color, name=robot_name);
+	env.non_interactive_objects += [start_point, target]
+
+	robot = Robot(initial_position, cmdargs, path_color=path_color, name=robot_name, objective=objective);
 	robot.put_sensor('radar', RadarSensor(env, robot, [], radar));
 	robot.put_sensor('gps', GpsSensor(robot));
 	robot.put_sensor('debug', {'name': debug_name});
@@ -67,17 +66,17 @@ def make_default_robot(robot_name, path_color, debug_name=None):
 	robot_obstacle.fillcolor = (0xcc, 0x88, 0x44)
 	robot.set_obstacle(robot_obstacle)
 
-	return robot
+	return robot, target
 
-robot = make_default_robot('ProbLPRobot', (0, 0, 255), 'problp')
+robot, target = make_default_robot('ProbLPRobot', (0, 0, 255), 'problp')
 robot.set_nav_algo(GlobalLocalNavigationAlgorithm(robot.get_sensors(), target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
 robot_list.append(robot);
 
-robot = make_default_robot('ProbLPRobot2', (0, 0, 255), 'problp2')
+robot, target = make_default_robot('ProbLPRobot2', (0, 0, 255), 'problp2')
 robot.set_nav_algo(GlobalLocalNavigationAlgorithm(robot.get_sensors(), target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
 robot_list.append(robot);
 
-robot = make_default_robot('ProbLPRobot3', (0, 0, 255), 'problp3')
+robot, target = make_default_robot('ProbLPRobot3', (0, 0, 255), 'problp3')
 robot.set_nav_algo(GlobalLocalNavigationAlgorithm(robot.get_sensors(), target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
 robot_list.append(robot);
 
@@ -85,7 +84,7 @@ for robot in robot_list:
 	robot.get_sensors()['radar'].set_other_robots([robot2 for robot2 in robot_list if robot2 != robot])
 
 # Create the simulator
-simulator = Game.Game(cmdargs, env, objective)
+simulator = Game.Game(cmdargs, env)
 simulator.add_robots(robot_list)
 
 # Set up Pygame display

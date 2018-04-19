@@ -87,11 +87,15 @@ class Robot:
 	# <br>	-- A name for the robot, only used for the purpose of
 	# 	printing debugging messages.
 	#
-	def __init__(self, initial_position, cmdargs, path_color = (0, 0, 255), name=""):
+	# @param objective (Objective object)
+	# <br>	-- Objective for the robot
+	#
+	def __init__(self, initial_position, cmdargs, path_color = (0, 0, 255), name="", objective=None):
 		self.location           = initial_position;
 		self._cmdargs           = cmdargs;
 		self._path_color        = path_color
 		self.name               = name;
+		self._objective         = objective
 
 		self.speed              = cmdargs.robot_speed;
 		self.stats              = RobotStats();
@@ -204,6 +208,13 @@ class Robot:
 
 	def has_given_up(self):
 		return self._nav_algo.has_given_up();
+
+
+	def test_objective(self):
+		if self._objective is None:
+			return False
+
+		return self._objective.test(self)
 
 
 	## Draws this `Robot` to the given surface

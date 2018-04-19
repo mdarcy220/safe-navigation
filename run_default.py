@@ -51,7 +51,7 @@ def make_default_robot(robot_name, path_color, debug_name=None):
 	if debug_name is None:
 		debug_name = robot_name
 
-	robot = Robot(initial_position, cmdargs, path_color=path_color, name=robot_name);
+	robot = Robot(initial_position, cmdargs, path_color=path_color, name=robot_name, objective=objective);
 	robot.put_sensor('radar', radar);
 	robot.put_sensor('gps', GpsSensor(robot));
 	robot.put_sensor('debug', {'name': debug_name});
@@ -68,7 +68,7 @@ robot_list.append(robot);
 
 
 # Create the simulator
-simulator = Game.Game(cmdargs, env, objective)
+simulator = Game.Game(cmdargs, env)
 simulator.add_robots(robot_list)
 
 # Set up Pygame display
