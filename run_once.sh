@@ -3,7 +3,6 @@
 python_args=( -m "cProfile" -o "/tmp/safenav_profile1.profile")
 
 simulator_args=();
-simulator_args+=( --debug-level 1 );
 simulator_args+=( --robot-speed 10 );
 simulator_args+=( --radar-range 100 );
 simulator_args+=( --max-steps 5000 );

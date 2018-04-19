@@ -132,13 +132,6 @@ def create_default_cmdline_parser():
 			default='',
 			action='store'
 	);
-	parser.add_argument('--debug-level',
-			help='Amount of debugging info to show',
-			dest='debug_level',
-			type=int,
-			default=0,
-			action='store'
-	);
 	parser.add_argument('--start-delay',
 			help='Number of seconds to wait before starting',
 			dest='start_delay',

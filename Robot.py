@@ -110,7 +110,6 @@ class Robot:
 		self._visited_points	= [np.array(self.location)]
 
 		self.debug_info = {
-			'ped_id': cmdargs.ped_id_to_replace,
 			'trajectory': self._visited_points,
 			'min_proximities': []
 		}
@@ -202,54 +201,54 @@ class Robot:
 	def draw(self, dtool):
 		dtool.set_color(self._path_color);
 		dtool.set_stroke_width(2);
-		if (0 < self._cmdargs.debug_level):
+		dtool.draw_lineseries(self._visited_points[-1500:])
 
-			# Draw circle representing radar range
-			#dtool.draw_circle(np.array(self.location, dtype=int), int(self._sensors['radar'].radius))
+		# Draw circle representing radar range
+		#dtool.draw_circle(np.array(self.location, dtype=int), int(self._sensors['radar'].radius))
 
-			# Draw the robot's sensor observations
-			dtool.set_color((0xaa, 0x55, 0xdd))
-			dtool.set_stroke_width(2);
-			self._draw_pdf(dtool, self._sensors['radar'].scan(self._sensors['gps'].location()))
-			dtool.set_color(self._path_color)
+		# Draw the robot's sensor observations
+		dtool.set_color((0xaa, 0x55, 0xdd))
+		dtool.set_stroke_width(2);
+		self._draw_pdf(dtool, self._sensors['radar'].scan(self._sensors['gps'].location()))
+		dtool.set_color(self._path_color)
 
-			# Draw circle to indicate a collision
-			if self._drawcoll > 0:
-				dtool.set_color((255, 80, 210))
-				dtool.set_stroke_width(0.3);
-				dtool.draw_circle(np.array(self.location), 1.2)
-				self._drawcoll = self._drawcoll - 1
+		# Draw circle to indicate a collision
+		if self._drawcoll > 0:
+			dtool.set_color((255, 80, 210))
+			dtool.set_stroke_width(0.3);
+			dtool.draw_circle(np.array(self.location), 1.2)
+			self._drawcoll = self._drawcoll - 1
 
-			# Draw static mapper data
-			if 'mapdata' in self._nav_algo.debug_info.keys() and isinstance(dtool, DrawTool.PygameDrawTool):
-				pix_arr = PG.surfarray.pixels2d(dtool._pg_surface);
-				pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
-				del pix_arr
+		# Draw static mapper data
+		if 'mapdata' in self._nav_algo.debug_info.keys() and isinstance(dtool, DrawTool.PygameDrawTool):
+			pix_arr = PG.surfarray.pixels2d(dtool._pg_surface);
+			pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
+			del pix_arr
 
-			# Draw predicted obstacle locations
-			if "future_obstacles" in self._nav_algo.debug_info.keys():
-				if self._nav_algo.debug_info["future_obstacles"]:
-					for fff in self._nav_algo.debug_info["future_obstacles"]:
-						for x,y in fff.keys():
-							gfxdraw.pixel(dtool._pg_surface.screen, x, y, (255,0,0))
+		# Draw predicted obstacle locations
+		if "future_obstacles" in self._nav_algo.debug_info.keys():
+			if self._nav_algo.debug_info["future_obstacles"]:
+				for fff in self._nav_algo.debug_info["future_obstacles"]:
+					for x,y in fff.keys():
+						gfxdraw.pixel(dtool._pg_surface.screen, x, y, (255,0,0))
 
-			# Draw planned path waypoints
-			if "path" in self._nav_algo.debug_info.keys():
-				if self._nav_algo.debug_info["path"]:
-					points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
-					dtool.set_color((30,30,60));
-					dtool.set_stroke_width(0);
-					for x,y in points:
-						dtool.draw_circle((x,y), 3)
+		# Draw planned path waypoints
+		if "path" in self._nav_algo.debug_info.keys():
+			if self._nav_algo.debug_info["path"]:
+				points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
+				dtool.set_color((30,30,60));
+				dtool.set_stroke_width(0);
+				for x,y in points:
+					dtool.draw_circle((x,y), 3)
 
-			# Draw RRT
-			if "rrt_tree" in self._nav_algo.debug_info.keys() and self._nav_algo.debug_info["rrt_tree"]:
-				dtool.set_color((255,0,0));
-				dtool.set_stroke_width(0.11);
-				for node in self._nav_algo.debug_info['rrt_tree'].toListValidNodes():
-					if node.parent is None or node is None:
-						continue
-					dtool.draw_line((node.data[0],node.data[1]), (node.parent.data[0],node.parent.data[1]))
+		# Draw RRT
+		if "rrt_tree" in self._nav_algo.debug_info.keys() and self._nav_algo.debug_info["rrt_tree"]:
+			dtool.set_color((255,0,0));
+			dtool.set_stroke_width(0.11);
+			for node in self._nav_algo.debug_info['rrt_tree'].toListValidNodes():
+				if node.parent is None or node is None:
+					continue
+				dtool.draw_line((node.data[0],node.data[1]), (node.parent.data[0],node.parent.data[1]))
 
 
 	def draw_radar_mask(self, mask_screen, radar_data=None):
