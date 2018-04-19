@@ -102,6 +102,8 @@ class Robot:
 
 		self._nav_algo = None;
 
+		self._obstacle = None
+
 		self.movement_momentum = cmdargs.robot_movement_momentum
 
 		# Variables to store drawing and debugging info
@@ -118,6 +120,14 @@ class Robot:
 		self.stepNum = 0
 
 		self._last_collision_step	= -1
+
+
+	def get_obstacle(self):
+		return self._obstacle
+
+
+	def set_obstacle(self, obstacle):
+		self._obstacle = obstacle
 
 
 	def get_stats(self):
@@ -175,6 +185,9 @@ class Robot:
 			new_location = np.array(new_location, dtype=int)
 		self.location = new_location
 
+		if self._obstacle is not None:
+			self._obstacle.next_step(1)
+
 		self._visited_points.append(np.array(self.location))
 
 
@@ -199,6 +212,9 @@ class Robot:
 	# <br>	-- The `DrawTool` with which to draw the robot
 	#
 	def draw(self, dtool):
+		if self._obstacle is not None:
+			dtool.set_color(self._obstacle.fillcolor);
+			self._sensors['radar']._env._draw_obstacle(dtool, self._obstacle)
 		dtool.set_color(self._path_color);
 		dtool.set_stroke_width(2);
 		dtool.draw_lineseries(self._visited_points[-1500:])

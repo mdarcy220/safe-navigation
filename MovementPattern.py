@@ -37,6 +37,21 @@ class StaticMovement(MovementPattern):
 		return self._pos
 
 
+## A MovementPattern that is static relative to a given Robot. Useful for an
+# Obstacle that represents the physical body of a Robot.
+#
+class RobotBodyMovement(MovementPattern):
+	def __init__(self, robot):
+		super().__init__(initial_pos=robot.location)
+		self._robot = robot
+
+	def step(self, timestep):
+		pass
+
+	def get_pos(self):
+		return self._robot.location
+
+
 ## Represents a movement through space modeled as a parametric curve
 #
 class ParametricPathMovement(MovementPattern):
