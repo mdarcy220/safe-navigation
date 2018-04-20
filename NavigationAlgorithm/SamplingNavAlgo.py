@@ -381,10 +381,10 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 	def _gen_trajectory(self, start_point, length=1):
 		new_traj = [];
 		last_point = start_point;
+		angle = np.random.choice(360);
 		for i in range(length):
 
 			# Sample the next waypoint from the distribution
-			angle = np.random.choice(360);
 			vec = Vector.unit_vec_from_radians(angle*np.pi/180) * self._normal_speed;
 			waypoint = np.add(last_point, vec);
 			new_traj.append(waypoint);
