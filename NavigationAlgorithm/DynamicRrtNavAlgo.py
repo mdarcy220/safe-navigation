@@ -304,7 +304,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				y = int(sin_cached * i + fromPoint[1])
 				if grid_data[x,y] & ObsFlag.ANY_OBSTACLE:
 					return True
-				if self._sensors['debug']['name'] != 'safe' and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius and self._radar._env.get_obsflags([x,y]) & ObsFlag.DYNAMIC_OBSTACLE:
+				if self._sensors['debug']['name'] != 'safe' and Vector.distance_between(np.array([x,y]), self._gps.location()) < self._radar.radius and self._radar._env.get_obsflags([x,y], ObsFlag.DYNAMIC_OBSTACLE):
 					return True
 
 		return grid_data[int(toPoint[0])][int(toPoint[1])] & ObsFlag.ANY_OBSTACLE;

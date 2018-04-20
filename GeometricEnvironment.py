@@ -132,28 +132,33 @@ class GeometricEnvironment(Environment):
 	# <br>  Format: `[x, y]`
 	# <br>  -- Location to check
 	#
-	def get_obsflags(self, location):
+	def get_obsflags(self, location, flag_types=0xFFFFFFFF):
 		flags = 0x00000000
-		for obs in self.dynamic_obstacles:
-			vec = np.subtract(location, obs.coordinate)
-			if (obs.shape == 1 and np.dot(vec, vec) < obs.radius*obs.radius) \
-				or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
-				or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
-				or (obs.shape == 4 and obs.polygon.contains_point(location)):
-				flags |= ObsFlag.DYNAMIC_OBSTACLE
-				break
+		if flag_types & (ObsFlag.DYNAMIC_OBSTACLE | ObsFlag.ANY_OBSTACLE):
+			for obs in self.dynamic_obstacles:
+				vec = np.subtract(location, obs.coordinate)
+				if (obs.shape == 1 and np.dot(vec, vec) < obs.radius*obs.radius) \
+					or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
+					or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
+					or (obs.shape == 4 and obs.polygon.contains_point(location)):
+					flags |= ObsFlag.DYNAMIC_OBSTACLE
+					break
 
-		for obs in self.static_obstacles:
-			vec = np.subtract(location, obs.coordinate)
-			if (obs.shape == 1 and np.dot(vec, vec) < obs.radius*obs.radius) \
-				or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
-				or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
-				or (obs.shape == 4 and obs.polygon.contains_point(location)):
-				flags |= ObsFlag.STATIC_OBSTACLE
-				break
+		if flag_types & (ObsFlag.STATIC_OBSTACLE | ObsFlag.ANY_OBSTACLE):
+			for obs in self.static_obstacles:
+				vec = np.subtract(location, obs.coordinate)
+				if (obs.shape == 1 and np.dot(vec, vec) < obs.radius*obs.radius) \
+					or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
+					or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
+					or (obs.shape == 4 and obs.polygon.contains_point(location)):
+					flags |= ObsFlag.STATIC_OBSTACLE
+					break
 
 		if flags & (ObsFlag.DYNAMIC_OBSTACLE | ObsFlag.STATIC_OBSTACLE):
 			flags |= ObsFlag.ANY_OBSTACLE
+
+		# Make sure to only return the requested flag types
+		flags = flags & flag_types
 
 		return flags
 
