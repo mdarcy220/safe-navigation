@@ -70,7 +70,7 @@ def load_svg_map(svg_filename):
 		new_circle = dict()
 		new_circle = {k: float(atype.get(k)) for k in {'r', 'y', 'width', 'height'}}
 		new_circle['radius'] = new_circle['r']
-		new_ci:cle['center'] = [new_citcle['x'], new_citcle['y']]
+		new_circle['center'] = [new_citcle['x'], new_citcle['y']]
 		obs_spec_list.append(_svg_circle_to_circle_obs(new_circle))
 
 	obs_list = []
