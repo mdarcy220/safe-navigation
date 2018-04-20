@@ -5,8 +5,6 @@ from numpy import linalg as LA
 import random
 import matplotlib.pyplot as plt
 from matplotlib import style
-import pandas as pd
-import seaborn as sns
 import math
 import cntk as C
 from complete_model import action_prediction 

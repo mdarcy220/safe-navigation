@@ -10,9 +10,6 @@ import numpy as np
 from numpy import linalg as LA
 import random
 import matplotlib.pyplot as plt
-from matplotlib import style
-import pandas as pd
-import seaborn as sns
 import math
 import Vector
 import cntk as C
@@ -303,7 +300,6 @@ class DeepIRLAlgorithm(AbstractNavigationAlgorithm):
 	
 	
 	def plot_reward(self, rewards, figsize=(7,7)):
-		sns.set(style="white")
 		#max_x = max([x for x,y in self._mdp.states()])
 		#max_y = max([y for x,y in self._mdp.states()])
 		#reward = np.zeros((max_x, max_y))

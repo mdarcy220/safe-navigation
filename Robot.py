@@ -6,17 +6,11 @@
 
 import numpy  as np
 import pygame as PG
-import math
-from Radar import Radar
-import Distributions
 import Vector
-import matplotlib.pyplot as plt
 import time
-import scipy.signal
 from pygame import gfxdraw
 from Environment import ObsFlag
 from RobotControlInput import RobotControlInput
-from NavigationAlgorithm import LinearNavigationAlgorithm
 import DrawTool
 import sys
 

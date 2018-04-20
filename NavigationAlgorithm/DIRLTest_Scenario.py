@@ -16,7 +16,6 @@ from numpy import linalg as LA
 import random
 import matplotlib.pyplot as plt
 from matplotlib import style
-import pandas as pd
 import math
 import Vector
 import cntk as C

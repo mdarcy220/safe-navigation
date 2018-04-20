@@ -9,40 +9,14 @@ import pickle
 import base64
 
 import DrawTool
-from GridDataEnvironment import GridDataEnvironment
-from GridDataRadar import GridDataRadar
-from GeometricEnvironment import GeometricEnvironment
-from GeometricRadar import GeometricRadar
-from Robot import Robot, RobotStats, GpsSensor
-from Target import Target
 import time
 import Vector
-from MDPAdapterSensor import MDPAdapterSensor
 import os
 import sys
 import json
 import datetime
 import binascii
 import random
-
-from NavigationObjective import NavigationObjective
-
-from NavigationAlgorithm import DeepQNavigationAlgorithm
-from NavigationAlgorithm import DynamicRrtNavigationAlgorithm
-from NavigationAlgorithm import FuzzyNavigationAlgorithm
-from NavigationAlgorithm import GlobalLocalNavigationAlgorithm
-from NavigationAlgorithm import IntegratedEnvNavigationAlgorithm
-from NavigationAlgorithm import LinearNavigationAlgorithm
-from NavigationAlgorithm import ManualMouseNavigationAlgorithm
-from NavigationAlgorithm import MpRrtNavigationAlgorithm
-from NavigationAlgorithm import MultiLevelNavigationAlgorithm
-from NavigationAlgorithm import SamplingNavigationAlgorithm
-from NavigationAlgorithm import ValueIterationNavigationAlgorithm
-from NavigationAlgorithm import InverseRLNavigationAlgorithm
-from NavigationAlgorithm import DeepIRLAlgorithm
-from NavigationAlgorithm import DeepQIRLAlgorithm
-from NavigationAlgorithm import DeepPredNavigationAlgorithm
-from NavigationAlgorithm import SFMNavigationAlgorithm
 
 from enum import Enum
 
