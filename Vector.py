@@ -203,7 +203,28 @@ def angle_degree_of(vec):
 #
 # @returns (float)
 # <br>	-- The difference between the angles, equivalent to the second
-# 	angle minus the first, mapped within the interval `[0, 180]`
+# 	angle minus the first, mapped within the interval `[-180, 180]`
 #
 def angle_diff_degrees(angle1, angle2):
 	return (angle2 - angle1 + 180) % 360 - 180
+
+
+## Returns (signed) difference between angles.
+#
+# Note: This always returns the difference with the smallest absolute value, so
+# for example `angle_diff_radians(np.pi/10, 19*np.pi/10)` would return -np.pi/5
+# rather than 18*np.pi/10.
+#
+# @param angle1 (float)
+# <br>	-- The first angle, in radians
+#
+# @param angle2 (float)
+# <br>	-- The second angle, in radians
+#
+# @returns (float)
+# <br>	-- The difference between the angles, equivalent to the second
+# 	angle minus the first, mapped within the interval `[-np.pi, np.pi]`
+#
+def angle_diff_radians(angle1, angle2):
+	return (angle2 - angle1 + np.pi) % (2*np.pi) - np.pi
+
