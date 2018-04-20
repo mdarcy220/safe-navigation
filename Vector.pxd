@@ -7,6 +7,7 @@
 # Provides basic vector math routines
 #
 
+import numpy as np
 cimport numpy as np
 
 cdef extern from "c_src/_Vector.h":

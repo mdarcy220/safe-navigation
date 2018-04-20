@@ -22,8 +22,9 @@ class Target:
 	def draw(self, dtool):
 		dtool.set_color(self._color);
 		dtool.set_stroke_width(0);
-		dtool.draw_circle(self.position, int(self.radius))
+		dtool.draw_circle(self.position, (self.radius))
 		dtool.set_color((0xFF, 0xFF, 0xFF));
-		dtool.draw_circle(self.position, int(self.radius/1.5))
+		dtool.draw_circle(self.position, (self.radius/1.5))
 		dtool.set_color(self._color);
-		dtool.draw_circle(self.position, int(self.radius/4))
+		dtool.draw_circle(self.position, (self.radius/4))
+

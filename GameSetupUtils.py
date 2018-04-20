@@ -1,33 +1,50 @@
-#!/usr/bin/python
 
-## @package Main
-#
-
-import numpy as np
+import pygame as PG
 import argparse
 import sys
-from Game import Game
 
-def get_cmdline_args():
+## Sets of a Pygame display and controller for the given Game with the given environment dimensions.
+#
+# `env_size` should be passed as a tuple of (width, height).
+#
+# Returns the gameDisplay from `PG.display.set_mode`. This is useful for
+# setting up a DrawTool later.
+#
+def setup_pygame_window(sim, env_size, window_title='Pygame Window'):
+
+	PG.init()
+	gameDisplay = PG.display.set_mode(env_size)
+	PG.display.set_caption(window_title)
+	def render_pygame(*args):
+		PG.display.update()
+	sim.add_trigger('post_update_display', render_pygame)
+
+	## Handles pygame events.
+	#
+	# Processes any received keypresses or mouse clicks.
+	#
+	def handle_pygame_events():
+		for event in PG.event.get():
+			if event.type == PG.QUIT:
+				sim.quit()
+			elif event.type == PG.KEYDOWN:
+				if event.key == PG.K_u:
+					self.update_game_image()
+				elif event.key == PG.K_q:
+					sim.quit()
+				elif event.key == PG.K_e:
+					sim_display_every_frame = (not sim._display_every_frame)
+				elif event.key == PG.K_p:
+					sim.pause()
+				elif event.key == PG.K_s:
+					sim.step()
+	sim.add_trigger('pre_frame', handle_pygame_events)
+
+	return gameDisplay
+
+
+def create_default_cmdline_parser():
 	parser = argparse.ArgumentParser(description="Safe Navigation simulator", prog=sys.argv[0])
-	parser.add_argument('--enable-memory',
-			help='Enable memory for the robot',
-			dest='enable_memory',
-			default=False,
-			action='store_true'
-	);
-	parser.add_argument('--batch-mode',
-			help='Enable batch mode (no output except csv line)',
-			dest='batch_mode',
-			default=False,
-			action='store_true'
-	);
-	parser.add_argument('--enable-pdf-smoothing-filter',
-			help='Run a filter to smooth the combined distribution',
-			dest='enable_pdf_smoothing_filter',
-			default=False,
-			action='store_true'
-	);
 	parser.add_argument('--show-real-time-plot',
 			help='Show a real-time plot of PDFs',
 			dest='show_real_time_plot',
@@ -46,17 +63,10 @@ def get_cmdline_args():
 			default=False,
 			action='store_true'
 	);
-	parser.add_argument('--display-robot-perspective',
-			help='Display robot\'s perspective (only show obstacles within radar range) ',
-			dest='display_robot_perspective',
-			default=False,
-			action='store_true'
-	);
-	parser.add_argument('--target-distribution-type',
-			help='Type of target distribution to use',
-			dest='target_distribution_type',
-			choices=['gaussian', 'rectangular', 'dotproduct'],
-			default='gaussian',
+	parser.add_argument('--unique-id',
+			help='A unique identifier for this simulation (printed in the CSV output). If omitted, a random identifier is generated.',
+			dest='unique_id',
+			default='',
 			action='store'
 	);
 	parser.add_argument('--robot-movement-momentum',
@@ -64,27 +74,6 @@ def get_cmdline_args():
 			dest='robot_movement_momentum',
 			type=float,
 			default=0.0,
-			action='store'
-	);
-	parser.add_argument('--robot-memory-size',
-			help='Maximum number of visited points to store in memory',
-			dest='robot_memory_size',
-			type=int,
-			default=500,
-			action='store'
-	);
-	parser.add_argument('--robot-memory-sigma',
-			help='Sigma of the robot memory gaussian',
-			dest='robot_memory_sigma',
-			type=float,
-			default=25,
-			action='store'
-	);
-	parser.add_argument('--robot-memory-decay',
-			help='Decay factor for the effect of remembered points over time',
-			dest='robot_memory_decay',
-			type=float,
-			default=1,
 			action='store'
 	);
 	parser.add_argument('--max-fps',
@@ -104,7 +93,7 @@ def get_cmdline_args():
 	parser.add_argument('--robot-speed',
 			help='Base speed of the robot',
 			dest='robot_speed',
-			type=int,
+			type=float,
 			default=6,
 			action='store'
 	);
@@ -136,25 +125,11 @@ def get_cmdline_args():
 			default=4,
 			action='store'
 	);
-	parser.add_argument('--radar-noise-level',
-			help='Width of Gaussian for radar noise',
-			dest='radar_noise_level',
-			type=float,
-			default=0.02,
-			action='store'
-	);
 	parser.add_argument('--map-name',
-			help='Name of the map to test on',
+			help='Name of the map file to test on',
 			dest='map_name',
 			type=str,
-			default='Maps/Maps_c.png',
-			action='store'
-	);
-	parser.add_argument('--debug-level',
-			help='Amount of debugging info to show',
-			dest='debug_level',
-			type=int,
-			default=0,
+			default='',
 			action='store'
 	);
 	parser.add_argument('--start-delay',
@@ -184,9 +159,6 @@ def get_cmdline_args():
 			default=None,
 			action='store'
 	);
-	return parser.parse_args(sys.argv[1:])
 
 
-if __name__ == '__main__':
-	Game = Game(get_cmdline_args())
-	Game.GameLoop()
+	return parser

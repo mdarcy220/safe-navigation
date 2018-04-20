@@ -35,7 +35,7 @@ def getAngleBetweenPoints(PointA, PointB):
 # <br>	Format: `[x, y]`
 # <br>	-- The first point
 #
-# @param PointB (numpy array)
+# @param point_b (numpy array)
 # <br>	Format: `[x, y]`
 # <br>	-- The second point
 #
@@ -45,6 +45,28 @@ def getAngleBetweenPoints(PointA, PointB):
 def degrees_between(point_a, point_b):
 	vectorAB = np.subtract(point_b, point_a);
 	return (np.arctan2(vectorAB[1], vectorAB[0]) * 180 / np.pi) % 360;
+
+
+## Gets the angle from point a to point b, in radians
+#
+# The return value of this function is guaranteed to be such that `point_b`
+# is equal to `point_a + [np.cos(angle), np.sin(angle)]
+# * scale`, where `scale` is the distance between points a and b.
+#
+# @param point_a (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- The first point
+#
+# @param point_b (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- The second point
+#
+# @returns (float)
+# <br>	-- The angle from the first point to the second point, in radians
+#
+def radians_between(point_a, point_b):
+	vectorAB = np.subtract(point_b, point_a);
+	return np.arctan2(vectorAB[1], vectorAB[0]);
 	
 
 
@@ -181,7 +203,28 @@ def angle_degree_of(vec):
 #
 # @returns (float)
 # <br>	-- The difference between the angles, equivalent to the second
-# 	angle minus the first, mapped within the interval `[0, 180]`
+# 	angle minus the first, mapped within the interval `[-180, 180]`
 #
 def angle_diff_degrees(angle1, angle2):
 	return (angle2 - angle1 + 180) % 360 - 180
+
+
+## Returns (signed) difference between angles.
+#
+# Note: This always returns the difference with the smallest absolute value, so
+# for example `angle_diff_radians(np.pi/10, 19*np.pi/10)` would return -np.pi/5
+# rather than 18*np.pi/10.
+#
+# @param angle1 (float)
+# <br>	-- The first angle, in radians
+#
+# @param angle2 (float)
+# <br>	-- The second angle, in radians
+#
+# @returns (float)
+# <br>	-- The difference between the angles, equivalent to the second
+# 	angle minus the first, mapped within the interval `[-np.pi, np.pi]`
+#
+def angle_diff_radians(angle1, angle2):
+	return (angle2 - angle1 + np.pi) % (2*np.pi) - np.pi
+

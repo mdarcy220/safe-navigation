@@ -1,4 +1,4 @@
-__pycache__
+__pycache__/
 .git
 *.pyc
 .*.swp
@@ -6,6 +6,6 @@ __pycache__
 *.csv
 *.so
 *.c
-build
-doc
+build/
+doc/
 run_once.sh

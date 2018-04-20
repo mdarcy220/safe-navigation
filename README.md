@@ -5,19 +5,19 @@ navigation for a single robot in an unknown environment.
 
 ## Running the simulator
 
-To run the simulator, first `cd` into the directory you cloned this
+As this simulator has evolved, it has become more like a library with many
+different features and types of simulation configurations available. The
+`run_default.py` file serves as a basic template for setting up and running
+a simulation.  You can simply `cd` into the directory you cloned this
 repository to, then run:
 
 ```
-python3 Main.py
+python3 run_default.py --display-every-frame
 ```
 
-There are many settings that can be configured from the command line. To
-see which flags are available, just run:
-
-```
-python3 Main.py --help
-```
+This will run a basic simulation, similar to the original scenario this
+simulator was made for. You can run with the `--help` flag to see the
+command-line arguments available by default.
 
 ### Unit tests
 
@@ -28,5 +28,5 @@ python3 -m testcode.geometry_test
 
 ## Contributing
 
-Use tabs, never spaces. Spaces break the Cython compilation. Also, use Unix line endings.
+Use tabs, never spaces. Spaces can break the Cython compilation. Also, use Unix line endings.
 

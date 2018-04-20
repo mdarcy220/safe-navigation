@@ -92,6 +92,10 @@ class GridDataEnvironment(Environment):
 	def update_display(self, dtool):
 		dtool.draw_image(self.static_base_image, (0, 0))
 		dtool.set_stroke_width(0);
+
+		for obj in self.non_interactive_objects:
+			obj.draw(dtool)
+
 		for i in self.dynamic_obstacles:
 			dtool.set_color(i.fillcolor);
 			if (i.shape == 1):

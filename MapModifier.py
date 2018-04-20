@@ -345,24 +345,28 @@ def _map_mod_obsmat(env):
 
 	with open('obsmat.json', 'r') as f:
 		obsmat = json.load(f)
+		time_offset = obsmat[str(env.cmdargs.ped_id_to_replace)][0]['time'] if env.cmdargs.ped_id_to_replace > 0 else 0
 		for ped_id in obsmat:
+			if ped_id == str(env.cmdargs.ped_id_to_replace):
+				continue
+
 			path_list = []
 			firstpoint = obsmat[ped_id][0]
-			path_list.append((0, 0, firstpoint['time']-770))
+			path_list.append((-1000, -1000, firstpoint['time']-time_offset))
 			for waypoint in obsmat[ped_id]:
-				pos = Geometry.apply_homography(H_meter2pix, (waypoint['pos_x'], waypoint['pos_y']))
+				#pos = Geometry.apply_homography(H_meter2pix, (waypoint['pos_x'], waypoint['pos_y']))
+				pos = (waypoint['pos_x'], waypoint['pos_y'])
 				# Rotate 90 degrees to match video
-				path_list.append((pos[1], pos[0], waypoint['time']-770))
+				path_list.append((pos[1], pos[0], waypoint['time']-time_offset))
 
 			# Get obstacles offscreen after they finish their path
-			path_list.append((0, 0, path_list[-1][2]+0.01))
+			path_list.append((-1000, -1000, path_list[-1][2]+0.01))
 
 			obs_mover = MovementPattern.PathMovement(path_list, loop=False)
 
-			dynobs = DynamicObstacle(obs_mover)
+			dynobs = DynamicObstacle(obs_mover, obs_id=int(ped_id))
 			dynobs.shape = 3
-			dynobs.radius = 6
-			dynobs.width = 12
-			dynobs.height = 6
+			dynobs.width = 0.6
+			dynobs.height = 0.3
 			env.dynamic_obstacles.append(dynobs)
 

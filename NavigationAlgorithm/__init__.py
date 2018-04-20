@@ -15,9 +15,12 @@ from .LinearNavAlgo import LinearNavigationAlgorithm
 from .ManualMouseNavAlgo import ManualMouseNavigationAlgorithm
 from .MpRrtNavAlgo import MpRrtNavigationAlgorithm
 from .MultiLevelNavAlgo import MultiLevelNavigationAlgorithm
-from .SamplingNavAlgo import SamplingNavigationAlgorithm
+from .SamplingNavAlgo import SamplingNavigationAlgorithm, DwaSamplingNavigationAlgorithm
 from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
 from .InverseRLNavAlgo import InverseRLNavigationAlgorithm
 from .DeepIRL import DeepIRLAlgorithm
-#from .DeepQIRLNavAlgo import DeepQIRLAlgorithm # this file is kept as a reference
+from .DeepQIRLNavAlgo import DeepQIRLAlgorithm # this file is kept as a reference
 from .DQNIRLNavAlgo import DeepQIRLAlgorithm
+from .DeepPredNavAlgo import DeepPredNavigationAlgorithm
+from .SFMNavAlgo import SFMNavigationAlgorithm
+from .MovementPatternNavAlgo import MovementPatternNavigationAlgorithm

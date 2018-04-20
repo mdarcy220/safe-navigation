@@ -9,9 +9,10 @@ import DrawTool
 from DynamicObstacles import DynamicObstacle
 import sys
 import Vector
-from Environment import Environment
+from Environment import Environment, ObsFlag
 import MapModifier
 import StaticGeometricMaps
+import Geometry
 
 
 ## Holds information related to the simulation environment, such as the
@@ -20,11 +21,15 @@ import StaticGeometricMaps
 class GeometricEnvironment(Environment):
 
 	def __init__(self, width, height, map_filename, cmdargs=None):
+		super().__init__(width, height, map_filename, cmdargs);
 		self.cmdargs = cmdargs
 		self.width = width
 		self.height = height
 		self.dynamic_obstacles = []
 		self.static_obstacles = []
+
+		self._triggers['pre_draw'] = []
+		self._triggers['post_draw'] = []
 
 		# Note: Order is important here:
 		#  - init_map_modifiers() MUST be called BEFORE
@@ -60,7 +65,7 @@ class GeometricEnvironment(Environment):
 
 
 	def load_map(self, map_filename):
-		StaticGeometricMaps._create_map_1(self)
+		self.static_obstacles = StaticGeometricMaps.load_map_file(self.cmdargs.map_name)
 
 
 	def apply_map_modifier_by_number(self, modifier_num):
@@ -80,17 +85,27 @@ class GeometricEnvironment(Environment):
 	# <br>	-- The DrawTool to draw onto
 	#
 	def update_display(self, dtool):
+		for trigger in self._triggers['pre_draw']:
+			trigger(dtool)
+
 		dtool.set_stroke_width(0);
 		self._draw_static_obstacles(dtool)
+
+		for obj in self.non_interactive_objects:
+			obj.draw(dtool)
+
 		for obs in self.dynamic_obstacles:
 			dtool.set_color(obs.fillcolor);
 			self._draw_obstacle(dtool, obs)
+
+		for trigger in self._triggers['post_draw']:
+			trigger(dtool)
 
 
 	def _draw_static_obstacles(self, dtool):
 		# Draw the background
 		dtool.set_color((0xFF, 0xFF, 0xFF))
-		dtool.draw_rect([0,0], [self.width, self.height])
+		dtool.draw_rect([-20,-20], [self.width+40, self.height+40])
 
 		# Draw static obstacles
 		for obs in self.static_obstacles:
@@ -100,13 +115,13 @@ class GeometricEnvironment(Environment):
 
 	def _draw_obstacle(self, dtool, obs):
 		if (obs.shape == 1):
-			dtool.draw_circle(np.array(obs.coordinate, dtype='int64'), obs.radius)
+			dtool.draw_circle(np.array(obs.coordinate), obs.radius)
 		elif (obs.shape == 2):
 			dtool.draw_rect(obs.coordinate.tolist(), obs.size)
 		elif (obs.shape == 3):
 			vec = obs.get_velocity_vector()
 			angle = np.arctan2(vec[1], vec[0])
-			dtool.draw_ellipse(np.array(obs.coordinate, dtype='int64'), obs.width, obs.height, angle)
+			dtool.draw_ellipse(np.array(obs.coordinate), obs.width, obs.height, angle)
 		elif (obs.shape == 4):
 			dtool.draw_poly(obs.polygon.get_vertices())
 
@@ -117,8 +132,33 @@ class GeometricEnvironment(Environment):
 	# <br>  Format: `[x, y]`
 	# <br>  -- Location to check
 	#
-	def get_obsflags(self, location):
-		# TODO: implement this method
-		# 0 = no obstacle
-		return 0
+	def get_obsflags(self, location, flag_types=0xFFFFFFFF):
+		flags = 0x00000000
+		if flag_types & (ObsFlag.DYNAMIC_OBSTACLE | ObsFlag.ANY_OBSTACLE):
+			for obs in self.dynamic_obstacles:
+				vec = np.subtract(location, obs.coordinate)
+				if (obs.shape == 1 and np.dot(vec, vec) < obs.radius*obs.radius) \
+					or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
+					or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
+					or (obs.shape == 4 and obs.polygon.contains_point(location)):
+					flags |= ObsFlag.DYNAMIC_OBSTACLE
+					break
+
+		if flag_types & (ObsFlag.STATIC_OBSTACLE | ObsFlag.ANY_OBSTACLE):
+			for obs in self.static_obstacles:
+				vec = np.subtract(location, obs.coordinate)
+				if (obs.shape == 1 and np.dot(vec, vec) < obs.radius*obs.radius) \
+					or (obs.shape == 2 and Geometry.point_inside_rectangle([obs.coordinate, obs.size], location)) \
+					or (obs.shape == 3 and np.dot(vec, vec) < max(obs.width, obs.height)**2/4 and Geometry.point_inside_ellipse(obs.coordinate, obs.width, obs.height, np.arctan2(obs.get_velocity_vector()[1], obs.get_velocity_vector()[0]), location)) \
+					or (obs.shape == 4 and obs.polygon.contains_point(location)):
+					flags |= ObsFlag.STATIC_OBSTACLE
+					break
+
+		if flags & (ObsFlag.DYNAMIC_OBSTACLE | ObsFlag.STATIC_OBSTACLE):
+			flags |= ObsFlag.ANY_OBSTACLE
+
+		# Make sure to only return the requested flag types
+		flags = flags & flag_types
+
+		return flags
 

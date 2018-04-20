@@ -58,10 +58,13 @@ class PygameDrawTool(DrawTool):
 
 
 	def draw_circle(self, center, radius):
-		PG.draw.circle(self._pg_surface, self._color, center, radius, self._stroke_width);
+		PG.draw.circle(self._pg_surface, self._color, np.array(center, dtype=int), int(radius), int(self._stroke_width));
 
 
 	def draw_ellipse(self, center, width, height, angle):
+		center = np.array(center, dtype=int)
+		width = int(width)+1
+		height = int(height)+1
 		surface = PG.Surface((width, height), PG.SRCALPHA, 32).convert_alpha()
 		PG.draw.ellipse(surface, self._color,(0,0,width,height),0)
 		rot_surface = PG.transform.rotate(surface, angle*180/np.pi)
@@ -70,15 +73,15 @@ class PygameDrawTool(DrawTool):
 
 
 	def draw_poly(self, points):
-		PG.draw.polygon(self._pg_surface, self._color, points, self._stroke_width);
+		PG.draw.polygon(self._pg_surface, self._color, points, int(self._stroke_width))
 
 
 	def draw_lineseries(self, points, closed=False):
-		PG.draw.lines(self._pg_surface, self._color, closed, points, self._stroke_width);
+		PG.draw.lines(self._pg_surface, self._color, closed, points, int(self._stroke_width));
 
 
 	def draw_line(self, point1, point2):
-		PG.draw.line(self._pg_surface, self._color, point1, point2, self._stroke_width);
+		PG.draw.line(self._pg_surface, self._color, point1, point2, int(self._stroke_width));
 
 
 	def draw_rect(self, point, dimension):
@@ -102,8 +105,8 @@ def _color_to_int(color_tuple):
 ## Draws to SVG markup
 #
 class SvgDrawTool(DrawTool):
-	def __init__(self):
-		self._svg_template_xml = """<svg width="800px" height="600px" viewBox="0 0 800 600"><g id="layer1">{}</g></svg>""";
+	def __init__(self, viewbox_rect=(0, 0, 800, 600), img_size=(800, 600), svg_transform=""):
+		self._svg_template_xml = """<svg width="{:d}px" height="{:d}px" viewBox="{:f} {:f} {:f} {:f}"><g id="layer1" transform="{}">{{}}</g></svg>""".format(img_size[0], img_size[1], viewbox_rect[0], viewbox_rect[1], viewbox_rect[2], viewbox_rect[3], svg_transform);
 		self._elems = [];
 		self._color = 0;
 		self._stroke_width = 1
@@ -113,7 +116,7 @@ class SvgDrawTool(DrawTool):
 
 
 	def _gen_style_str(self):
-		style_attr = "stroke-width:{:d};".format(self._stroke_width);
+		style_attr = "stroke-width:{:f};".format(self._stroke_width);
 		color = '#{:06x}'.format(_color_to_int(self._color));
 		style_attr += ("fill:none;stroke:{};" if self._stroke_width != 0 else "fill:{};stroke:none;").format(color);
 		return style_attr

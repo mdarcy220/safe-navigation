@@ -6,18 +6,13 @@
 
 import numpy  as np
 import pygame as PG
-import math
-from Radar import Radar
-import Distributions
 import Vector
-import matplotlib.pyplot as plt
 import time
-import scipy.signal
 from pygame import gfxdraw
 from Environment import ObsFlag
 from RobotControlInput import RobotControlInput
-from NavigationAlgorithm import LinearNavigationAlgorithm
 import DrawTool
+import sys
 
 
 ## Holds statistics about the robot's progress, used for reporting the
@@ -86,30 +81,51 @@ class Robot:
 	# <br>	-- A name for the robot, only used for the purpose of
 	# 	printing debugging messages.
 	#
-	def __init__(self, initial_position, cmdargs, path_color = (0, 0, 255), name=""):
+	# @param objective (Objective object)
+	# <br>	-- Objective for the robot
+	#
+	def __init__(self, initial_position, cmdargs, path_color = (0, 0, 255), name="", objective=None):
 		self.location           = initial_position;
 		self._cmdargs           = cmdargs;
 		self._path_color        = path_color
 		self.name               = name;
+		self._objective         = objective
 
 		self.speed              = cmdargs.robot_speed;
 		self.stats              = RobotStats();
+		self._current_speed     = self.speed
+		self._movement_ang      = 0 
 
 		self._sensors           = {};
 
 		self._nav_algo = None;
+
+		self._obstacle = None
 
 		self.movement_momentum = cmdargs.robot_movement_momentum
 
 		# Variables to store drawing and debugging info
 		self._last_mmv		= np.array([0, 0])
 		self._drawcoll = 0
-		self._visited_points	= [self.location]
+		self._visited_points	= [np.array(self.location)]
+
+		self.debug_info = {
+			'trajectory': self._visited_points,
+			'min_proximities': []
+		}
 
 		# Number of steps taken in the navigation
 		self.stepNum = 0
 
 		self._last_collision_step	= -1
+
+
+	def get_obstacle(self):
+		return self._obstacle
+
+
+	def set_obstacle(self, obstacle):
+		self._obstacle = obstacle
 
 
 	def get_stats(self):
@@ -133,9 +149,12 @@ class Robot:
 		control_input = self._nav_algo.select_next_action();
 		self.stats.decision_times.append(time.perf_counter() - start_decision_time)
 
+		self.debug_info['min_proximities'] = self._nav_algo.debug_info['min_proximities'] if 'min_proximities' in self._nav_algo.debug_info else []
+
 		speed = min(control_input.speed, self.speed);
 		movement_ang = control_input.angle;
-
+		self._current_speed = speed
+		self._movement_ang = movement_ang
 		# Update the robot's motion based on the chosen direction
 		# (uses acceleration to prevent the robot from being able
 		# to instantaneously change direction, more realistic)
@@ -150,8 +169,6 @@ class Robot:
 		new_location = np.add(self.location, movement_vec)
 		if (env.get_obsflags(new_location) & ObsFlag.ANY_OBSTACLE):
 			if self.stepNum - self._last_collision_step > 1:
-				if not self._cmdargs.batch_mode:
-					print('Robot ({}) glitched into obstacle!'.format(self.name))
 				self._drawcoll = 10
 				if env.get_obsflags(new_location) & ObsFlag.DYNAMIC_OBSTACLE:
 					self.stats.num_dynamic_collisions += 1
@@ -166,7 +183,10 @@ class Robot:
 			new_location = np.array(new_location, dtype=int)
 		self.location = new_location
 
-		self._visited_points.append(np.array(self.location, dtype=int))
+		if self._obstacle is not None:
+			self._obstacle.next_step(1)
+
+		self._visited_points.append(np.array(self.location))
 
 
 	def set_nav_algo(self, nav_algo):
@@ -184,62 +204,72 @@ class Robot:
 		return self._nav_algo.has_given_up();
 
 
+	def test_objective(self):
+		if self._objective is None:
+			return False
+
+		return self._objective.test(self)
+
+
 	## Draws this `Robot` to the given surface
 	#
 	# @param dtool (`DrawTool` object)
 	# <br>	-- The `DrawTool` with which to draw the robot
 	#
 	def draw(self, dtool):
+		if self._obstacle is not None:
+			dtool.set_color(self._obstacle.fillcolor);
+			self._sensors['radar']._env._draw_obstacle(dtool, self._obstacle)
 		dtool.set_color(self._path_color);
 		dtool.set_stroke_width(2);
 		dtool.draw_lineseries(self._visited_points[-1500:])
-		if (0 < self._cmdargs.debug_level):
 
-			# Draw circle representing radar range
-			dtool.draw_circle(np.array(self.location, dtype=int), int(self._sensors['radar'].radius))
+		# Draw circle representing radar range
+		#dtool.draw_circle(np.array(self.location, dtype=int), int(self._sensors['radar'].radius))
 
-			# Draw the robot's sensor observations
-			#dtool.set_color((0xaa, 0x55, 0xdd))
-			#self._draw_pdf(dtool, self._sensors['radar'].scan(self._sensors['gps'].location()))
-			#dtool.set_color(self._path_color)
+		# Draw the robot's sensor observations
+		dtool.set_color((0xaa, 0x55, 0xdd))
+		dtool.set_stroke_width(2);
+		self._draw_pdf(dtool, self._sensors['radar'].scan(self._sensors['gps'].location()))
+		dtool.set_color(self._path_color)
 
-			# Draw circle to indicate a collision
-			if self._drawcoll > 0:
-				dtool.set_color((255, 80, 210))
-				dtool.set_stroke_width(3);
-				dtool.draw_circle(np.array(self.location, dtype=int), 16)
-				self._drawcoll = self._drawcoll - 1
+		# Draw circle to indicate a collision
+		if self._drawcoll > 0:
+			dtool.set_color((255, 80, 210))
+			dtool.set_stroke_width(0.3);
+			dtool.draw_circle(np.array(self.location), 1.2)
+			self._drawcoll = self._drawcoll - 1
 
-			# Draw static mapper data
-			if 'mapdata' in self._nav_algo.debug_info.keys() and isinstance(dtool, DrawTool.PygameDrawTool):
-				pix_arr = PG.surfarray.pixels2d(dtool._pg_surface);
-				pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
-				del pix_arr
+		# Draw static mapper data
+		if 'mapdata' in self._nav_algo.debug_info.keys() and isinstance(dtool, DrawTool.PygameDrawTool):
+			pix_arr = PG.surfarray.pixels2d(dtool._pg_surface);
+			pix_arr[self._nav_algo.debug_info['mapdata'] == 0b00000101] = 0xFF5555;
+			del pix_arr
 
-			# Draw predicted obstacle locations
-			if "future_obstacles" in self._nav_algo.debug_info.keys():
-				if self._nav_algo.debug_info["future_obstacles"]:
-					for fff in self._nav_algo.debug_info["future_obstacles"]:
-						for x,y in fff.keys():
-							gfxdraw.pixel(dtool._pg_surface.screen, x, y, (255,0,0))
+		# Draw predicted obstacle locations
+		if "future_obstacles" in self._nav_algo.debug_info.keys():
+			if self._nav_algo.debug_info["future_obstacles"]:
+				for fff in self._nav_algo.debug_info["future_obstacles"]:
+					for x,y in fff.keys():
+						gfxdraw.pixel(dtool._pg_surface.screen, x, y, (255,0,0))
 
-			# Draw planned path waypoints
-			if "path" in self._nav_algo.debug_info.keys():
-				if self._nav_algo.debug_info["path"]:
-					points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
-					dtool.set_color((30,30,60));
-					dtool.set_stroke_width(0);
-					for x,y in points:
-						dtool.draw_circle((x,y), 3)
+		# Draw planned path waypoints
+		if "path" in self._nav_algo.debug_info.keys():
+			if self._nav_algo.debug_info["path"]:
+				points = [x.data[:2] for x in self._nav_algo.debug_info["path"]]
+				dtool.set_color((30,30,60));
+				dtool.set_stroke_width(0);
+				for x,y in points:
+					dtool.draw_circle((x,y), 3)
 
-			# Draw RRT
-			if "rrt_tree" in self._nav_algo.debug_info.keys() and self._nav_algo.debug_info["rrt_tree"]:
-				dtool.set_color((255,0,0));
-				dtool.set_stroke_width(1);
-				for node in self._nav_algo.debug_info['rrt_tree'].toListValidNodes():
-					if node.parent is None or node is None:
-						continue
-					dtool.draw_line((node.data[0],node.data[1]), (node.parent.data[0],node.parent.data[1]))
+		# Draw RRT
+		if "rrt_tree" in self._nav_algo.debug_info.keys() and self._nav_algo.debug_info["rrt_tree"]:
+			dtool.set_color((255,0,0));
+			dtool.set_stroke_width(0.11);
+			for node in self._nav_algo.debug_info['rrt_tree'].toListValidNodes():
+				if node.parent is None or node is None:
+					continue
+				dtool.draw_line((node.data[0],node.data[1]), (node.parent.data[0],node.parent.data[1]))
 
 
 	def draw_radar_mask(self, mask_screen, radar_data=None):

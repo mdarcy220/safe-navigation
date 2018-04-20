@@ -8,6 +8,7 @@
 
 import numpy as np
 import Vector
+import cython
 
 
 ## Factor to multiply by to convert degrees to radians
@@ -96,6 +97,7 @@ def circle_circle_intersection(circle1_center, circle1_radius, circle2_center, c
 # 	intersection points, an empty list will be returned. If an error
 # 	occurs, `None` is returned.
 #
+@cython.locals(x1=cython.double, y1=cython.double, x2=cython.double, y2=cython.double, circle_radius=cython.double)
 def circle_line_intersection(circle_center, circle_radius, line):
 
 	# Make things easier by shifting the coordinate system so the circle
@@ -183,20 +185,36 @@ def circle_line_intersection(circle_center, circle_radius, line):
 # <br>	-- coordinate of intersection if the lines intersect, `None`
 # 	otherwise
 #
+@cython.locals(p0_x=cython.double, p0_y=cython.double, p1_x=cython.double, p1_y=cython.double, p2_x=cython.double, p2_y=cython.double, p3_x=cython.double, p3_y=cython.double, s1_x=cython.double, s2_x=cython.double)
 def line_line_intersection(line1, line2):
-	vec_line1 = line1[1] - line1[0];
-	vec_line2 = line2[1] - line2[0];
-	crossProd = np.cross(vec_line1, vec_line2)
 
-	if crossProd == 0:
-		return None;
+	# Super-optimized version from LeMothes book:
+	p0_x = line1[0][0]
+	p0_y = line1[0][1]
+	p1_x = line1[1][0]
+	p1_y = line1[1][1]
+	p2_x = line2[0][0]
+	p2_y = line2[0][1]
+	p3_x = line2[1][0]
+	p3_y = line2[1][1]
+	s1_x = p1_x - p0_x; s1_y = p1_y - p0_y;
+	s2_x = p3_x - p2_x; s2_y = p3_y - p2_y;
 
-	t = np.cross(line2[0] - line1[0], vec_line2) / crossProd
-	u = np.cross(line2[0] - line1[0], vec_line1) / crossProd
+	s_denom = (-s2_x * s1_y + s1_x * s2_y)
+	if s_denom == 0:
+		return None
 
-	if 0 <= t and t <= 1 and 0 <= u and u <= 1:
-		return line1[0] + (t * vec_line1);
-	return None;
+	t_denom = (-s2_x * s1_y + s1_x * s2_y)
+	if t_denom == 0:
+		return None
+
+	s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / s_denom;
+	t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / t_denom;
+
+	if (s >= 0 and s <= 1 and t >= 0 and t <= 1):
+		return np.array([p0_x + (t * s1_x), p0_y + (t * s1_y)])
+
+	return None
 
 
 ## Returns the points of intersection of the given rectangle and line.
@@ -503,7 +521,7 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 	for i in range(4):
 		rect_line = rect_lines[i];
 		rect_point = rect_points[i];
-		if Vector.getDistanceBetweenPoints(rect_point, circle_center) < circle_radius:
+		if Vector.distance_between(rect_point, circle_center) < circle_radius:
 			has_inter = True
 			break;
 		inters = circle_line_intersection(circle_center, circle_radius, rect_line);
@@ -526,7 +544,9 @@ def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos,
 #          rotation of `x` about the origin
 #
 def make_rot_matrix(angle):
-	return np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+	cosang = np.cos(angle)
+	sinang = np.sin(angle)
+	return np.array([[cosang, -sinang], [sinang, cosang]])
 
 
 ## Returns the point(s) of intersection of the given ellipse
@@ -555,6 +575,7 @@ def make_rot_matrix(angle):
 # 	intersection points, an empty list will be returned. If an error
 # 	occurs, `None` is returned.
 #
+@cython.locals(ellipse_width=cython.double, ellipse_height=cython.double, ellipse_angle=cython.double, ellipse_rx=cython.double, ellipse_ry=cython.double)
 def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ellipse_angle, line):
 
 	# Use radii instead of diameters
@@ -590,6 +611,54 @@ def ellipse_line_intersection(ellipse_center, ellipse_width, ellipse_height, ell
 		intersections.append(np.dot(inverse_trans_matrix, trans_inter))
 
 	return intersections
+
+
+## Tests whether the given point is inside the given ellipse.
+# 
+# @param ellipse_center (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the center of the ellipse
+# 
+# @param ellipse_width (float)
+# <br>	-- the width of the ellipse
+# 
+# @param ellipse_height (float)
+# <br>	-- the height of the ellipse
+# 
+# @param ellipse_angle (float)
+# <br>	-- the angle of the ellipse
+# 
+# @param line (numpy array)
+# <br>	Format: `[x, y]`
+# <br>	-- the point to check
+# 
+# @returns (boolean)
+# <br>	-- True if the point is inside the ellipse, False otherwise
+#
+def point_inside_ellipse(ellipse_center, ellipse_width, ellipse_height, ellipse_angle, point):
+	# Use radii instead of diameters
+	ellipse_rx = ellipse_width / 2.0
+	ellipse_ry = ellipse_height / 2.0
+
+	# Transformation matrix to normalize the angle of the ellipse
+	rotation_matrix = make_rot_matrix(-ellipse_angle)
+
+	# Transformation to squeeze/stretch the ellipse back to a perfect circle
+	stretch_matrix = np.array([[1.0/ellipse_rx, 0], [0, 1.0/ellipse_ry]])
+
+	# Combined transformation to make the ellipse a perfect circle
+	# Note: Matrix multiplication, so order matters
+	transform_matrix = np.dot(stretch_matrix, rotation_matrix)
+
+	# Transform both the ellipse and the point
+	# This reduces the problem to a point-in-circle problem
+	new_center = np.dot(transform_matrix, ellipse_center)
+	new_point = np.dot(transform_matrix, point)
+
+	vec = new_point - new_center
+
+	# Radius is 1 due to transformation
+	return np.dot(vec, vec) < 1
 
 
 ## Transforms a point according to the given homography matrix.

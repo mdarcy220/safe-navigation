@@ -30,7 +30,15 @@ class Environment:
 		self.width = width
 		self.height = height
 		self.dynamic_obstacles = []
+		self.non_interactive_objects = []
 		self._speed_mode = cmdargs.speedmode
+		self._triggers = {'step': []}
+
+
+	def add_trigger(self, exec_on, exec_func):
+		if exec_on not in self._triggers:
+			self._triggers[exec_on] = []
+		self._triggers[exec_on].append(exec_func)
 
 
 	def get_speed_mode(self):
@@ -69,6 +77,9 @@ class Environment:
 	## Step the environment, updating dynamic obstacles
 	#
 	def next_step(self, timestep=1):
+		for trigger in self._triggers['step']:
+			trigger(timestep)
+
 		self._update_dynamic_obstacles(timestep);
 
 
