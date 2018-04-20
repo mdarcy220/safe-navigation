@@ -15,7 +15,7 @@ from .LinearNavAlgo import LinearNavigationAlgorithm
 from .ManualMouseNavAlgo import ManualMouseNavigationAlgorithm
 from .MpRrtNavAlgo import MpRrtNavigationAlgorithm
 from .MultiLevelNavAlgo import MultiLevelNavigationAlgorithm
-from .SamplingNavAlgo import SamplingNavigationAlgorithm
+from .SamplingNavAlgo import SamplingNavigationAlgorithm, DwaSamplingNavigationAlgorithm
 from .ValueIterationNavAlgo import ValueIterationNavigationAlgorithm
 from .InverseRLNavAlgo import InverseRLNavigationAlgorithm
 from .DeepIRL import DeepIRLAlgorithm
