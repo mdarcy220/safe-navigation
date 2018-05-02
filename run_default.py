@@ -47,22 +47,19 @@ radar = GeometricRadar(env, radius = cmdargs.radar_range);
 initial_position = np.array(start_point.position);
 robot_list = [];
 
-def make_default_robot(robot_name, path_color, debug_name=None):
-	if debug_name is None:
-		debug_name = robot_name
-
+def make_default_robot(robot_name, path_color):
 	robot = Robot(initial_position, cmdargs, path_color=path_color, name=robot_name, objective=objective);
 	robot.put_sensor('radar', radar);
 	robot.put_sensor('gps', GpsSensor(robot));
-	robot.put_sensor('debug', {'name': debug_name});
+	robot.put_sensor('params', {'name': robot_name});
 
 	return robot
 
-robot = make_default_robot('NormalRobot', (0, 0, 255), 'normal')
+robot = make_default_robot('NormalRobot', (0, 0, 255))
 robot.set_nav_algo(DynamicRrtNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
 robot_list.append(robot);
 
-robot = make_default_robot('SafeRobot', (0xf3,0x91,0x12), 'safe')
+robot = make_default_robot('SafeRobot', (0xf3,0x91,0x12))
 robot.set_nav_algo(GlobalLocalNavigationAlgorithm(robot.get_sensors(), target, cmdargs, local_algo_init = SamplingNavigationAlgorithm));
 robot_list.append(robot);
 

@@ -88,7 +88,6 @@ class ValueIterationNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._mdp = sensors['mdp'];
 		self._gps = sensors['gps'];
-		self.debug_info = self._sensors['debug']
 
 		self._values = {k: 0.0 for k in self._mdp.states()}
 		self._values[self._mdp.goal_state()] = 1

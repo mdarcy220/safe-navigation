@@ -1,6 +1,4 @@
 
-import pygame as PG
-import argparse
 import sys
 
 ## Sets of a Pygame display and controller for the given Game with the given environment dimensions.
@@ -11,6 +9,7 @@ import sys
 # setting up a DrawTool later.
 #
 def setup_pygame_window(sim, env_size, window_title='Pygame Window'):
+	import pygame as PG
 
 	PG.init()
 	gameDisplay = PG.display.set_mode(env_size)
@@ -44,6 +43,8 @@ def setup_pygame_window(sim, env_size, window_title='Pygame Window'):
 
 
 def create_default_cmdline_parser():
+	import argparse
+
 	parser = argparse.ArgumentParser(description="Safe Navigation simulator", prog=sys.argv[0])
 	parser.add_argument('--show-real-time-plot',
 			help='Show a real-time plot of PDFs',
@@ -159,6 +160,30 @@ def create_default_cmdline_parser():
 			default=None,
 			action='store'
 	);
+	parser.add_argument('--params-file',
+			help='JSON file containing values for various simulator/algorithm parameters',
+			dest='params_file',
+			type=str,
+			default='',
+			action='store'
+	);
 
 
 	return parser
+
+
+def load_params(params_file):
+	import json
+
+	params = {'robots': {}}
+
+	if params_file is None or params_file == '':
+		return params
+
+	with open(params_file) as f:
+		params = json.load(f)
+
+	if 'robots' not in params:
+		params['robots'] = {}
+
+	return params

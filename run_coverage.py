@@ -176,7 +176,7 @@ for i in range(10):
 	robot.put_sensor('recv', ReceiverSensor(robot, bcast_channel));
 	robot.put_sensor('roadmap', roadmap);
 	robot.put_sensor('event', EventSensor(robot, event_map, env, detection_range=cmdargs.radar_range));
-	robot.put_sensor('debug', {'name': robot.name});
+	robot.put_sensor('params', {'name': robot_name});
 	robot.set_nav_algo(FazliCoverageAlgorithm(robot.get_sensors(), cmdargs));
 	robot_list.append(robot);
 

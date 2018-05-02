@@ -67,23 +67,20 @@ radar = GeometricRadar(env, radius = cmdargs.radar_range);
 initial_position = np.array(start_point.position);
 robot_list = [];
 
-def make_default_robot(robot_name, path_color, debug_name=None):
-	if debug_name is None:
-		debug_name = robot_name
-
+def make_default_robot(robot_name, path_color):
 	robot = Robot(initial_position, cmdargs, path_color=path_color, name=robot_name, objective=objective);
 	robot.put_sensor('radar', radar);
 	robot.put_sensor('gps', GpsSensor(robot));
-	robot.put_sensor('debug', {'name': debug_name});
+	robot.put_sensor('params', {'name': robot_name});
 	robot.debug_info['ped_id'] = cmdargs.ped_id_to_replace;
 
 	return robot
 
-robot = make_default_robot('SFMRobot', (0, 0, 255), 'sfm')
+robot = make_default_robot('SFMRobot', (0, 0, 255))
 robot.set_nav_algo(SFMNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
 robot_list.append(robot);
 
-robot = make_default_robot('DeepMotionRobot', (0xf3,0x91,0x12), 'deepmotion')
+robot = make_default_robot('DeepMotionRobot', (0xf3,0x91,0x12))
 robot.set_nav_algo(DeepPredNavigationAlgorithm(robot.get_sensors(), target, cmdargs, net_type='perl', net_load_file=cmdargs.net_load_filename));
 robot_list.append(robot);
 
