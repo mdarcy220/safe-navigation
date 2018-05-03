@@ -51,9 +51,10 @@ class Game:
 	#          with no arguments. The default is the base DrawTool
 	#          constructor, which does not draw anything.
 	#
-	def __init__(self, cmdargs, env, dtool_constructor=DrawTool.DrawTool):
+	def __init__(self, cmdargs, env, output_type='csv', dtool_constructor=DrawTool.DrawTool):
 		self._cmdargs = cmdargs
 		self._env = env
+		self._output_type = output_type
 		self._dtool_constructor = dtool_constructor
 
 		# Init trigger table
@@ -289,6 +290,46 @@ class Game:
 		return ','.join(csv_fields)
 
 
+	## Creates a result summary as a dict that can be serialized to JSON
+	#
+	# @returns dict
+	#
+	def make_json_robot_summary(self, robot):
+
+		json_obj = dict()
+
+		json_obj['sim_id'] = self._unique_id
+		json_obj['robot_name'] = robot.name
+
+		json_obj['speedmode'] = self._cmdargs.speedmode
+		json_obj['radar_resolution'] = self._cmdargs.radar_resolution
+		json_obj['robot_movement_momentum'] = self._cmdargs.robot_movement_momentum
+
+		json_obj['map_name'] = self._cmdargs.map_name
+
+		json_obj['map_modifier_num'] = self._cmdargs.map_modifier_num
+		json_obj['use_integer_robot_location'] = self._cmdargs.use_integer_robot_location
+
+		json_obj['num_dynamic_collisions'] = robot.get_stats().num_dynamic_collisions
+		json_obj['num_static_collisions'] = robot.get_stats().num_static_collisions
+
+		json_obj['num_steps'] = robot.stepNum
+
+		json_obj['reached_goal'] = bool(robot.test_objective())
+		json_obj['has_given_up'] = bool(robot.has_given_up())
+
+		json_obj['avg_decision_time'] = robot.get_stats().avg_decision_time()
+
+		json_obj['min_proximities'] = robot.debug_info['min_proximities']
+		json_obj['trajectory'] = [loc.tolist() for loc in robot._visited_points]
+		if 'ped_id' in robot.debug_info:
+			json_obj['ped_id'] = robot.debug_info['ped_id']
+		if self._cmdargs.output_prng_state:
+			json_obj['prng_state'] = str(self._initial_random_state)
+
+		return json_obj
+
+
 	## Runs the game
 	#
 	# This method dispatches the appropriate game loop based on the
@@ -300,8 +341,12 @@ class Game:
 
 		self.standard_game_loop()
 
-		for robot in self._robot_list:
-			sys.stdout.write(self.make_csv_robot_line(robot) + '\n');
+		if self._output_type == 'csv':
+			for robot in self._robot_list:
+				sys.stdout.write(self.make_csv_robot_line(robot) + '\n');
+		elif self._output_type == 'json':
+			for robot in self._robot_list:
+				sys.stdout.write(json.dumps(self.make_json_robot_summary(robot), sort_keys=True) + '\n');
 
 		return 0
 
