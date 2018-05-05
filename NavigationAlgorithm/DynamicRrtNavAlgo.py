@@ -35,12 +35,17 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 	#          reduced, and dynamic obstacles are not checked for
 	#          collisions.
 	# 
-	def __init__(self, sensors, target, cmdargs, use_as_global_planner=False):
+	def __init__(self, sensors, target, cmdargs, params = None, use_as_global_planner=False):
 		# Init basic members
 		self._sensors = sensors;
 		self._target  = target;
 		self._cmdargs = cmdargs;
 		self._use_as_global_planner = use_as_global_planner;
+
+		self._params = self._get_default_params()
+		if params is not None:
+			for param_name in params:
+				self._params[param_name] = params[param_name]
 
 		self._radar = sensors['radar'];
 		self._gps = sensors['gps'];
@@ -54,15 +59,16 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._has_given_up = False
 
 		# Algorithm parameters
-		self._maxstepsize = cmdargs.robot_speed*5;
-		self._maxWaypoints = 500;
+		self._maxstepsize = self._params['max_stepsize'];
+		self._maxWaypoints = self._params['max_waypoints'];
 		self._waypointCache = []
-		self._goalThreshold = cmdargs.robot_speed * 1.5;
-		self._waypoint_threshold = 25 if self._use_as_global_planner else 3
-		self._goalBias = 0.1;
-		self._waypointBias = 0.3;
-		self._maxGrowths = 3000;
-		self._maxFailedGrowths = 2000;
+		self._goalThreshold = self._params['goal_threshold'];
+		self._waypoint_threshold = self._params['waypoint_threshold']
+		self._goalBias = self._params['goal_bias'];
+		self._waypointBias = self._params['waypoint_bias'];
+		self._maxGrowths = self._params['max_growths'];
+		self._maxFailedGrowths = self._params['max_failed_growths'];
+
 		self.debug_info = {"path": None, "point": None}
 
 		# Make initial RRT from start to goal
@@ -70,6 +76,20 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._initRRT(self._target.position, self._gps.location());
 		self._grow_rrt(); 
 		self._extract_solution(); 
+
+
+	def _get_default_params(self):
+		default_params = {
+			'max_stepsize': self._cmdargs.robot_speed * 5,
+			'max_waypoints': 500,
+			'goal_threshold': self._cmdargs.robot_speed * 1.5,
+			'goal_bias': 0.1,
+			'waypoint_threshold': (25 if self._use_as_global_planner else 3),
+			'waypoint_bias': 0.3,
+			'max_growths': 3000,
+			'max_failed_growths': 2000,
+		}
+		return default_params
 
 
 	## Next action selector method.
