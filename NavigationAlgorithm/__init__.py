@@ -24,3 +24,5 @@ from .DQNIRLNavAlgo import DeepQIRLAlgorithm
 from .DeepPredNavAlgo import DeepPredNavigationAlgorithm
 from .SFMNavAlgo import SFMNavigationAlgorithm
 from .MovementPatternNavAlgo import MovementPatternNavigationAlgorithm
+
+from . import util
