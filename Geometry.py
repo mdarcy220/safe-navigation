@@ -575,7 +575,7 @@ def test_circle_overlaps_poly(circle_center, circle_radius, poly_points):
 
 	# The only other way to collide is if the circle is completely inside
 	# the polygon
-	ployob = Polygon(poly_points)
+	polyob = Polygon(poly_points)
 	return polyob.contains_point(circle_center)
 
 
