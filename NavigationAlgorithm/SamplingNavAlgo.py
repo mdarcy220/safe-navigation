@@ -370,7 +370,6 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		# Replan if the current trajectory is either finished or no 
 		# longer safe
-		print(self._score_clearance(self._cur_traj[self._cur_traj_index:]))
 		if len(self._cur_traj) <= self._cur_traj_index or self._score_clearance(self._cur_traj[self._cur_traj_index:]) < 101:
 
 
