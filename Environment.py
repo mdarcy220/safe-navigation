@@ -18,6 +18,7 @@ class ObsFlag:
 	ANY_OBSTACLE     = 0b0001;
 	DYNAMIC_OBSTACLE = 0b0010;
 	STATIC_OBSTACLE  = 0b0100;
+	ROBOT_OBSTACLE   = 0b1000;
 
 
 ## Holds information related to the simulation environment, such as the

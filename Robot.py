@@ -7,6 +7,7 @@
 import numpy  as np
 import pygame as PG
 import Vector
+import Geometry
 import time
 from pygame import gfxdraw
 from Environment import ObsFlag
@@ -195,8 +196,64 @@ class Robot:
 
 
 	def _compute_collision_flags(self):
-		return self._env.get_obsflags(self.location)
+		if self._obstacle is None:
+			return self._env.get_obsflags(self.location)
 
+		# Only circular robot shapes are supported for now
+		if self._obstacle.shape != 1:
+			return self._env.get_obsflags(self.location)
+
+		flags = 0
+
+		if self._collides_with_obstacle_list(self._env.dynamic_obstacles):
+			flags = flags | ObsFlag.DYNAMIC_OBSTACLE
+			flags = flags | ObsFlag.ANY_OBSTACLE
+
+		if self._collides_with_obstacle_list(self._env.static_obstacles):
+			flags = flags | ObsFlag.STATIC_OBSTACLE
+			flags = flags | ObsFlag.ANY_OBSTACLE
+
+		robo_obstacles = []
+		for robot in self._env.robots:
+			if robot == self or robot._obstacle is None:
+				continue
+			robo_obstacles.append(robot._obstacle)
+
+		if self._collides_with_obstacle_list(robo_obstacles):
+			flags = flags | ObsFlag.ROBOT_OBSTACLE
+			flags = flags | ObsFlag.DYNAMIC_OBSTACLE
+			flags = flags | ObsFlag.ANY_OBSTACLE
+
+		return flags
+
+
+	## Checks if this robot's _obstacle collides with any of the obstacles
+	# in the given list.
+	#
+	def _collides_with_obstacle_list(self, obstacle_list):
+		for obs in obstacle_list:
+			if self._collides_with_obstacle(obs):
+				return True
+		return False
+
+	## Checks if this robot's _obstacle collides with the given `obstacle`
+	#
+	# Currently assumes this robot's _obstacle is a circle.
+	#
+	def _collides_with_obstacle(self, obstacle):
+		if self._obstacle.shape != 1:
+			raise ValueError("Currently, only circles are supported for robot _obstacles.")
+
+		if obstacle.shape == 1:  # Circle
+			return (Vector.distance_between(self._obstacle.coordinate, obstacle.coordinate) <= (self._obstacle.radius + obstacle.radius))
+		elif obstacle.shape == 2:
+			return Geometry.test_circle_overlaps_rect(self._obstacle.coordinate, self._obstacle.radius, obstacle.coordinate, obstacle.size)
+		elif obstacle.shape == 3:
+			raise ValueError("No circle-ellipse overlap test implemented.")
+		elif obstacle.shape == 4:
+			return Geometry.test_circle_overlaps_poly(self._obstacle.coordinate, self._obstacle.radius, obstacle.polygon.get_vertices())
+
+		raise ValueError("Unknown obstacle shape: {}".format(obstacle.shape))
 
 	def set_nav_algo(self, nav_algo):
 		self._nav_algo = nav_algo;
@@ -227,6 +284,7 @@ class Robot:
 	#
 	def draw(self, dtool):
 		if self._obstacle is not None:
+			dtool.set_stroke_width(0);
 			dtool.set_color(self._obstacle.fillcolor);
 			self._env._draw_obstacle(dtool, self._obstacle)
 		dtool.set_color(self._path_color);

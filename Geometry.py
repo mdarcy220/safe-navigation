@@ -9,6 +9,7 @@
 import numpy as np
 import Vector
 import cython
+from Polygon import Polygon
 
 
 ## Factor to multiply by to convert degrees to radians
@@ -504,34 +505,78 @@ def circle_circle_overlap_angle_range(circle1_center, circle1_radius, circle2_ce
 # 	rectangle, the angle range `[0, 360]` is returned.
 #
 def circle_rectangle_overlap_angle_range(circle_center, circle_radius, rect_pos, rect_dim):
+	if not test_circle_overlaps_rect(circle_center, circle_radius, rect_pos, rect_dim):
+		return None;
+
 	if point_inside_rectangle([rect_pos, rect_dim], circle_center):
 		return [0, 360];
-	# Start by checking if the rectangle is close enough to have an intersection at all
+
+	return rectangle_shadow_angle_range(circle_center, rect_pos, rect_dim);
+
+
+def test_circle_overlaps_rect(circle_center, circle_radius, rect_pos, rect_dim):
+	if point_inside_rectangle([rect_pos, rect_dim], circle_center):
+		return True
+
 	rect_points = [rect_pos]
 	rect_points.append(rect_pos + np.array([rect_dim[0], 0]))
 	rect_points.append(rect_pos + rect_dim)
 	rect_points.append(rect_pos + np.array([0, rect_dim[1]]))
+
+	circle_radius2 = circle_radius * circle_radius
+	for i in range(4):
+		rect_point = rect_points[i];
+		xdiff = rect_point[0] - circle_center[0]
+		ydiff = rect_point[1] - circle_center[1]
+		if (xdiff*xdiff + ydiff*ydiff) <= circle_radius2:
+			return True
+
 	rect_lines = [];
 	rect_lines.append(np.array([rect_points[0], rect_points[1]]));
 	rect_lines.append(np.array([rect_points[1], rect_points[2]]));
 	rect_lines.append(np.array([rect_points[2], rect_points[3]]));
 	rect_lines.append(np.array([rect_points[3], rect_points[0]]));
-
-	has_inter = False;
 	for i in range(4):
 		rect_line = rect_lines[i];
-		rect_point = rect_points[i];
-		if Vector.distance_between(rect_point, circle_center) < circle_radius:
-			has_inter = True
-			break;
 		inters = circle_line_intersection(circle_center, circle_radius, rect_line);
 		if inters is not None and 0 < len(inters):
-			has_inter = True;
-			break;
-	if not has_inter:
-		return None;
+			return True
 
-	return rectangle_shadow_angle_range(circle_center, rect_pos, rect_dim);
+	return False
+
+
+## Checks whether the given circle overlaps the given polygon.
+#
+def test_circle_overlaps_poly(circle_center, circle_radius, poly_points):
+	# Start with a cheap points-in-circle test
+	circle_radius2 = circle_radius * circle_radius
+	for i in range(len(poly_points)):
+		xdiff = poly_points[i][0] - circle_center[0]
+		ydiff = poly_points[i][1] - circle_center[1]
+		if (xdiff*xdiff + ydiff*ydiff) <= circle_radius2:
+			return True
+
+	# Now try a bounding-rectangle test
+	min_x = min(poly_points, key=lambda p: p[0])[0]
+	max_x = max(poly_points, key=lambda p: p[0])[0]
+	min_y = min(poly_points, key=lambda p: p[1])[1]
+	max_y = max(poly_points, key=lambda p: p[1])[1]
+	rect_pos = [min_x, min_y]
+	rect_size = np.subtract((max_x, max_y), rect_pos)
+	if not test_circle_overlaps_rect(circle_center, circle_radius, rect_pos, rect_size):
+		return False
+
+	# Brute-force all the possible line collsions
+	for i in range(len(poly_points)-1):
+		line = [poly_points[i], poly_points[i+1]];
+		inters = circle_line_intersection(circle_center, circle_radius, line);
+		if inters is not None and 0 < len(inters):
+			return True
+
+	# The only other way to collide is if the circle is completely inside
+	# the polygon
+	ployob = Polygon(poly_points)
+	return polyob.contains_point(circle_center)
 
 
 ## Creates a 2x2 rotation transform matrix
