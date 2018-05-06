@@ -175,9 +175,8 @@ class Robot:
 				elif env.get_obsflags(new_location) & ObsFlag.STATIC_OBSTACLE:
 					self.stats.num_static_collisions += 1
 			self._last_collision_step = self.stepNum
-			new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-.5, .5, size=2));
-			if(Vector.getDistanceBetweenPoints(self.location, new_location) > 2*self.speed):
-				new_location = np.add(self.location, np.random.uniform(-0.5, 0.5, size=2))
+			movement_vec_len = Vector.magnitudeOf(movement_vec)
+			new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-movement_vec_len*0.007, movement_vec_len*0.007, size=2));
 
 		self.location = new_location
 
