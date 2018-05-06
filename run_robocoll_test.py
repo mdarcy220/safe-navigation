@@ -54,7 +54,7 @@ def make_default_robot(robot_name, path_color):
 
 	env.non_interactive_objects += [start_point, target]
 
-	robot = Robot(initial_position, cmdargs, path_color=path_color, name=robot_name, objective=objective);
+	robot = Robot(initial_position, cmdargs, env, path_color=path_color, name=robot_name, objective=objective);
 	robot.put_sensor('radar', RadarSensor(env, robot, [], radar));
 	robot.put_sensor('gps', GpsSensor(robot));
 	if robot_name in params['robots']:

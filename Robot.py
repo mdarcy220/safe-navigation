@@ -84,9 +84,10 @@ class Robot:
 	# @param objective (Objective object)
 	# <br>	-- Objective for the robot
 	#
-	def __init__(self, initial_position, cmdargs, path_color = (0, 0, 255), name="", objective=None):
+	def __init__(self, initial_position, cmdargs, env, path_color = (0, 0, 255), name="", objective=None):
 		self.location           = initial_position;
 		self._cmdargs           = cmdargs;
+		self._env               = env
 		self._path_color        = path_color
 		self.name               = name;
 		self._objective         = objective
@@ -138,7 +139,11 @@ class Robot:
 	# decision about the robot's next action to reach the goal. Then,
 	# it takes one step in the planned direction.
 	#
-	def NextStep(self, env):
+	def next_step(self, timestep):
+		# Don't bother if the robot has already achieved its objective
+		if self.test_objective():
+			return;
+
 		self.stepNum += 1
 		self.stats.num_steps += 1
 
@@ -166,24 +171,31 @@ class Robot:
 
 		# Update the robot's position and check for a collision
 		# with an obstacle
-		new_location = np.add(self.location, movement_vec)
-		if (env.get_obsflags(new_location) & ObsFlag.ANY_OBSTACLE):
-			if self.stepNum - self._last_collision_step > 1:
-				self._drawcoll = 10
-				if env.get_obsflags(new_location) & ObsFlag.DYNAMIC_OBSTACLE:
-					self.stats.num_dynamic_collisions += 1
-				elif env.get_obsflags(new_location) & ObsFlag.STATIC_OBSTACLE:
-					self.stats.num_static_collisions += 1
-			self._last_collision_step = self.stepNum
-			movement_vec_len = Vector.magnitudeOf(movement_vec)
-			new_location = np.add(new_location, -movement_vec*1.01 + np.random.uniform(-movement_vec_len*0.007, movement_vec_len*0.007, size=2));
-
-		self.location = new_location
+		self.location = np.add(self.location, movement_vec)
 
 		if self._obstacle is not None:
 			self._obstacle.next_step(1)
 
+		collision_flags = self._compute_collision_flags()
+		if (collision_flags & ObsFlag.ANY_OBSTACLE):
+			if self.stepNum - self._last_collision_step > 1:
+				self._drawcoll = 10
+				if collision_flags & ObsFlag.DYNAMIC_OBSTACLE:
+					self.stats.num_dynamic_collisions += 1
+				elif collision_flags & ObsFlag.STATIC_OBSTACLE:
+					self.stats.num_static_collisions += 1
+			self._last_collision_step = self.stepNum
+			movement_vec_len = Vector.magnitudeOf(movement_vec)
+			self.location = np.add(self.location, -movement_vec*1.01 + np.random.uniform(-movement_vec_len*0.007, movement_vec_len*0.007, size=2));
+
+			if self._obstacle is not None:
+				self._obstacle.next_step(1)
+
 		self._visited_points.append(np.array(self.location))
+
+
+	def _compute_collision_flags(self):
+		return self._env.get_obsflags(self.location)
 
 
 	def set_nav_algo(self, nav_algo):
@@ -216,7 +228,7 @@ class Robot:
 	def draw(self, dtool):
 		if self._obstacle is not None:
 			dtool.set_color(self._obstacle.fillcolor);
-			self._sensors['radar']._env._draw_obstacle(dtool, self._obstacle)
+			self._env._draw_obstacle(dtool, self._obstacle)
 		dtool.set_color(self._path_color);
 		dtool.set_stroke_width(2);
 		dtool.draw_lineseries(self._visited_points[-1500:])

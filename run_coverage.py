@@ -169,7 +169,7 @@ env.add_trigger('post_draw', event_map.draw)
 
 for i in range(10):
 	initial_position = random.sample(roadmap.get_nodes(), 1)[0].location
-	robot    = Robot(initial_position, cmdargs, path_color=(0xf3,0x91,0x12), name='fazlicov{}'.format(i));
+	robot    = Robot(initial_position, cmdargs, env, path_color=(0xf3,0x91,0x12), name='fazlicov{}'.format(i));
 	robot.put_sensor('radar', radar);
 	robot.put_sensor('gps', GpsSensor(robot));
 	robot.put_sensor('bcast', Broadcaster(robot, bcast_channel));

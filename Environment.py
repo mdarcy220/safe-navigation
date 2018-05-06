@@ -30,10 +30,28 @@ class Environment:
 		self.width = width
 		self.height = height
 		self.dynamic_obstacles = []
+		self.robots = []
 		self.non_interactive_objects = []
 		self._speed_mode = cmdargs.speedmode
 		self._triggers = {'step': []}
 
+
+	def add_robot(self, robot):
+		if robot not in self.robots:
+			self.robots.append(robot);
+
+	def add_robots(self, robots):
+		for robot in robots:
+			self.add_robot(robot)
+
+	def remove_robot(self, robot):
+		self.robots.remove(robot)
+
+	def remove_robot_by_name(self, robot_name):
+		for robot in self.robots:
+			if robot.name == robot_name:
+				self.robots.remove(robot)
+				return
 
 	def add_trigger(self, exec_on, exec_func):
 		if exec_on not in self._triggers:
@@ -81,6 +99,9 @@ class Environment:
 			trigger(timestep)
 
 		self._update_dynamic_obstacles(timestep);
+
+		for robot in self.robots:
+			robot.next_step(timestep)
 
 
 	## Checks what kind of obstacle the given point is

@@ -91,7 +91,6 @@ class Game:
 		self._robot_list = []
 
 		self._cur_state = GameState.INITIALIZING
-		self._doing_step = False
 
 		self._step_num = 0;
 
@@ -105,10 +104,12 @@ class Game:
 
 
 	def add_robots(self, robot_list):
+		self._env.add_robots(robot_list)
 		self._robot_list += robot_list
 
 
 	def remove_robot_by_name(self, robot_name):
+		self._env.remove_robot_by_name(robot_name)
 		for robot in self._robot_list:
 			if robot.name == robot_name:
 				self._robot_list.remove(robot)
@@ -149,17 +150,11 @@ class Game:
 
 		self._env.update_display(dtool);
 
-		if self._display_every_frame:
-			for robot in self._robot_list:
-				robot.draw(dtool)
-
 		self._run_triggers_for('post_update_display', dtool)
 
 
 	def step(self):
 		self._run_triggers_for('pre_step')
-
-		self._doing_step = False
 
 		allBotsAtTarget = True
 		anyRobotQuit = False
@@ -171,18 +166,17 @@ class Game:
 				break;
 			if not (robot.test_objective()):
 				allBotsAtTarget = False
-				robot.NextStep(self._env)
+
+		# Quit if necessary
+		if anyRobotQuit or allBotsAtTarget or self._cmdargs.max_steps <= self._step_num:
+			self.quit()
+			return
 
 		# Step the environment
 		self._env.next_step()
 
 		# Increment the step num
 		self._step_num += 1
-
-		# Quit if necessary
-		if anyRobotQuit or allBotsAtTarget or self._cmdargs.max_steps <= self._step_num:
-			self.quit()
-			return
 
 		# Draw everything
 		if self._display_every_frame:

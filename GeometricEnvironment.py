@@ -98,6 +98,9 @@ class GeometricEnvironment(Environment):
 			dtool.set_color(obs.fillcolor);
 			self._draw_obstacle(dtool, obs)
 
+		for robot in self.robots:
+			robot.draw(dtool)
+
 		for trigger in self._triggers['post_draw']:
 			trigger(dtool)
 
