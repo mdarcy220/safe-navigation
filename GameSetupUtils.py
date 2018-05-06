@@ -52,12 +52,6 @@ def create_default_cmdline_parser():
 			default=False,
 			action='store_true'
 	);
-	parser.add_argument('--use-integer-robot-location',
-			help='Set the simulation to store the robot location as an integer instead of a floating-point value',
-			dest='use_integer_robot_location',
-			default=False,
-			action='store_true'
-	);
 	parser.add_argument('--display-every-frame',
 			help='Display every frame ',
 			dest='display_every_frame',

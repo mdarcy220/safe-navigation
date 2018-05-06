@@ -264,7 +264,7 @@ class Game:
 		csv_fields.append(sanitize_str_obj(self._cmdargs.map_name))
 
 		csv_fields.append(str(self._cmdargs.map_modifier_num))
-		csv_fields.append(str(self._cmdargs.use_integer_robot_location))
+		csv_fields.append(str(False)) # TODO: This was the old use_integer_robot_location. Remove field eventually.
 
 		csv_fields.append(str(robot.get_stats().num_dynamic_collisions))
 		csv_fields.append(str(robot.get_stats().num_static_collisions))
@@ -308,7 +308,6 @@ class Game:
 		json_obj['map_name'] = self._cmdargs.map_name
 
 		json_obj['map_modifier_num'] = self._cmdargs.map_modifier_num
-		json_obj['use_integer_robot_location'] = self._cmdargs.use_integer_robot_location
 
 		json_obj['num_dynamic_collisions'] = robot.get_stats().num_dynamic_collisions
 		json_obj['num_static_collisions'] = robot.get_stats().num_static_collisions

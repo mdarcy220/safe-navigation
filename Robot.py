@@ -179,8 +179,6 @@ class Robot:
 			if(Vector.getDistanceBetweenPoints(self.location, new_location) > 2*self.speed):
 				new_location = np.add(self.location, np.random.uniform(-0.5, 0.5, size=2))
 
-		if (self._cmdargs.use_integer_robot_location):
-			new_location = np.array(new_location, dtype=int)
 		self.location = new_location
 
 		if self._obstacle is not None:
@@ -236,8 +234,8 @@ class Robot:
 		# Draw circle to indicate a collision
 		if self._drawcoll > 0:
 			dtool.set_color((255, 80, 210))
-			dtool.set_stroke_width(0.3);
-			dtool.draw_circle(np.array(self.location), 1.2)
+			dtool.set_stroke_width(3);
+			dtool.draw_circle(np.array(self.location), 12)
 			self._drawcoll = self._drawcoll - 1
 
 		# Draw static mapper data
