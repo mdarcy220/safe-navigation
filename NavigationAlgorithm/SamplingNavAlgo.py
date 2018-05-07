@@ -46,8 +46,9 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._gps     = self._sensors['gps'];
 
-		self._normal_speed = cmdargs.robot_speed;
+		self._normal_speed = self._params['normal_speed'];
 		self._max_sampling_iters = self._params['max_sampling_iters']
+		self._trajectory_num_waypoints = self._params['trajectory_num_waypoints']
 		self._safety_threshold = self._params['safety_threshold']
 		self._stepNum = 0;
 
@@ -67,7 +68,10 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _get_default_params(self):
 		default_params = {
+			'normal_speed': self._cmdargs.robot_speed,
+			'obstacle_dist_normalizer': self._sensors['radar'].radius,
 			'max_sampling_iters': 200,
+			'trajectory_num_waypoints': 2,
 			'safety_threshold': 0.1,
 			'gaussian_sigma': 100,
 		}
@@ -103,7 +107,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			# Init queue
 			traj_queue = Queue();
 			for i in range(self._max_sampling_iters):
-				traj_queue.put_nowait(self._gen_trajectory(self._gps.location(), length=2));
+				traj_queue.put_nowait(self._gen_trajectory(self._gps.location(), length=self._trajectory_num_waypoints));
 
 			best_traj = [self._gps.location()];
 
@@ -198,7 +202,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		raw_radar_data = self._radar_data_at(center, time_offset);
 
-		normalized_radar_data = self._gaussian.amplitude * raw_radar_data / self._radar.radius;
+		normalized_radar_data = self._gaussian.amplitude * raw_radar_data / self._params['obstacle_dist_normalizer'];
 
 		# Add the obstacle distribution into the combined PDF
 		combined_pdf = combiner_func(combined_pdf, normalized_radar_data);
