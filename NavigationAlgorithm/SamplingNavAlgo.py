@@ -326,8 +326,8 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._gps     = self._sensors['gps'];
 
-		self._normal_speed = cmdargs.robot_speed;
-		self._max_sampling_iters = 200
+		self._normal_speed = self._params['normal_speed'];
+		self._max_sampling_iters = self._params['max_sampling_iters']
 		self._stepNum = 0;
 
 		# Parameters from Fox, Burgard, and Thrun's original DWA paper
@@ -352,6 +352,8 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 	def _get_default_params(self):
 		return {
+			'normal_speed': self._cmdargs.robot_speed,
+			'max_sampling_iters': 200,
 			'heading_weight': 2.0,
 			'clearance_weight': 0.2,
 			'velocity_weight': 0.2,
