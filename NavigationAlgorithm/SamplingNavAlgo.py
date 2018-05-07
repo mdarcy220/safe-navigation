@@ -328,6 +328,7 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self._normal_speed = self._params['normal_speed'];
 		self._max_sampling_iters = self._params['max_sampling_iters']
+		self._trajectory_num_waypoints = self._params['trajectory_num_waypoints']
 		self._stepNum = 0;
 
 		# Parameters from Fox, Burgard, and Thrun's original DWA paper
@@ -354,6 +355,7 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		return {
 			'normal_speed': self._cmdargs.robot_speed,
 			'max_sampling_iters': 200,
+			'trajectory_num_waypoints': 4,
 			'heading_weight': 2.0,
 			'clearance_weight': 0.2,
 			'velocity_weight': 0.2,
@@ -390,7 +392,7 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			# Init queue
 			traj_queue = Queue();
 			for i in range(self._max_sampling_iters):
-				traj_queue.put_nowait(self._gen_trajectory(self._gps.location(), length=4));
+				traj_queue.put_nowait(self._gen_trajectory(self._gps.location(), length=self._trajectory_num_waypoints));
 
 			best_traj = [self._gps.location()];
 
