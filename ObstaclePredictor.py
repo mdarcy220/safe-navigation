@@ -10,6 +10,8 @@ from scipy.cluster.hierarchy import linkage, fcluster
 from collections import defaultdict
 from collections import OrderedDict
 
+import cython
+
 ## Abstract base class for obstacle predictors.
 #
 # Obstacle predictors use observations of past obstacles to predict future
@@ -497,6 +499,7 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 
 	## @copydoc AbstractObstaclePredictor#get_prediction()
 	#
+	@cython.locals(dx=cython.double, dy=cython.double, dist2=cython.double, dist=cython.double, prob=cython.double, conesize=cython.double)
 	def get_prediction(self, location, time):
 		if self.max_timestep < time:
 			return 0.0;
@@ -519,8 +522,11 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 			else:
 				conesize += (time*cone_expansion_rate);
 
-			dist = Vector.distance_between(location, future_point)
-			if dist <= conesize:
+			dx = location[0] - future_point[0]
+			dy = location[1] - future_point[1]
+			dist2 = (dx*dx + dy*dy)
+			if dist2 <= conesize*conesize:
+				dist = dist2**(1/2)
 				prob = max(min(4.0*(time+1)/(1+dist), 1.0), prob)
 		return prob;
 
