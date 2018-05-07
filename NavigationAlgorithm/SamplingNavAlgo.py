@@ -63,7 +63,10 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._gaussian = Distributions.Gaussian(sigma=gaussian_sigma, amplitude=(1/(np.sqrt(2*np.pi)*gaussian_sigma)))
 
 		# Obstecle Predictor
-		self._obstacle_predictor = CollisionConeObstaclePredictor(360, sensors['radar'].radius, 5);
+		obs_pred_params = None
+		if 'params' in self._params['obstacle_predictor'].keys():
+			obs_pred_params = self._params['obstacle_predictor']['params']
+		self._obstacle_predictor = CollisionConeObstaclePredictor(360, params=obs_pred_params, radar_range=sensors['radar'].radius, max_timestep=5);
 
 
 	def _get_default_params(self):
@@ -74,6 +77,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			'trajectory_num_waypoints': 2,
 			'safety_threshold': 0.1,
 			'gaussian_sigma': 100,
+			'obstacle_predictor': {'params': {}},
 		}
 		return default_params
 
@@ -336,7 +340,10 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		self.debug_info = {};
 
-		self._obstacle_predictor = CollisionConeObstaclePredictor(360, sensors['radar'].radius, 5);
+		obs_pred_params = None
+		if 'params' in self._params['obstacle_predictor'].keys():
+			obs_pred_params = self._params['obstacle_predictor']['params']
+		self._obstacle_predictor = CollisionConeObstaclePredictor(360, params=obs_pred_params, radar_range=sensors['radar'].radius, max_timestep=5);
 
 		# Parameter to indicate how certain the obstacle predictor's
 		# prediction must be for us to react to the obstacle
@@ -349,6 +356,7 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			'clearance_weight': 0.2,
 			'velocity_weight': 0.2,
 			'obstacle_belief_threshold': 0.3,
+			'obstacle_predictor': {'params': {}},
 		};
 
 

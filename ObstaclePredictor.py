@@ -470,12 +470,17 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 	# 	the prediction will always be 0.
 	#
 
-	def __init__(self, data_size, radar_range = 100, max_timestep = 0):
+	def __init__(self, data_size, params = None, radar_range = 100, max_timestep = 0):
 		# Might be good to cache values from observations to use
 		# later. Let's initialize them now.
 		self.data_size = data_size;
 		self.radar_range = radar_range;
 		self.max_timestep = max_timestep;
+
+		self._params = self._get_default_params()
+		if params is not None:
+			for param_name in params:
+				self._params[param_name] = params[param_name]
 
 		self.last_location = None;
 		self.last_radar_distribution = None;
@@ -484,6 +489,14 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 
 		# Init obstacle point storage
 		self._obs_points = [];
+
+
+	def _get_default_params(self):
+		default_params = {
+			'cone_initial_size': 5,
+			'cone_expansion_rate': 10,
+		}
+		return default_params
 
 
 	## @copydoc AbstractObstaclePredictor#add_observation()
@@ -499,7 +512,10 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 
 	## @copydoc AbstractObstaclePredictor#get_prediction()
 	#
-	@cython.locals(dx=cython.double, dy=cython.double, dist2=cython.double, dist=cython.double, prob=cython.double, conesize=cython.double)
+	@cython.locals(dx=cython.double, dy=cython.double, dist2=cython.double,
+		       dist=cython.double, prob=cython.double,
+		       conesize=cython.double, cone_initial_size=cython.double,
+		       cone_expansion_rate=cython.double)
 	def get_prediction(self, location, time):
 		if self.max_timestep < time:
 			return 0.0;
@@ -508,8 +524,8 @@ class CollisionConeObstaclePredictor(AbstractObstaclePredictor):
 		time = max(int(round(time)), 0);
 
 		# Cone expansion parameters
-		cone_initial_size = 5;
-		cone_expansion_rate = 10;
+		cone_initial_size = self._params['cone_initial_size'];
+		cone_expansion_rate = self._params['cone_expansion_rate'];
 
 		prob = 0.0
 
