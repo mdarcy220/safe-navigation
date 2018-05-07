@@ -156,19 +156,11 @@ class Game:
 	def step(self):
 		self._run_triggers_for('pre_step')
 
-		allBotsAtTarget = True
-		anyRobotQuit = False
-
-		# Process robot actions
-		for robot in self._robot_list:
-			if robot.has_given_up():
-				anyRobotQuit = True;
-				break;
-			if not (robot.test_objective()):
-				allBotsAtTarget = False
+		allBotsAtTarget = all(robot.test_objective() for robot in self._robot_list)
+		allGivenUp = all(robot.has_given_up() for robot in self._robot_list)
 
 		# Quit if necessary
-		if anyRobotQuit or allBotsAtTarget or self._cmdargs.max_steps <= self._step_num:
+		if allBotsAtTarget or allGivenUp or self._cmdargs.max_steps <= self._step_num:
 			self.quit()
 			return
 

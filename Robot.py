@@ -141,8 +141,8 @@ class Robot:
 	# it takes one step in the planned direction.
 	#
 	def next_step(self, timestep):
-		# Don't bother if the robot has already achieved its objective
-		if self.test_objective():
+		# Don't bother if the robot has already achieved its objective or quit
+		if self.test_objective() or self.has_given_up():
 			return;
 
 		self.stepNum += 1
