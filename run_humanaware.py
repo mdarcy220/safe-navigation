@@ -24,10 +24,13 @@ import binascii
 import random
 import json
 
+import MovementPattern
+
 from NavigationObjective import NavigationObjective
 
 from NavigationAlgorithm import SFMNavigationAlgorithm
 from NavigationAlgorithm import DeepPredNavigationAlgorithm
+from NavigationAlgorithm import MovementPatternNavigationAlgorithm
 
 cmdarg_parser = GameSetupUtils.create_default_cmdline_parser()
 cmdarg_parser.add_argument('--net-load-filename',
@@ -50,6 +53,10 @@ with open('obsmat.json', 'r') as f:
 	obsmat = json.load(f)
 	start_human_obs = obsmat[str(cmdargs.ped_id_to_replace)][0]
 	end_human_obs = obsmat[str(cmdargs.ped_id_to_replace)][-1]
+
+	time_offset = obsmat[str(cmdargs.ped_id_to_replace)][0]['time'] if cmdargs.ped_id_to_replace > 0 else 0
+	human_path = [(waypoint['pos_y'], waypoint['pos_x'], waypoint['time']-time_offset) for waypoint in obsmat[str(cmdargs.ped_id_to_replace)]]
+
 	obsmat = None
 
 env_size = (640, 480)
@@ -80,8 +87,13 @@ robot = make_default_robot('SFMRobot', (0, 0, 255))
 robot.set_nav_algo(SFMNavigationAlgorithm(robot.get_sensors(), target, cmdargs));
 robot_list.append(robot);
 
-robot = make_default_robot('DeepMotionRobot', (0xf3,0x91,0x12))
-robot.set_nav_algo(DeepPredNavigationAlgorithm(robot.get_sensors(), target, cmdargs, net_type='perl', net_load_file=cmdargs.net_load_filename));
+#robot = make_default_robot('DeepMotionRobot', (0xf3,0x91,0x12))
+#robot.set_nav_algo(DeepPredNavigationAlgorithm(robot.get_sensors(), target, cmdargs, net_type='perl', net_load_file=cmdargs.net_load_filename));
+#robot_list.append(robot);
+
+robot = make_default_robot('human', (0x44, 0x88, 0x44))
+human_movement = MovementPattern.PathMovement(human_path, loop=False)
+robot.set_nav_algo(MovementPatternNavigationAlgorithm(robot.get_sensors(), target, cmdargs, human_movement));
 robot_list.append(robot);
 
 
