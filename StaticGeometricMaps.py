@@ -68,9 +68,9 @@ def load_svg_map(svg_filename):
 
 	for atype in e.findall('.//svg:circle', namespaces):
 		new_circle = dict()
-		new_circle = {k: float(atype.get(k)) for k in {'r', 'y', 'width', 'height'}}
+		new_circle = {k: float(atype.get(k)) for k in {'r', 'cx', 'cy'}}
 		new_circle['radius'] = new_circle['r']
-		new_circle['center'] = [new_circle['x'], new_circle['y']]
+		new_circle['center'] = [new_circle['cx'], new_circle['cy']]
 		obs_spec_list.append(_svg_circle_to_circle_obs(new_circle))
 
 	obs_list = []
