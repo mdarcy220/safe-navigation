@@ -171,7 +171,7 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 				foundGoal = True
 				self._final_node = qNew
 
-		#self._postprocess(self._final_node);
+		self._postprocess(self._final_node);
 
 
 	## Post-process (smooth) the path from start_node to the root
