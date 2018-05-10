@@ -14,6 +14,7 @@ extensions = cythonize(
 			"Environment.py",
 			"Game.py",
 			"Geometry.py",
+			"GeometricRadar.py",
 			"GridDataEnvironment.py",
 			"MapModifier.py",
 			"MDPAdapterSensor.py",
