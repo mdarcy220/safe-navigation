@@ -79,16 +79,16 @@ class RadarSensor:
 		return self.scan_obstacles_list(self._env.dynamic_obstacles + self._robot_obs_list())
 
 
-	def scan_static_obstacles_one_by_one(self):
-		return self.scan_obstacles_list_to_list(self._env.static_obstacles)
+	def scan_static_obstacles_one_by_one(self, center):
+		return self.scan_obstacles_list_to_list(center, self._env.static_obstacles)
 
 
-	def scan_dynamic_obstacles_one_by_one(self):
-		return self.scan_obstacles_list_to_list(self._env.dynamic_obstacles + self._robot_obs_list())
+	def scan_dynamic_obstacles_one_by_one(self, center):
+		return self.scan_obstacles_list_to_list(center, self._env.dynamic_obstacles + self._robot_obs_list())
 
 
-	def scan_obstacles_list_to_list(self, obs_list):
-		center = self._robot.location
+	def scan_obstacles_list_to_list(self, center, obs_list):
+		#center = self._robot.location
 		return self._radar.scan_obstacles_list_to_list(center, obs_list)
 
 
