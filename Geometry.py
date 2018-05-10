@@ -356,7 +356,7 @@ def rectangle_shadow_angle_range(center_point, rect_pos, rect_dim):
 	rect_points.append(rect_pos + rect_dim)
 	rect_points.append(rect_pos + np.array([0, rect_dim[1]]))
 
-	first_ang = Vector.getAngleBetweenPoints(center_point, rect_points[0]);
+	first_ang = Vector.degrees_between(center_point, rect_points[0]);
 
 	angle_range = [first_ang, first_ang];
 
@@ -365,11 +365,11 @@ def rectangle_shadow_angle_range(center_point, rect_pos, rect_dim):
 		vec2 = Vector.unitVectorFromAngle(angle_range[0]*DEGREE_TO_RADIAN_FACTOR);
 		crossProd = np.cross(vec2, vec);
 		if crossProd < 0:
-			angle_range[0] = Vector.getAngleBetweenPoints(center_point, point);
+			angle_range[0] = Vector.degrees_between(center_point, point)-1;
 		vec2 = Vector.unitVectorFromAngle(angle_range[1]*DEGREE_TO_RADIAN_FACTOR);
 		crossProd = np.cross(vec2, vec);
 		if crossProd > 0:
-			angle_range[1] = Vector.getAngleBetweenPoints(center_point, point);
+			angle_range[1] = Vector.degrees_between(center_point, point)+1;
 
 	return angle_range;
 
