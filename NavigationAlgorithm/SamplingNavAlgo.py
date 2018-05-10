@@ -50,6 +50,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._max_sampling_iters = self._params['max_sampling_iters']
 		self._trajectory_num_waypoints = self._params['trajectory_num_waypoints']
 		self._safety_threshold = self._params['safety_threshold']
+		self._obstacle_belief_threshold = self._params['obstacle_belief_threshold']
 		self._stepNum = 0;
 
 		self._cur_traj = [];
@@ -77,6 +78,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			'trajectory_num_waypoints': 2,
 			'safety_threshold': 0.1,
 			'gaussian_sigma': 100,
+			'obstacle_belief_threshold': 0.3,
 			'obstacle_predictor': {'params': {}},
 		}
 		return default_params
@@ -234,7 +236,7 @@ class SamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			for i in np.arange(0, radius, resolution):
 				x = int(cos_cached * i + center[0]);
 				y = int(sin_cached * i + center[1]);
-				if 0.3 < self._obstacle_predictor.get_prediction([x, y], time_offset):
+				if self._obstacle_belief_threshold < self._obstacle_predictor.get_prediction([x, y], time_offset):
 					radar_data[currentStep] = i;
 					break;
 			currentStep = currentStep + 1;
@@ -386,7 +388,7 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 		# Replan if the current trajectory is either finished or no 
 		# longer safe
-		if len(self._cur_traj) <= self._cur_traj_index or self._score_clearance(self._cur_traj[self._cur_traj_index:]) < 101:
+		if len(self._cur_traj) <= self._cur_traj_index or self._score_clearance(self._cur_traj[self._cur_traj_index:]) < 31:
 
 
 			# Init queue
