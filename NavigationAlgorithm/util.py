@@ -37,6 +37,9 @@ def algo_from_config(algo_config, *args, **kwargs):
 	elif algo_type == 'dwa':
 		from .SamplingNavAlgo import DwaSamplingNavigationAlgorithm
 		constructor_func = DwaSamplingNavigationAlgorithm
+	elif algo_type == 'sfm':
+		from .SFMNavAlgo import SFMNavigationAlgorithm
+		constructor_func = SFMNavigationAlgorithm
 	else:
 		raise ValueError("Invalid algorithm type in config")
 
