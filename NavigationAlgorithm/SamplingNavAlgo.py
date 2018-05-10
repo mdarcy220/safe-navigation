@@ -500,6 +500,8 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 
 			time_offset += 1
 
+		min_radar_distance = min(min_radar_distance, cumulative_path_dist)
+
 		return min_radar_distance;
 
 
