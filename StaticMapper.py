@@ -69,6 +69,10 @@ class StaticMapper:
 	def get_grid_data(self):
 		return self._griddata;
 
+
+	def combine_map(self, other_griddate):
+		np.bitwise_or(self._griddata, other_griddate, out=self._griddata)
+
 		
 	## Convert radar data to a list of observed obstacle locations
 	#

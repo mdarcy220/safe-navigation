@@ -100,6 +100,15 @@ class DynamicRrtNavigationAlgorithm(AbstractNavigationAlgorithm):
 	#
 	def select_next_action(self):
 		self._mapper.add_observation();
+
+		if 'bcast' in self._sensors:
+			self._sensors['bcast'].send_bcast(self._mapper.get_grid_data())
+		if 'recv' in self._sensors:
+			msgs = self._sensors['recv'].get_recent_bcasts()
+			if len(msgs) != 0:
+				grid_data = msgs[0]['msg']
+				self._mapper.combine_map(grid_data)
+
 		self.debug_info['mapdata'] = self._mapper.get_grid_data();
 
 		self._invalidateNodes();
