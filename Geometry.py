@@ -63,7 +63,7 @@ def circle_circle_intersection(circle1_center, circle1_radius, circle2_center, c
 		return []; # Concentric
 
 	a = ((r0*r0) - (r1*r1) + dSquared) / (2*d)
-	h = r0*r0 - a*a
+	h = (r0*r0 - a*a)**(1/2)
 
 	p2 = p0 + a * vec_p0_p1 / d
 
@@ -310,8 +310,8 @@ def point_inside_rectangle(rect, point):
 # 	end_ang. The angles will be in degrees between 0 and 360.
 #
 def circle_shadow_angle_range(center_point, circle_center, circle_radius):
-	base_ang = Vector.getAngleBetweenPoints(center_point, circle_center);
-	dist = Vector.getDistanceBetweenPoints(center_point, circle_center);
+	base_ang = np.arctan2(circle_center[1] - center_point[1], circle_center[0] - center_point[0]) * RADIAN_TO_DEGREE_FACTOR;
+	dist = Vector.distance_between(center_point, circle_center);
 	if dist < circle_radius:
 		return [0, 360];
 	offset = np.arcsin(circle_radius / float(dist)) * RADIAN_TO_DEGREE_FACTOR;
@@ -416,8 +416,8 @@ def circle_circle_intersect_angle_range(circle_center, circle_radius, circle2_ce
 	points = circle_circle_intersection(circle_center, circle_radius, circle2_center, circle2_radius);
 	if points is None or len(points) < 2:
 		return None;
-	ang1 = Vector.getAngleBetweenPoints(circle_center, points[0]);
-	ang2 = Vector.getAngleBetweenPoints(circle_center, points[1]);
+	ang1 = Vector.degrees_between(circle_center, points[0]);
+	ang2 = Vector.degrees_between(circle_center, points[1]);
 	vec1 = points[0] - circle_center;
 	vec2 = points[1] - circle_center;
 	crossProd = np.cross(vec1, vec2);
@@ -469,7 +469,7 @@ def circle_circle_intersect_angle_range(circle_center, circle_radius, circle2_ce
 def circle_circle_overlap_angle_range(circle1_center, circle1_radius, circle2_center, circle2_radius):
 	# Get an angle range (relative to circle1) that is guaranteed to contain the entire
 	# overlap of circles 1 and 2. May return None if there is no overlap
-	if Vector.getDistanceBetweenPoints(circle1_center, circle2_center) < circle1_radius:
+	if Vector.distance_between(circle1_center, circle2_center) < circle1_radius:
 		return circle_shadow_angle_range(circle1_center, circle2_center, circle2_radius);
 	else:
 		return circle_circle_intersect_angle_range(circle1_center, circle1_radius, circle2_center, circle2_radius);
