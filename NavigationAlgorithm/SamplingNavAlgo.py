@@ -499,6 +499,7 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			# If the belief reaches the threshold, consider this point an obstacle
 			if self._obstacle_belief_threshold <= obs_belief:
 				min_radar_distance = min(min_radar_distance, cumulative_path_dist)
+				break
 
 			time_offset += 1
 
