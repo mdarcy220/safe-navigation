@@ -4,7 +4,7 @@ import numpy  as np
 import Vector
 from .AbstractNavAlgo import AbstractNavigationAlgorithm
 from RobotControlInput import RobotControlInput
-from ObstaclePredictor import CollisionConeObstaclePredictor, HMMObstaclePredictor
+from ObstaclePredictor import CollisionConeObstaclePredictor, HMMObstaclePredictor, DummyObstaclePredictor
 from queue import Queue, PriorityQueue
 import Distributions
 from Radar import Radar
@@ -346,7 +346,14 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		obs_pred_params = None
 		if 'params' in self._params['obstacle_predictor'].keys():
 			obs_pred_params = self._params['obstacle_predictor']['params']
-		self._obstacle_predictor = CollisionConeObstaclePredictor(360, params=obs_pred_params, radar_range=sensors['radar'].radius, max_timestep=5);
+
+		if 'type' not in self._params['obstacle_predictor']:
+			self._params['obstacle_predictor']['type'] = 'collision_cone'
+
+		if self._params['obstacle_predictor']['type'] == 'collision_cone':
+			self._obstacle_predictor = CollisionConeObstaclePredictor(360, params=obs_pred_params, radar_range=sensors['radar'].radius, max_timestep=5);
+		else:
+			self._obstacle_predictor = DummyObstaclePredictor(360, params=obs_pred_params)
 
 		# Parameter to indicate how certain the obstacle predictor's
 		# prediction must be for us to react to the obstacle
@@ -362,7 +369,7 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 			'clearance_weight': 0.2,
 			'velocity_weight': 0.2,
 			'obstacle_belief_threshold': 0.3,
-			'obstacle_predictor': {'params': {}},
+			'obstacle_predictor': {'type': 'collision_cone', 'params': {}},
 		};
 
 
@@ -376,15 +383,17 @@ class DwaSamplingNavigationAlgorithm(AbstractNavigationAlgorithm):
 		self._stepNum += 1;
 
 		# Scan the radar
-		self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
 		self._radar_data = self._radar.scan(self._gps.location());
 
-		# Give the current observation to the obstacle motion predictor
-		self.debug_info["future_obstacles"] = self._obstacle_predictor.add_observation(self._gps.location(),
-				self._radar_data,
-				self._dynamic_radar_data,
-				None
-		);
+		if self._params['obstacle_predictor']['type'] != 'none':
+			self._dynamic_radar_data = self._radar.scan_dynamic_obstacles(self._gps.location());
+
+			# Give the current observation to the obstacle motion predictor
+			self.debug_info["future_obstacles"] = self._obstacle_predictor.add_observation(self._gps.location(),
+					self._radar_data,
+					self._dynamic_radar_data,
+					None
+			);
 
 		# Replan if the current trajectory is either finished or no 
 		# longer safe
